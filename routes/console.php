@@ -26,3 +26,8 @@ Schedule::command('backup:monitor')
 
 // ── Horizon ────────────────────────────────────────────────────────────────
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
+
+// ── Websites: renewal alerts ───────────────────────────────────────────────
+Schedule::command('websites:check-renewals')
+    ->dailyAt('08:00')
+    ->onOneServer();

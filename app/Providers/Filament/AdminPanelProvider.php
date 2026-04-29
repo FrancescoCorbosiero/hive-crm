@@ -3,6 +3,8 @@
 namespace App\Providers\Filament;
 
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
+use App\Domains\Finance\Filament\FinancePanelPlugin;
+use App\Domains\Websites\Filament\WebsitesPanelPlugin;
 use App\Http\Middleware\SetLocale;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -43,6 +45,8 @@ class AdminPanelProvider extends PanelProvider
                 // Each domain mounts its Filament classes through its own
                 // panel plugin. Add new domains here.
                 ContactsPanelPlugin::make(),
+                WebsitesPanelPlugin::make(),
+                FinancePanelPlugin::make(),
             ])
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,

@@ -7,4 +7,6 @@ return [
 
     // ── Domains ────────────────────────────────────────────────────────
     App\Domains\Contacts\ContactsServiceProvider::class,
+    App\Domains\Websites\WebsitesServiceProvider::class,
+    App\Domains\Finance\FinanceServiceProvider::class,
 ];

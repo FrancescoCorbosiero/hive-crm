@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             \App\Domains\Contacts\Database\Seeders\ContactsSeeder::class,
+            \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
+            \App\Domains\Finance\Database\Seeders\TransactionsSeeder::class,
         ]);
     }
 }
