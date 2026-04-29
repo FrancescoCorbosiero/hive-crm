@@ -1,0 +1,114 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/prod/Dockerfile
+        image: hive-crm/app:latest
+        restart: unless-stopped
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        env_file: .env
+        environment:
+            CONTAINER_ROLE: app
+        volumes:
+            - app-code:/var/www/html
+            - app-storage:/var/www/html/storage
+        networks:
+            - internal
+
+    queue:
+        image: hive-crm/app:latest
+        restart: unless-stopped
+        depends_on:
+            - app
+            - redis
+        env_file: .env
+        environment:
+            CONTAINER_ROLE: queue
+        command: ["php", "artisan", "horizon"]
+        volumes:
+            - app-code:/var/www/html
+            - app-storage:/var/www/html/storage
+        networks:
+            - internal
+
+    scheduler:
+        image: hive-crm/app:latest
+        restart: unless-stopped
+        depends_on:
+            - app
+        env_file: .env
+        environment:
+            CONTAINER_ROLE: scheduler
+        command: ["php", "artisan", "schedule:work"]
+        volumes:
+            - app-code:/var/www/html
+            - app-storage:/var/www/html/storage
+        networks:
+            - internal
+
+    pgsql:
+        image: postgres:16-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${DB_DATABASE}
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - pgsql-data:/var/lib/postgresql/data
+        networks:
+            - internal
+        healthcheck:
+            test: ["CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    redis:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: ["redis-server", "--appendonly", "yes"]
+        volumes:
+            - redis-data:/data
+        networks:
+            - internal
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    caddy:
+        image: caddy:2-alpine
+        restart: unless-stopped
+        depends_on:
+            - app
+        ports:
+            - "80:80"
+            - "443:443"
+            - "443:443/udp"
+        environment:
+            APP_DOMAIN: ${APP_DOMAIN}
+            ACME_EMAIL: ${ACME_EMAIL}
+        volumes:
+            - ./docker/prod/Caddyfile:/etc/caddy/Caddyfile:ro
+            - app-code:/var/www/html:ro
+            - caddy-data:/data
+            - caddy-config:/config
+        networks:
+            - internal
+
+networks:
+    internal:
+        driver: bridge
+
+volumes:
+    pgsql-data:
+    redis-data:
+    app-code:
+    app-storage:
+    caddy-data:
+    caddy-config:
