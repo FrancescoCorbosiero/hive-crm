@@ -130,6 +130,43 @@ the most recent successful restore in your ops journal.
 - `https://APP_DOMAIN/pulse` — Pulse application metrics.
 - `https://APP_DOMAIN/up` — health probe for uptime monitors.
 
+## Operational checklist after first deploy
+
+Run through this list once after the initial deploy and again after any
+non-trivial schema migration. It exists because every item here has bitten
+real production setups before.
+
+- [ ] `https://APP_DOMAIN/up` returns 200 — Caddy + app are healthy.
+- [ ] `https://APP_DOMAIN/admin` loads + you can log in with the seeded
+      admin (set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`).
+- [ ] Locale switcher in the topbar flips IT ↔ EN.
+- [ ] Dashboard widgets render: today calendar, monthly income chart,
+      YTD totals, upcoming renewals, leads pipeline, recent transactions.
+- [ ] Backup ran: `docker compose -f docker-compose.prod.yml exec app
+      php artisan backup:run` — confirm the zip lands in your Contabo
+      bucket.
+- [ ] **Backup restored** at least once via the drill above.
+- [ ] Cal.com webhook delivers — book a test event, confirm it appears
+      in the today widget within seconds. Hourly `calcom:sync` also
+      works as a fallback.
+- [ ] SES sandbox-period test email lands at a verified address from the
+      `MailTestPage`. Once production access is granted: send a campaign
+      to one verified contact, confirm the SES SNS notifications flip
+      `recipients.status` and that a simulated bounce flips
+      `do_not_email = true` on the contact.
+- [ ] `unsubscribe` link from a campaign email lands on the success page
+      and flips `do_not_email`.
+- [ ] First fattura issued via `/admin/fatture` — number = `0001/<year>`,
+      PDF downloads with € + accents rendered correctly.
+- [ ] Horizon queue dashboard (`/horizon`) shows the worker as online and
+      the `default`, `notifications` queues idle.
+
+## Observability
+
+- `https://APP_DOMAIN/horizon` — Horizon queue dashboard (auth-gated).
+- `https://APP_DOMAIN/pulse` — Pulse application metrics.
+- `https://APP_DOMAIN/up` — health probe for uptime monitors.
+
 ## Common issues
 
 - **Caddy stuck issuing cert.** DNS for `APP_DOMAIN` must resolve to the
@@ -140,3 +177,14 @@ the most recent successful restore in your ops journal.
 - **Backups fail with 403.** Verify the Contabo bucket exists and the
   access key has write permissions; confirm
   `CONTABO_USE_PATH_STYLE_ENDPOINT=true`.
+- **Cal.com webhook returns 403.** Confirm `CALCOM_WEBHOOK_SECRET` in
+  `.env` matches the secret you configured on the Cal.com webhook.
+- **SES webhook returns 403.** SNS auto-confirms its subscription on the
+  first delivery. If signature verification fails, check that the SNS
+  topic is in the same AWS region as your SES identity and that the
+  `aws/aws-php-sns-message-validator` package can reach the AWS cert URL
+  outbound (port 443).
+- **Fattura PDF shows ? in place of €.** dompdf needs DejaVu Sans to be
+  resolvable. The provided Dockerfile installs the dependency; if you
+  build a custom image, ensure `font-dejavu` (Alpine: `font-dejavu` or
+  `ttf-dejavu`) is present.

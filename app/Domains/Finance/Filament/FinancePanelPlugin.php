@@ -26,6 +26,10 @@ class FinancePanelPlugin implements Plugin
                 in: __DIR__.'/Resources',
                 for: 'App\\Domains\\Finance\\Filament\\Resources',
             )
+            ->discoverPages(
+                in: __DIR__.'/Pages',
+                for: 'App\\Domains\\Finance\\Filament\\Pages',
+            )
             ->discoverWidgets(
                 in: __DIR__.'/Widgets',
                 for: 'App\\Domains\\Finance\\Filament\\Widgets',

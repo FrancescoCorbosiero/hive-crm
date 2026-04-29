@@ -4,6 +4,23 @@ Personal operations dashboard for managing my own websites and customer
 websites: CRM, finance, mail, calendar, documents, fatture. Self-hosted on
 a Contabo VPS, single-user for v1, multi-tenant ready.
 
+## Domains
+
+Seven isolated domains under `app/Domains/`. Each owns its migrations,
+Filament resources, public service surface (DTOs only across boundaries),
+and event listeners. The conventions are spelled out in
+[`docs/architecture.md`](docs/architecture.md).
+
+| Domain      | Surface                                                      |
+| ----------- | ------------------------------------------------------------ |
+| Contacts    | Person/company directory with role flag-set (customer / collaborator / employer / vendor); do-not-email is hard-locked. |
+| Websites    | Subscription-based site portfolio with translatable name + notes, status, tech stack, daily renewal alerts. |
+| Finance     | Income/expense ledger with polymorphic source attribution (website / lead / fattura), category + website-level analytics. |
+| Leads       | Sales pipeline (new / contacted / qualified / proposal / won / lost) with single-action transactional Convert-to-Customer. |
+| Calendar    | [Cal.com](https://cal.com) bookings via signed webhook + hourly fallback REST sync. Today widget reads from local store only. |
+| Mail        | Campaigns + per-recipient queued sending via SES, SNS-signed bounce/complaint webhooks, signed unsubscribe. |
+| Documents   | Uploads + Italian fatture with race-safe sequential numbering, dompdf rendering, Contabo Object Storage. |
+
 ## Tech stack
 
 - PHP 8.3 / Laravel 11
@@ -66,9 +83,18 @@ Caddy issues a real Let's Encrypt cert on first request to `APP_DOMAIN`.
 
 The codebase is split into isolated domains under `app/Domains/{Name}/`. Hard
 rules (no cross-domain Eloquent imports, communication via Events / public
-service DTOs) are documented in `docs/architecture.md` from Phase 1 onward.
-Phase 0 ships the bootstrap only — domains are scaffolded in subsequent
-phases.
+service DTOs returning, scalar-FK + public-service-lookup pattern instead of
+cross-boundary `belongsTo`) live in [`docs/architecture.md`](docs/architecture.md).
+
+Each domain registers itself via two classes:
+
+- `XxxServiceProvider` — loads its migrations, maps its factory namespace,
+  wires its event listeners, registers its routes (if any).
+- `XxxPanelPlugin` — Filament `Plugin` contract, discovers the domain's
+  Resources / Pages / Widgets and is mounted in
+  `App\Providers\Filament\AdminPanelProvider`.
+
+Adding a new domain to the panel is a one-line change.
 
 ## Testing
 

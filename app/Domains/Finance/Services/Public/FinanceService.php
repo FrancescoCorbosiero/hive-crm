@@ -113,6 +113,57 @@ class FinanceService
     }
 
     /**
+     * Sum totals grouped by category for transactions of the given type
+     * within an inclusive date range. Returns category => Money sorted
+     * descending by amount. Null categories collapse to '(other)'.
+     *
+     * @return Collection<string, Money>
+     */
+    public function breakdownByCategory(TransactionType $type, CarbonInterface $start, CarbonInterface $end): Collection
+    {
+        $rows = Transaction::query()
+            ->ofType($type)
+            ->occurredBetween(Carbon::instance($start), Carbon::instance($end))
+            ->selectRaw('COALESCE(category, ?) AS category, SUM(amount_cents) AS total_cents', ['(other)'])
+            ->groupBy('category')
+            ->orderByDesc('total_cents')
+            ->get();
+
+        $currency = config('app.currency', 'EUR');
+
+        return $rows->mapWithKeys(fn ($row) => [
+            (string) $row->category => new Money((int) $row->total_cents, $currency),
+        ]);
+    }
+
+    /**
+     * Sum income transactions grouped by source website within a date
+     * range. Returns websiteId => Money, sorted descending. Callers
+     * resolve website names via WebsitesService — Finance does not
+     * import Websites models.
+     *
+     * @return Collection<int, Money>
+     */
+    public function incomeByWebsite(CarbonInterface $start, CarbonInterface $end): Collection
+    {
+        $rows = Transaction::query()
+            ->incomes()
+            ->where('source_type', TransactionSource::Website->value)
+            ->whereNotNull('source_id')
+            ->occurredBetween(Carbon::instance($start), Carbon::instance($end))
+            ->selectRaw('source_id, SUM(amount_cents) AS total_cents')
+            ->groupBy('source_id')
+            ->orderByDesc('total_cents')
+            ->get();
+
+        $currency = config('app.currency', 'EUR');
+
+        return $rows->mapWithKeys(fn ($row) => [
+            (int) $row->source_id => new Money((int) $row->total_cents, $currency),
+        ]);
+    }
+
+    /**
      * Sum a transactions query into a single Money. Uses the configured
      * default currency — mixed-currency rows would need explicit FX
      * handling, deliberately out of scope for v1.
