@@ -22,5 +22,9 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
+
+        $this->call([
+            \App\Domains\Contacts\Database\Seeders\ContactsSeeder::class,
+        ]);
     }
 }
