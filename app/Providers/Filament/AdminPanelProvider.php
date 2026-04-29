@@ -6,6 +6,7 @@ use App\Domains\Calendar\Filament\CalendarPanelPlugin;
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
 use App\Domains\Finance\Filament\FinancePanelPlugin;
 use App\Domains\Leads\Filament\LeadsPanelPlugin;
+use App\Domains\Mail\Filament\MailPanelPlugin;
 use App\Domains\Websites\Filament\WebsitesPanelPlugin;
 use App\Http\Middleware\SetLocale;
 use Filament\Http\Middleware\Authenticate;
@@ -51,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
                 FinancePanelPlugin::make(),
                 LeadsPanelPlugin::make(),
                 CalendarPanelPlugin::make(),
+                MailPanelPlugin::make(),
             ])
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,

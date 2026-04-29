@@ -61,6 +61,56 @@ class ContactsService
     }
 
     /**
+     * Search Contacts by name OR email, case-insensitive, limited to
+     * mailable contacts (do_not_email=false, email IS NOT NULL).
+     * Used by the MailTestPage recipient picker.
+     *
+     * @return Collection<int, ContactDTO>
+     */
+    public function searchMailable(string $query, int $limit = 20): Collection
+    {
+        $term = '%'.mb_strtolower(trim($query)).'%';
+
+        return Contact::query()
+            ->where('do_not_email', false)
+            ->whereNotNull('email')
+            ->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(name) LIKE ?', [$term])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$term]);
+            })
+            ->orderBy('name')
+            ->limit($limit)
+            ->get()
+            ->map(fn (Contact $c) => ContactDTO::fromModel($c));
+    }
+
+    /**
+     * Look up Contact IDs by email address, case-insensitive. Returns a
+     * deduped collection — multiple Contacts with the same email
+     * (legacy data) all match.
+     *
+     * @param  array<int,string>  $emails
+     * @return Collection<int, int>
+     */
+    public function idsByEmails(array $emails): Collection
+    {
+        $emails = collect($emails)
+            ->filter()
+            ->map(fn (string $e) => mb_strtolower(trim($e)))
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($emails === []) {
+            return collect();
+        }
+
+        return Contact::query()
+            ->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(email)'), $emails)
+            ->pluck('id');
+    }
+
+    /**
      * @return Collection<int, ContactDTO>
      */
     public function findMany(array $ids): Collection
