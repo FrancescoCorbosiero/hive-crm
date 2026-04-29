@@ -6,6 +6,7 @@ namespace App\Domains\Contacts\Services\Public;
 
 use App\Domains\Contacts\DTOs\ContactDTO;
 use App\Domains\Contacts\Enums\ContactRole;
+use App\Domains\Contacts\Events\ContactCreated;
 use App\Domains\Contacts\Events\ContactFlaggedDoNotEmail;
 use App\Domains\Contacts\Models\Contact;
 use Illuminate\Support\Collection;
@@ -18,6 +19,40 @@ use Illuminate\Support\Collection;
  */
 class ContactsService
 {
+    /**
+     * Create a Contact from a payload originating outside the domain
+     * (e.g. the Leads convert action). Roles default to ['customer'] —
+     * pass an explicit `roles` key to override.
+     *
+     * Dispatches ContactCreated.
+     *
+     * @param  array{
+     *     name: string,
+     *     email?: ?string,
+     *     phone?: ?string,
+     *     vat_number?: ?string,
+     *     tax_code?: ?string,
+     *     address?: ?array<string,mixed>,
+     *     notes?: ?string,
+     *     roles?: array<int,string>,
+     *     do_not_email?: bool,
+     *     owner_user_id?: ?int,
+     *  }  $attributes
+     */
+    public function create(array $attributes): ContactDTO
+    {
+        $attributes = array_merge([
+            'roles' => [ContactRole::Customer->value],
+            'do_not_email' => false,
+        ], $attributes);
+
+        $contact = Contact::query()->create($attributes);
+
+        ContactCreated::dispatch($contact->id);
+
+        return ContactDTO::fromModel($contact);
+    }
+
     public function find(int $id): ?ContactDTO
     {
         $contact = Contact::query()->find($id);

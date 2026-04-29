@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             \App\Domains\Contacts\Database\Seeders\ContactsSeeder::class,
             \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
             \App\Domains\Finance\Database\Seeders\TransactionsSeeder::class,
+            \App\Domains\Leads\Database\Seeders\LeadsSeeder::class,
         ]);
     }
 }
