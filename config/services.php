@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'calcom' => [
+        'base_url' => env('CALCOM_API_BASE_URL', 'https://api.cal.com/v2'),
+        'api_key' => env('CALCOM_API_KEY'),
+        'webhook_secret' => env('CALCOM_WEBHOOK_SECRET'),
+        // Standard Cal.com header for HMAC-SHA256 signatures.
+        'webhook_signature_header' => env('CALCOM_WEBHOOK_SIGNATURE_HEADER', 'X-Cal-Signature-256'),
+    ],
+
 ];

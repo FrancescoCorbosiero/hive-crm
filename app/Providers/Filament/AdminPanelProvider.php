@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Domains\Calendar\Filament\CalendarPanelPlugin;
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
 use App\Domains\Finance\Filament\FinancePanelPlugin;
 use App\Domains\Leads\Filament\LeadsPanelPlugin;
@@ -49,6 +50,7 @@ class AdminPanelProvider extends PanelProvider
                 WebsitesPanelPlugin::make(),
                 FinancePanelPlugin::make(),
                 LeadsPanelPlugin::make(),
+                CalendarPanelPlugin::make(),
             ])
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,

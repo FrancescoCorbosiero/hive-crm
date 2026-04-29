@@ -31,3 +31,8 @@ Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('websites:check-renewals')
     ->dailyAt('08:00')
     ->onOneServer();
+
+// ── Calendar: fallback sync (catches missed Cal.com webhooks) ──────────────
+Schedule::command('calcom:sync')
+    ->hourly()
+    ->onOneServer();
