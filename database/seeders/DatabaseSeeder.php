@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
             \App\Domains\Finance\Database\Seeders\TransactionsSeeder::class,
             \App\Domains\Leads\Database\Seeders\LeadsSeeder::class,
+            \App\Domains\Documents\Database\Seeders\DocumentsSeeder::class,
         ]);
     }
 }

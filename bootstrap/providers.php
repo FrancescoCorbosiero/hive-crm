@@ -12,4 +12,5 @@ return [
     App\Domains\Leads\LeadsServiceProvider::class,
     App\Domains\Calendar\CalendarServiceProvider::class,
     App\Domains\Mail\MailServiceProvider::class,
+    App\Domains\Documents\DocumentsServiceProvider::class,
 ];
