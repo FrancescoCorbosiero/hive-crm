@@ -24,5 +24,14 @@ return [
     'widgets' => [
         'upcoming_renewals' => 'Upcoming renewals',
         'no_upcoming_renewals' => 'No renewals in the next 30 days',
+        'down_websites' => 'Offline websites',
+        'no_down_websites' => 'All active sites are reachable.',
+    ],
+
+    'ping' => [
+        'is_up' => 'Online',
+        'last_status_code' => 'Last HTTP',
+        'last_pinged_at' => 'Last check',
+        'never' => 'Never checked',
     ],
 ];

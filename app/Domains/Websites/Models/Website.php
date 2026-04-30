@@ -34,6 +34,9 @@ class Website extends Model
         'subscription_started_at',
         'next_renewal_at',
         'renewal_period_months',
+        'is_up',
+        'last_status_code',
+        'last_pinged_at',
         'owner_user_id',
     ];
 
@@ -45,6 +48,9 @@ class Website extends Model
             'subscription_started_at' => 'date',
             'next_renewal_at' => 'date',
             'renewal_period_months' => 'integer',
+            'is_up' => 'boolean',
+            'last_status_code' => 'integer',
+            'last_pinged_at' => 'datetime',
         ];
     }
 

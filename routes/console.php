@@ -27,10 +27,15 @@ Schedule::command('backup:monitor')
 // ── Horizon ────────────────────────────────────────────────────────────────
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
 
-// ── Websites: renewal alerts ───────────────────────────────────────────────
+// ── Websites: renewal alerts + uptime pings ────────────────────────────────
 Schedule::command('websites:check-renewals')
     ->dailyAt('08:00')
     ->onOneServer();
+
+Schedule::command('websites:ping')
+    ->everyFifteenMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();
 
 // ── Calendar: fallback sync (catches missed Cal.com webhooks) ──────────────
 Schedule::command('calcom:sync')

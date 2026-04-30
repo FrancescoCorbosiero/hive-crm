@@ -24,5 +24,14 @@ return [
     'widgets' => [
         'upcoming_renewals' => 'Prossimi rinnovi',
         'no_upcoming_renewals' => 'Nessun rinnovo nei prossimi 30 giorni',
+        'down_websites' => 'Siti offline',
+        'no_down_websites' => 'Tutti i siti attivi rispondono.',
+    ],
+
+    'ping' => [
+        'is_up' => 'Online',
+        'last_status_code' => 'Ultimo HTTP',
+        'last_pinged_at' => 'Ultimo controllo',
+        'never' => 'Mai controllato',
     ],
 ];

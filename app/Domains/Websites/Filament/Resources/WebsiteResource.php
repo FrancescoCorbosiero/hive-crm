@@ -134,6 +134,22 @@ class WebsiteResource extends Resource
                     ->color(fn (WebsiteStatus $state) => $state->color())
                     ->formatStateUsing(fn (WebsiteStatus $state) => $state->label()),
 
+                Tables\Columns\IconColumn::make('is_up')
+                    ->label(__('websites/labels.ping.is_up'))
+                    ->icon(fn (?bool $state) => match ($state) {
+                        true => 'heroicon-o-signal',
+                        false => 'heroicon-o-signal-slash',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn (?bool $state) => match ($state) {
+                        true => 'success',
+                        false => 'danger',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (Website $w) => $w->last_pinged_at
+                        ? __('websites/labels.ping.last_status_code').': '.($w->last_status_code ?? '—')
+                        : __('websites/labels.ping.never')),
+
                 Tables\Columns\TextColumn::make('next_renewal_at')
                     ->label(__('websites/labels.next_renewal_at'))
                     ->date('d/m/Y')

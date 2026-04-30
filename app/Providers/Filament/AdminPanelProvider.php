@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Domains\Calendar\Filament\CalendarPanelPlugin;
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
 use App\Domains\Documents\Filament\DocumentsPanelPlugin;
+use App\Domains\Quotations\Filament\QuotationsPanelPlugin;
 use App\Domains\Finance\Filament\FinancePanelPlugin;
 use App\Domains\Leads\Filament\LeadsPanelPlugin;
 use App\Domains\Mail\Filament\MailPanelPlugin;
@@ -55,6 +56,7 @@ class AdminPanelProvider extends PanelProvider
                 CalendarPanelPlugin::make(),
                 MailPanelPlugin::make(),
                 DocumentsPanelPlugin::make(),
+                QuotationsPanelPlugin::make(),
             ])
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,
