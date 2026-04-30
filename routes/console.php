@@ -41,3 +41,9 @@ Schedule::command('websites:ping')
 Schedule::command('calcom:sync')
     ->hourly()
     ->onOneServer();
+
+// ── Documents: issue recurring fatture due today ───────────────────────────
+Schedule::command('fatture:issue-recurring')
+    ->dailyAt('06:00')
+    ->onOneServer()
+    ->withoutOverlapping();

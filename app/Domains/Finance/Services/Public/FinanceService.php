@@ -31,6 +31,47 @@ class FinanceService
     }
 
     /**
+     * Cross-domain income recording: used by Documents' PaymentRecorded
+     * listener to mirror a Payment as an Income Transaction. Returns
+     * the new Transaction id so the caller can store it for later
+     * cleanup if the underlying payment is deleted.
+     *
+     * @param  array{
+     *     amount_cents: int,
+     *     currency?: string,
+     *     occurred_at: \DateTimeInterface|string,
+     *     description: string,
+     *     category?: ?string,
+     *     source_type?: ?string,
+     *     source_id?: ?int,
+     *     contact_id?: ?int,
+     *     owner_user_id?: ?int,
+     *  }  $attributes
+     */
+    public function recordIncome(array $attributes): int
+    {
+        $tx = Transaction::query()->create([
+            'type' => TransactionType::Income->value,
+            'amount_cents' => (int) $attributes['amount_cents'],
+            'currency' => $attributes['currency'] ?? config('app.currency', 'EUR'),
+            'occurred_at' => $attributes['occurred_at'],
+            'description' => $attributes['description'],
+            'category' => $attributes['category'] ?? null,
+            'source_type' => $attributes['source_type'] ?? null,
+            'source_id' => $attributes['source_id'] ?? null,
+            'contact_id' => $attributes['contact_id'] ?? null,
+            'owner_user_id' => $attributes['owner_user_id'] ?? null,
+        ]);
+
+        return $tx->id;
+    }
+
+    public function deleteTransaction(int $id): void
+    {
+        Transaction::query()->where('id', $id)->delete();
+    }
+
+    /**
      * @return Collection<int, TransactionDTO>
      */
     public function recent(int $limit = 10): Collection

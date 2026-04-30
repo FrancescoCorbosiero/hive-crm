@@ -25,10 +25,12 @@ class Fattura extends Model
         'number',
         'client_contact_id',
         'issued_at',
+        'due_date',
         'lines',
         'subtotal_cents',
         'vat_cents',
         'total_cents',
+        'paid_amount_cents',
         'currency',
         'payment_status',
         'document_id',
@@ -41,12 +43,25 @@ class Fattura extends Model
             'year' => 'integer',
             'number' => 'integer',
             'issued_at' => 'date',
+            'due_date' => 'date',
             'lines' => AsArrayObject::class,
             'subtotal_cents' => 'integer',
             'vat_cents' => 'integer',
             'total_cents' => 'integer',
+            'paid_amount_cents' => 'integer',
             'payment_status' => PaymentStatus::class,
         ];
+    }
+
+    public function paidAmount(): Money
+    {
+        return new Money((int) $this->paid_amount_cents, $this->currency);
+    }
+
+    public function outstanding(): Money
+    {
+        $cents = max(0, (int) $this->total_cents - (int) $this->paid_amount_cents);
+        return new Money($cents, $this->currency);
     }
 
     protected static function newFactory(): FatturaFactory
@@ -57,6 +72,11 @@ class Fattura extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
+    }
+
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     /**

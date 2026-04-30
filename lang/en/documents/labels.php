@@ -59,5 +59,48 @@ return [
     'actions' => [
         'download_pdf' => 'Download PDF',
         'render_pdf' => 'Re-render PDF',
+        'record_payment' => 'Record payment',
+        'pause' => 'Pause',
+        'resume' => 'Resume',
+        'issue_now' => 'Issue now',
+    ],
+
+    'payment' => [
+        'singular' => 'Payment',
+        'plural' => 'Payments',
+        'paid_at' => 'Paid at',
+        'amount' => 'Amount',
+        'method' => 'Method',
+        'reference' => 'Reference',
+        'notes' => 'Notes',
+        'outstanding' => 'Outstanding',
+        'fully_paid' => 'Fully paid',
+        'due_date' => 'Due date',
+    ],
+
+    'payment_method' => [
+        'bank_transfer' => 'Bank transfer',
+        'stripe' => 'Stripe',
+        'paypal' => 'PayPal',
+        'cash' => 'Cash',
+        'check' => 'Check',
+        'other' => 'Other',
+    ],
+
+    'recurring' => [
+        'singular' => 'Recurring invoice',
+        'plural' => 'Recurring invoices',
+        'name' => 'Name',
+        'frequency' => 'Frequency',
+        'day_of_month' => 'Day of month',
+        'next_issue_at' => 'Next issue',
+        'last_issued_at' => 'Last issued',
+        'is_active' => 'Active',
+    ],
+
+    'frequency' => [
+        'monthly' => 'Monthly',
+        'quarterly' => 'Quarterly',
+        'yearly' => 'Yearly',
     ],
 ];

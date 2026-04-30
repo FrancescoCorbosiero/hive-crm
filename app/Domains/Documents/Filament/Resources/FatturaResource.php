@@ -71,11 +71,17 @@ class FatturaResource extends Resource
                         ->displayFormat('d/m/Y')
                         ->default(now())
                         ->required(),
+                    Forms\Components\DatePicker::make('due_date')
+                        ->label(__('documents/labels.payment.due_date'))
+                        ->displayFormat('d/m/Y')
+                        ->default(now()->addDays(30)),
                     Forms\Components\Select::make('payment_status')
                         ->label(__('documents/labels.fields.payment_status'))
                         ->options(PaymentStatus::options())
                         ->default(PaymentStatus::Unpaid->value)
-                        ->required(),
+                        ->disabled()
+                        ->dehydrated()
+                        ->helperText('Aggiornato automaticamente dai pagamenti registrati.'),
                 ]),
 
             Forms\Components\Section::make(__('documents/labels.sections.lines'))
@@ -129,6 +135,16 @@ class FatturaResource extends Resource
                     ->label(__('documents/labels.fields.total'))
                     ->getStateUsing(fn (Fattura $f) => $f->total()->format(app()->getLocale()))
                     ->alignEnd(),
+                Tables\Columns\TextColumn::make('paid_amount_cents')
+                    ->label(__('documents/labels.payment.outstanding'))
+                    ->getStateUsing(fn (Fattura $f) => $f->outstanding()->format(app()->getLocale()))
+                    ->color(fn (Fattura $f) => $f->outstanding()->isZero() ? 'success' : 'warning')
+                    ->alignEnd()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('due_date')
+                    ->label(__('documents/labels.payment.due_date'))
+                    ->date('d/m/Y')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label(__('documents/labels.fields.payment_status'))
                     ->badge()
@@ -171,6 +187,13 @@ class FatturaResource extends Resource
             ->icon('heroicon-o-arrow-down-tray')
             ->visible(fn (Fattura $f) => $f->document_id !== null)
             ->url(fn (Fattura $f) => app(DocumentsService::class)->temporaryUrl($f->document_id), shouldOpenInNewTab: true);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            \App\Domains\Documents\Filament\Resources\FatturaResource\RelationManagers\PaymentsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
