@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Websites\Database\Seeders;
 
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Domains\Websites\Models\Website;
 use Illuminate\Database\Seeder;
@@ -15,15 +15,22 @@ class WebsitesSeeder extends Seeder
     {
         $ownerId = \App\Models\User::query()->value('id');
 
-        // Pick contacts that play the "customer" role to wire as website owners.
-        $customerContacts = Contact::query()
-            ->whereRaw("roles LIKE '%customer%'")
-            ->pluck('id', 'email');
+        // Resolve the seeded customer contacts through the public service
+        // — keeps this seeder honest about the no-cross-domain-Eloquent-
+        // imports rule AND sidesteps the SQLite-vs-Postgres jsonb LIKE
+        // portability gotcha (Postgres rejects LIKE on jsonb columns).
+        $contacts = app(ContactsService::class);
 
-        $bellavista = $customerContacts['amministrazione@bellavistadolci.it'] ?? null;
-        $rossi = $customerContacts['info@rossiebianchi.legal'] ?? null;
-        $bertolini = $customerContacts['marco.bertolini@gmail.com'] ?? null;
-        $romano = $customerContacts['chiara@romanodesign.it'] ?? null;
+        $resolveByEmail = function (string $email) use ($contacts): ?int {
+            $id = $contacts->idsByEmails([$email])->first();
+
+            return $id ? (int) $id : null;
+        };
+
+        $bellavista = $resolveByEmail('amministrazione@bellavistadolci.it');
+        $rossi = $resolveByEmail('info@rossiebianchi.legal');
+        $bertolini = $resolveByEmail('marco.bertolini@gmail.com');
+        $romano = $resolveByEmail('chiara@romanodesign.it');
 
         $websites = [
             [
