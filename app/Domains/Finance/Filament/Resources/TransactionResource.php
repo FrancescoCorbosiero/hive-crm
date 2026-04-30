@@ -22,6 +22,8 @@ class TransactionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
+    protected static ?int $navigationSort = 9;
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.finance');
@@ -62,12 +64,9 @@ class TransactionResource extends Resource
                         ->default(TransactionType::Income->value)
                         ->required(),
 
-                    Forms\Components\TextInput::make('amount_cents')
+                    \App\Shared\Filament\MoneyInput::make('amount_cents')
                         ->label(__('finance/transactions.fields.amount'))
-                        ->numeric()
-                        ->required()
-                        ->suffix('¢')
-                        ->helperText('Importi in centesimi (€1,00 = 100).'),
+                        ->required(),
 
                     Forms\Components\DatePicker::make('occurred_at')
                         ->label(__('finance/transactions.fields.occurred_at'))

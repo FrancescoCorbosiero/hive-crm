@@ -23,6 +23,19 @@ class RecurringFatturaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
+    protected static ?int $navigationSort = 7;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->addSelect([
+                'client_name' => Contact::query()
+                    ->select('name')
+                    ->whereColumn('contacts.id', 'recurring_fatture.client_contact_id')
+                    ->limit(1),
+            ]);
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.documents');
@@ -91,7 +104,7 @@ class RecurringFatturaResource extends Resource
                                 ->required()
                                 ->columnSpan(2),
                             Forms\Components\TextInput::make('qty')->numeric()->default(1)->required(),
-                            Forms\Components\TextInput::make('unit_price_cents')->numeric()->suffix('¢')->required(),
+                            \App\Shared\Filament\MoneyInput::make('unit_price_cents')->required(),
                             Forms\Components\TextInput::make('vat_rate')->numeric()->default(22)->required(),
                         ])
                         ->columns(5)
@@ -107,9 +120,9 @@ class RecurringFatturaResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('documents/labels.recurring.name'))
                     ->searchable(),
-                Tables\Columns\TextColumn::make('client_contact_id')
+                Tables\Columns\TextColumn::make('client_name')
                     ->label(__('documents/labels.fields.client'))
-                    ->getStateUsing(fn (RecurringFattura $r) => Contact::find($r->client_contact_id)?->name ?? '—'),
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('frequency')
                     ->label(__('documents/labels.recurring.frequency'))
                     ->badge()

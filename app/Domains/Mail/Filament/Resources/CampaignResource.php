@@ -27,6 +27,8 @@ class CampaignResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope-open';
 
+    protected static ?int $navigationSort = 10;
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.mail');

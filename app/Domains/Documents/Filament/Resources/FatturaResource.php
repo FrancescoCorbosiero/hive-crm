@@ -24,6 +24,41 @@ class FatturaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
+    protected static ?int $navigationSort = 6;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['number', 'year'];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = Fattura::query()
+            ->whereIn('payment_status', ['unpaid', 'partially_paid', 'overdue'])
+            ->whereDate('due_date', '<', now())
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        // Avoid N+1 on the client column: inline a correlated subquery
+        // returning the client's name as `client_name` on each row.
+        return parent::getEloquentQuery()
+            ->addSelect([
+                'client_name' => Contact::query()
+                    ->select('name')
+                    ->whereColumn('contacts.id', 'fatture.client_contact_id')
+                    ->limit(1),
+            ]);
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.documents');
@@ -98,10 +133,8 @@ class FatturaResource extends Resource
                                 ->numeric()
                                 ->default(1)
                                 ->required(),
-                            Forms\Components\TextInput::make('unit_price_cents')
+                            \App\Shared\Filament\MoneyInput::make('unit_price_cents')
                                 ->label(__('documents/labels.fields.line_unit_price'))
-                                ->numeric()
-                                ->suffix('¢')
                                 ->required(),
                             Forms\Components\TextInput::make('vat_rate')
                                 ->label(__('documents/labels.fields.line_vat_rate'))
@@ -128,9 +161,9 @@ class FatturaResource extends Resource
                     ->label(__('documents/labels.fields.issued_at'))
                     ->date('d/m/Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('client_contact_id')
+                Tables\Columns\TextColumn::make('client_name')
                     ->label(__('documents/labels.fields.client'))
-                    ->getStateUsing(fn (Fattura $f) => Contact::find($f->client_contact_id)?->name ?? '—'),
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('total_cents')
                     ->label(__('documents/labels.fields.total'))
                     ->getStateUsing(fn (Fattura $f) => $f->total()->format(app()->getLocale()))
@@ -193,6 +226,7 @@ class FatturaResource extends Resource
     {
         return [
             \App\Domains\Documents\Filament\Resources\FatturaResource\RelationManagers\PaymentsRelationManager::class,
+            \App\Shared\Filament\HistoryRelationManager::class,
         ];
     }
 

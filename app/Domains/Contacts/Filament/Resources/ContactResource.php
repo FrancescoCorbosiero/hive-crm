@@ -20,6 +20,23 @@ class ContactResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'vat_number', 'tax_code'];
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        return array_filter([
+            __('contacts/labels.email') => $record->email,
+            __('contacts/labels.vat_number') => $record->vat_number,
+        ]);
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.contacts');
@@ -157,16 +174,37 @@ class ContactResource extends Resource
                     }),
                 Tables\Filters\TernaryFilter::make('do_not_email')
                     ->label(__('contacts/labels.do_not_email')),
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('name');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                \Illuminate\Database\Eloquent\SoftDeletingScope::class,
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            \App\Shared\Filament\HistoryRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

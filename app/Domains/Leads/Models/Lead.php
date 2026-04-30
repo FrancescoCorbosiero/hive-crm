@@ -13,11 +13,25 @@ use App\Shared\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Lead extends Model
 {
     use BelongsToOwner;
     use HasFactory;
+    use LogsActivity;
+    use SoftDeletes;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'email', 'status', 'estimated_value_cents', 'next_action_at', 'converted_contact_id'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('lead');
+    }
 
     protected $table = 'leads';
 

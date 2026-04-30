@@ -10,6 +10,9 @@ use App\Shared\Concerns\BelongsToOwner;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Contact — a person or company touched by any part of the business.
@@ -26,6 +29,17 @@ class Contact extends Model
 {
     use BelongsToOwner;
     use HasFactory;
+    use LogsActivity;
+    use SoftDeletes;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'email', 'phone', 'roles', 'do_not_email'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('contact');
+    }
 
     protected $table = 'contacts';
 

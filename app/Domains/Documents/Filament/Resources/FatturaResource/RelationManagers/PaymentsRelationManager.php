@@ -35,10 +35,8 @@ class PaymentsRelationManager extends RelationManager
                 ->displayFormat('d/m/Y')
                 ->default(now())
                 ->required(),
-            Forms\Components\TextInput::make('amount_cents')
+            \App\Shared\Filament\MoneyInput::make('amount_cents')
                 ->label(__('documents/labels.payment.amount'))
-                ->numeric()
-                ->suffix('¢')
                 ->required(),
             Forms\Components\Select::make('method')
                 ->label(__('documents/labels.payment.method'))

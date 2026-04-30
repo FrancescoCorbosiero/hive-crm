@@ -23,6 +23,27 @@ class QuotationResource extends Resource
 {
     protected static ?string $model = Quotation::class;
 
+    protected static ?int $navigationSort = 5;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name'];
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        // Inline correlated subquery to avoid N+1 on the client name column.
+        return parent::getEloquentQuery()
+            ->addSelect([
+                'client_name' => Contact::query()
+                    ->select('name')
+                    ->whereColumn('contacts.id', 'quotations.client_contact_id')
+                    ->limit(1),
+            ]);
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-document-currency-euro';
 
     public static function getNavigationGroup(): ?string
@@ -84,9 +105,9 @@ class QuotationResource extends Resource
                             Forms\Components\TextInput::make('qty')
                                 ->label(__('quotations/labels.fields.line_qty'))
                                 ->numeric()->default(1)->required(),
-                            Forms\Components\TextInput::make('unit_price_cents')
+                            \App\Shared\Filament\MoneyInput::make('unit_price_cents')
                                 ->label(__('quotations/labels.fields.line_unit_price'))
-                                ->numeric()->suffix('¢')->required(),
+                                ->required(),
                             Forms\Components\TextInput::make('vat_rate')
                                 ->label(__('quotations/labels.fields.line_vat_rate'))
                                 ->numeric()->default(22)->required(),
@@ -116,9 +137,9 @@ class QuotationResource extends Resource
                     ->label(__('quotations/labels.fields.name'))
                     ->searchable()
                     ->limit(40),
-                Tables\Columns\TextColumn::make('client_contact_id')
+                Tables\Columns\TextColumn::make('client_name')
                     ->label(__('quotations/labels.fields.client'))
-                    ->getStateUsing(fn (Quotation $q) => Contact::find($q->client_contact_id)?->name ?? '—'),
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('issued_at')
                     ->label(__('quotations/labels.fields.issued_at'))
                     ->date('d/m/Y')->sortable(),

@@ -28,6 +28,8 @@ class DocumentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-folder';
 
+    protected static ?int $navigationSort = 8;
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.documents');

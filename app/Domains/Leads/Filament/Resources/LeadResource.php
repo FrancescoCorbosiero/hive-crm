@@ -24,6 +24,27 @@ class LeadResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-funnel';
 
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email'];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = Lead::query()->open()->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.leads');
@@ -73,11 +94,8 @@ class LeadResource extends Resource
                         ->options(LeadStatus::options())
                         ->default(LeadStatus::New->value)
                         ->required(),
-                    Forms\Components\TextInput::make('estimated_value_cents')
-                        ->label(__('leads/labels.fields.estimated_value'))
-                        ->numeric()
-                        ->suffix('¢')
-                        ->helperText('Importi in centesimi (€1,00 = 100).'),
+                    \App\Shared\Filament\MoneyInput::make('estimated_value_cents')
+                        ->label(__('leads/labels.fields.estimated_value')),
                     Forms\Components\DateTimePicker::make('next_action_at')
                         ->label(__('leads/labels.fields.next_action_at'))
                         ->displayFormat('d/m/Y H:i')
@@ -135,17 +153,31 @@ class LeadResource extends Resource
                 Tables\Filters\SelectFilter::make('source')
                     ->label(__('leads/labels.fields.source'))
                     ->options(LeadSource::options()),
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 self::convertAction(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('next_action_at');
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                \Illuminate\Database\Eloquent\SoftDeletingScope::class,
+            ]);
     }
 
     /**
@@ -201,6 +233,13 @@ class LeadResource extends Resource
                     ->body(__('leads/labels.convert.success_body'))
                     ->send();
             });
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            \App\Shared\Filament\HistoryRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

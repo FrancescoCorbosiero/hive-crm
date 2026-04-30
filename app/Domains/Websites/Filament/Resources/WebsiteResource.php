@@ -23,6 +23,27 @@ class WebsiteResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-globe-alt';
 
+    protected static ?int $navigationSort = 4;
+
+    protected static ?string $recordTitleAttribute = 'url';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['url'];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = Website::query()->active()->where('is_up', false)->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('app.navigation.websites');
