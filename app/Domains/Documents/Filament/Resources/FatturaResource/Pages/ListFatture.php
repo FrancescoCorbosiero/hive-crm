@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\Filament\Resources\FatturaResource\Pages;
 
+use App\Domains\Documents\Filament\Exports\FatturaExporter;
 use App\Domains\Documents\Filament\Resources\FatturaResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -14,6 +15,9 @@ class ListFatture extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [
+            Actions\ExportAction::make()->exporter(FatturaExporter::class),
+            Actions\CreateAction::make(),
+        ];
     }
 }

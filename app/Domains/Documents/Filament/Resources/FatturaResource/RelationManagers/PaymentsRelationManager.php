@@ -82,6 +82,8 @@ class PaymentsRelationManager extends RelationManager
                             $data,
                         );
                     }),
+                \Filament\Tables\Actions\ExportAction::make()
+                    ->exporter(\App\Domains\Documents\Filament\Exports\PaymentExporter::class),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
