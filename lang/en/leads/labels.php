@@ -6,15 +6,22 @@ return [
 
     'fields' => [
         'name' => 'Name',
+        'company_name' => 'Company',
         'email' => 'Email',
         'phone' => 'Phone',
         'source' => 'Source',
         'status' => 'Status',
         'estimated_value' => 'Estimated value',
         'next_action_at' => 'Next action',
+        'last_contacted_at' => 'Last contact',
+        'lost_reason' => 'Lost reason',
         'notes' => 'Notes',
         'converted_contact' => 'Created contact',
         'converted_at' => 'Converted at',
+    ],
+
+    'helpers' => [
+        'company_name' => 'Auto-filled from the email domain when left blank.',
     ],
 
     'sections' => [
@@ -22,6 +29,12 @@ return [
         'pipeline' => 'Pipeline',
         'extras' => 'Notes',
     ],
+
+    'filters' => [
+        'stale' => 'Stale (no contact in 14 days)',
+    ],
+
+    'never_contacted' => 'Never contacted',
 
     'convert' => [
         'action' => 'Convert to customer',
@@ -37,6 +50,10 @@ return [
 
     'widgets' => [
         'pipeline' => 'Leads pipeline',
+        'pipeline_value' => 'Pipeline value by stage',
+        'lead_count' => '{0} no leads|{1} :count lead|[2,*] :count leads',
+        'stale_leads' => 'Stale leads — no contact in :days days',
         'no_open_leads' => 'No open leads',
+        'no_stale_leads' => 'No stale leads — every open lead has been touched recently.',
     ],
 ];
