@@ -38,17 +38,26 @@ docker compose exec laravel.test sh -c \
   "git pull && composer install && php artisan migrate && php artisan optimize:clear"
 ```
 
-## Re-seed demo data
+## Demo data
 
-Each domain owns its own seeder under
-`app/Domains/<Domain>/Database/Seeders/`. Run a single seeder by class:
+`php artisan db:seed` only creates the admin user. Sample contacts,
+websites, leads, transactions and documents are opt-in — install them
+from the admin UI under **Settings → Demo data**, or from the CLI:
+
+```bash
+docker compose exec laravel.test php artisan db:seed \
+  --class="Database\Seeders\DemoDataSeeder"
+```
+
+Re-running is idempotent (each domain seeder uses `updateOrCreate` on a
+stable key). You can also run a single domain's seeder directly:
 
 ```bash
 docker compose exec laravel.test php artisan db:seed \
   --class="App\Domains\Leads\Database\Seeders\LeadsSeeder"
 ```
 
-Run the full seeder stack (wipes and re-seeds — dev only):
+To wipe everything and start clean (dev only):
 
 ```bash
 docker compose exec laravel.test php artisan migrate:fresh --seed

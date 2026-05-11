@@ -44,6 +44,10 @@ docker compose -f docker-compose.prod.yml exec app php artisan route:cache
 docker compose -f docker-compose.prod.yml exec app php artisan view:cache
 ```
 
+`migrate --force --seed` only creates the admin user — demo data
+(sample contacts, websites, leads, etc.) is opt-in via the admin UI at
+**Settings → Demo data**. Production boxes stay clean by default.
+
 Visit `https://APP_DOMAIN/admin` — Caddy will issue a Let's Encrypt cert on
 the first request. Allow ~30s on first hit.
 

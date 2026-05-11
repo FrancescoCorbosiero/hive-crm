@@ -6,6 +6,14 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Production-safe default seeder. Creates ONLY the admin user.
+ *
+ * Demo data (sample leads, contacts, websites, transactions, documents)
+ * lives in DemoDataSeeder and is installable on-demand from the admin UI
+ * (Settings → Demo data). This prevents fake records from landing in a
+ * real production workspace on first boot.
+ */
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
@@ -22,13 +30,5 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
-
-        $this->call([
-            \App\Domains\Contacts\Database\Seeders\ContactsSeeder::class,
-            \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
-            \App\Domains\Finance\Database\Seeders\TransactionsSeeder::class,
-            \App\Domains\Leads\Database\Seeders\LeadsSeeder::class,
-            \App\Domains\Documents\Database\Seeders\DocumentsSeeder::class,
-        ]);
     }
 }
