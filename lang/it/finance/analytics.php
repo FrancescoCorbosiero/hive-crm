@@ -9,12 +9,12 @@ return [
     'sections' => [
         'totals' => 'Totali del periodo',
         'income_by_category' => 'Entrate per categoria',
-        'expense_by_category' => 'Uscite per categoria',
+        'loss_by_category' => 'Uscite per categoria',
         'income_by_website' => 'Entrate per sito web',
     ],
     'totals' => [
         'income' => 'Entrate',
-        'expense' => 'Uscite',
+        'loss' => 'Uscite',
         'net' => 'Netto',
     ],
     'columns' => [

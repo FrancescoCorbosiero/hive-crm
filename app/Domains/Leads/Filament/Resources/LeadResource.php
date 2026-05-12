@@ -191,6 +191,7 @@ class LeadResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 self::convertAction(),
+                self::issueInvoiceAction(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
@@ -265,6 +266,44 @@ class LeadResource extends Resource
                     ->title(__('leads/labels.convert.success_title'))
                     ->body(__('leads/labels.convert.success_body'))
                     ->send();
+            });
+    }
+
+    /**
+     * Issue a draft Fattura against the lead's converted Contact. Only
+     * visible once the lead has been converted (so a downstream Contact
+     * actually exists to invoice). Redirects to the new Fattura's edit
+     * page so the operator can fine-tune lines / due_date before saving.
+     */
+    private static function issueInvoiceAction(): Action
+    {
+        return Action::make('issueInvoice')
+            ->label(__('leads/labels.invoice.action'))
+            ->icon('heroicon-o-document-currency-euro')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->visible(fn (Lead $lead) => $lead->isConverted())
+            ->action(function (Lead $lead) {
+                try {
+                    $fatturaId = app(LeadsService::class)->issueInvoice($lead->id);
+                } catch (DomainException $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('leads/labels.invoice.failed'))
+                        ->body($e->getMessage())
+                        ->send();
+
+                    return null;
+                }
+
+                Notification::make()
+                    ->success()
+                    ->title(__('leads/labels.invoice.success'))
+                    ->send();
+
+                return redirect()->to(
+                    \App\Domains\Documents\Filament\Resources\FatturaResource::getUrl('edit', ['record' => $fatturaId])
+                );
             });
     }
 

@@ -7,6 +7,7 @@ namespace App\Domains\Leads\Services\Public;
 use App\Domains\Contacts\DTOs\ContactDTO;
 use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Services\Public\ContactsService;
+use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Leads\DTOs\LeadDTO;
 use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Events\LeadConverted;
@@ -31,6 +32,7 @@ class LeadsService
     public function __construct(
         private readonly ContactsService $contacts,
         private readonly WebsitesService $websites,
+        private readonly FatturaService $fatture,
     ) {}
 
     public function find(int $id): ?LeadDTO
@@ -134,6 +136,40 @@ class LeadsService
             LeadConverted::dispatch($lead->id, $contact->id, $website?->id);
 
             return ['contact' => $contact, 'website' => $website];
+        });
+    }
+
+    /**
+     * Spawn a draft Fattura against the lead's already-converted Contact.
+     * One line, qty 1, unit price = lead.estimated_value (or 0 when the
+     * lead carries no value — the operator fills it in on the form).
+     * VAT rate defaults to 22 (Italian standard); description is the
+     * lead's name as a placeholder.
+     *
+     * @return int The new Fattura id, for caller redirection.
+     */
+    public function issueInvoice(int $leadId, int $vatRate = 22): int
+    {
+        return DB::transaction(function () use ($leadId, $vatRate): int {
+            $lead = Lead::query()->lockForUpdate()->findOrFail($leadId);
+
+            if (! $lead->isConverted()) {
+                throw new DomainException("Lead {$leadId} has no converted contact yet.");
+            }
+
+            $fattura = $this->fatture->create([
+                'client_contact_id' => $lead->converted_contact_id,
+                'lines' => [[
+                    'description' => $lead->name,
+                    'qty' => 1,
+                    'unit_price_cents' => (int) ($lead->estimated_value_cents ?? 0),
+                    'vat_rate' => $vatRate,
+                ]],
+                'currency' => $lead->estimated_value_currency ?: (string) config('app.currency', 'EUR'),
+                'owner_user_id' => $lead->owner_user_id,
+            ]);
+
+            return $fattura->id;
         });
     }
 }

@@ -76,6 +76,7 @@ return [
         'outstanding' => 'Residuo',
         'fully_paid' => 'Saldata',
         'due_date' => 'Scadenza',
+        'days_overdue' => 'Giorni di ritardo',
     ],
 
     'payment_method' => [

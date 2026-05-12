@@ -59,7 +59,7 @@ class PaymentsService
             PaymentRecorded::dispatch($payment->id);
 
             if ($previousStatus !== PaymentStatus::Paid && $fattura->fresh()->payment_status === PaymentStatus::Paid) {
-                FatturaPaid::dispatch($fattura->id);
+                FatturaPaid::dispatch($fattura->id, (int) $fattura->client_contact_id);
             }
 
             return $payment;

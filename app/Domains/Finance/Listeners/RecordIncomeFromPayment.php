@@ -10,18 +10,16 @@ use App\Domains\Finance\Services\Public\FinanceService;
 
 /**
  * When a payment is recorded in the Documents domain, mirror it as an
- * Income transaction so the ledger reflects cash actually received.
+ * Income FinancialEntry so the ledger reflects cash actually received.
  *
- * Payment is the source of truth; we store the resulting transaction
- * id back on the payment row so it can be cleaned up if the payment
- * is deleted (the matching deletion listener does that round trip).
+ * Payment is the source of truth here; the resulting financial_entry id
+ * is stored on the payment row so it can be cleaned up if the payment
+ * is deleted.
  *
- * Cross-domain wiring: this listener imports the Documents Payment
- * model. Per the architectural rules events are explicit cross-domain
- * primitives — Mail's bounce listener does the same with
- * ContactFlaggedDoNotEmail. We deliberately don't reach for a
- * "PaymentDTO" here because mirroring is an internal concern of
- * Finance, not part of any public surface.
+ * Note: the reverse direction (FinancialEntry → Fattura, on demand)
+ * lives on FinanceService::generateFattura(). This listener handles
+ * the legacy direction only — fatture that pre-date the entry-first
+ * workflow.
  */
 class RecordIncomeFromPayment
 {
@@ -34,9 +32,9 @@ class RecordIncomeFromPayment
             return;
         }
 
-        // Already mirrored — keeps the listener idempotent in the face
-        // of duplicate event delivery.
-        if ($payment->transaction_id !== null) {
+        // Already mirrored — keeps the listener idempotent under
+        // duplicate event delivery.
+        if ($payment->financial_entry_id !== null) {
             return;
         }
 
@@ -45,7 +43,7 @@ class RecordIncomeFromPayment
             return;
         }
 
-        $transactionId = $this->finance->recordIncome([
+        $entryId = $this->finance->recordIncome([
             'amount_cents' => $payment->amount_cents,
             'currency' => $payment->currency,
             'occurred_at' => $payment->paid_at,
@@ -57,6 +55,6 @@ class RecordIncomeFromPayment
             'owner_user_id' => $payment->owner_user_id,
         ]);
 
-        $payment->update(['transaction_id' => $transactionId]);
+        $payment->update(['financial_entry_id' => $entryId]);
     }
 }

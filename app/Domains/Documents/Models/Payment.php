@@ -23,7 +23,7 @@ class Payment extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['fattura_id', 'amount_cents', 'method', 'paid_at', 'reference'])
+            ->logOnly(['fattura_id', 'amount_cents', 'method', 'paid_at', 'reference', 'financial_entry_id'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('payment');
@@ -39,7 +39,7 @@ class Payment extends Model
         'method',
         'reference',
         'notes',
-        'transaction_id',
+        'financial_entry_id',
         'owner_user_id',
     ];
 

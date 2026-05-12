@@ -18,10 +18,13 @@ class ContactExporter extends Exporter
         return [
             ExportColumn::make('id'),
             ExportColumn::make('name'),
+            ExportColumn::make('ragione_sociale'),
             ExportColumn::make('email'),
             ExportColumn::make('phone'),
             ExportColumn::make('vat_number'),
             ExportColumn::make('tax_code'),
+            ExportColumn::make('sdi_code'),
+            ExportColumn::make('pec_email'),
             ExportColumn::make('roles')
                 ->state(fn (Contact $c) => implode(',', $c->roles ?? [])),
             ExportColumn::make('address')

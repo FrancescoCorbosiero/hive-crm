@@ -2,7 +2,7 @@
 
 return [
     'page_title' => 'Demo data',
-    'subtitle' => 'Install a small set of sample contacts, websites, leads, transactions and documents to evaluate the app. Disabled by default in fresh installs.',
+    'subtitle' => 'Install a small set of sample contacts, websites, leads, financial entries and documents to evaluate the app. Disabled by default in fresh installs.',
 
     'current_state' => [
         'heading' => 'Current workspace',
@@ -11,7 +11,7 @@ return [
     'tables' => [
         'contacts' => 'Contacts',
         'websites' => 'Websites',
-        'transactions' => 'Transactions',
+        'financial_entries' => 'Financial entries',
         'leads' => 'Leads',
         'documents' => 'Documents',
     ],

@@ -23,10 +23,10 @@
             </div>
             <div class="p-4 rounded-xl bg-danger-50 dark:bg-danger-950/30">
                 <div class="text-xs uppercase tracking-wide text-danger-700 dark:text-danger-300">
-                    {{ __('finance/analytics.totals.expense') }}
+                    {{ __('finance/analytics.totals.loss') }}
                 </div>
                 <div class="mt-1 text-2xl font-semibold text-danger-700 dark:text-danger-300">
-                    {{ $data['totalExpense'] }}
+                    {{ $data['totalLoss'] }}
                 </div>
             </div>
             <div @class([
@@ -73,9 +73,9 @@
             @endif
         </x-filament::section>
 
-        {{-- Expense by category --}}
-        <x-filament::section :heading="__('finance/analytics.sections.expense_by_category')">
-            @if ($data['expense']->isEmpty())
+        {{-- Loss by category --}}
+        <x-filament::section :heading="__('finance/analytics.sections.loss_by_category')">
+            @if ($data['loss']->isEmpty())
                 <p class="text-sm text-gray-500">{{ __('finance/analytics.empty') }}</p>
             @else
                 <table class="w-full text-sm">
@@ -86,7 +86,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-white/5">
-                    @foreach ($data['expense'] as $row)
+                    @foreach ($data['loss'] as $row)
                         <tr>
                             <td class="py-2">{{ $row['category'] }}</td>
                             <td class="py-2 text-right font-medium">{{ $row['amount'] }}</td>

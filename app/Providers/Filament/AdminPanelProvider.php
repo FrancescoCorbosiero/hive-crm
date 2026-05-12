@@ -9,6 +9,7 @@ use App\Domains\Quotations\Filament\QuotationsPanelPlugin;
 use App\Domains\Finance\Filament\FinancePanelPlugin;
 use App\Domains\Leads\Filament\LeadsPanelPlugin;
 use App\Domains\Mail\Filament\MailPanelPlugin;
+use App\Domains\Scheduling\Filament\SchedulingPanelPlugin;
 use App\Domains\Websites\Filament\WebsitesPanelPlugin;
 use App\Http\Middleware\SetLocale;
 use Filament\Http\Middleware\Authenticate;
@@ -57,6 +58,7 @@ class AdminPanelProvider extends PanelProvider
                 MailPanelPlugin::make(),
                 DocumentsPanelPlugin::make(),
                 QuotationsPanelPlugin::make(),
+                SchedulingPanelPlugin::make(),
             ])
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,

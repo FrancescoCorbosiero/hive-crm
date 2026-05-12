@@ -1,49 +1,20 @@
 <?php
 
+use App\Domains\Scheduling\Services\ScheduleLoader;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// ── Backups (Spatie laravel-backup) ────────────────────────────────────────
-Schedule::command('backup:clean')
-    ->daily()
-    ->at('01:00')
-    ->onOneServer();
-
-Schedule::command('backup:run')
-    ->daily()
-    ->at('01:30')
-    ->onOneServer();
-
-Schedule::command('backup:monitor')
-    ->daily()
-    ->at('07:00')
-    ->onOneServer();
-
-// ── Horizon ────────────────────────────────────────────────────────────────
-Schedule::command('horizon:snapshot')->everyFiveMinutes();
-
-// ── Websites: renewal alerts + uptime pings ────────────────────────────────
-Schedule::command('websites:check-renewals')
-    ->dailyAt('08:00')
-    ->onOneServer();
-
-Schedule::command('websites:ping')
-    ->everyFifteenMinutes()
-    ->onOneServer()
-    ->withoutOverlapping();
-
-// ── Calendar: fallback sync (catches missed Cal.com webhooks) ──────────────
-Schedule::command('calcom:sync')
-    ->hourly()
-    ->onOneServer();
-
-// ── Documents: issue recurring fatture due today ───────────────────────────
-Schedule::command('fatture:issue-recurring')
-    ->dailyAt('06:00')
-    ->onOneServer()
-    ->withoutOverlapping();
+// Every scheduled job in the app lives as a row in scheduled_tasks
+// (managed via the Filament resource at /admin/scheduled-tasks). The
+// loader binds enabled rows into Laravel's Scheduler at boot.
+//
+// To add a new schedulable command:
+//   1. Register the artisan signature in SchedulingServiceProvider's
+//      registerSystemCommands() (this is the security whitelist).
+//   2. Run `php artisan scheduling:sync` to seed the row.
+//   3. Tune cron / enabled flag from the UI.
+app(ScheduleLoader::class)->register();

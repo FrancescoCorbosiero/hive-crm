@@ -48,6 +48,12 @@ return [
         'already_converted' => 'This lead has already been converted.',
     ],
 
+    'invoice' => [
+        'action' => 'Issue invoice',
+        'success' => 'Draft fattura created.',
+        'failed' => 'Could not create fattura.',
+    ],
+
     'widgets' => [
         'pipeline' => 'Leads pipeline',
         'pipeline_value' => 'Pipeline value by stage',

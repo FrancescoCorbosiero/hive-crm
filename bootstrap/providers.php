@@ -14,4 +14,5 @@ return [
     App\Domains\Mail\MailServiceProvider::class,
     App\Domains\Documents\DocumentsServiceProvider::class,
     App\Domains\Quotations\QuotationsServiceProvider::class,
+    App\Domains\Scheduling\SchedulingServiceProvider::class,
 ];

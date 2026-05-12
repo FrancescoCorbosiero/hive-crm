@@ -48,6 +48,12 @@ return [
         'already_converted' => 'Questa opportunità è già stata convertita.',
     ],
 
+    'invoice' => [
+        'action' => 'Emetti fattura',
+        'success' => 'Fattura bozza creata.',
+        'failed' => 'Impossibile creare la fattura.',
+    ],
+
     'widgets' => [
         'pipeline' => 'Pipeline opportunità',
         'pipeline_value' => 'Valore pipeline per fase',

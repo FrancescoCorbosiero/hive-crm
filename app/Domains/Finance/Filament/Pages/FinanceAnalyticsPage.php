@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Pages;
 
-use App\Domains\Finance\Enums\TransactionType;
+use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Websites\Services\Public\WebsitesService;
 use Carbon\Carbon;
@@ -81,13 +81,13 @@ class FinanceAnalyticsPage extends Page implements HasForms
         $websites = app(WebsitesService::class);
         $locale = app()->getLocale();
 
-        $income = $finance->breakdownByCategory(TransactionType::Income, $from, $until);
-        $expense = $finance->breakdownByCategory(TransactionType::Expense, $from, $until);
+        $income = $finance->breakdownByCategory(FinancialEntryType::Income, $from, $until);
+        $loss = $finance->breakdownByCategory(FinancialEntryType::Loss, $from, $until);
         $byWebsite = $finance->incomeByWebsite($from, $until);
 
         $totalIncome = $income->sum(fn ($m) => $m->cents);
-        $totalExpense = $expense->sum(fn ($m) => $m->cents);
-        $net = $totalIncome - $totalExpense;
+        $totalLoss = $loss->sum(fn ($m) => $m->cents);
+        $net = $totalIncome - $totalLoss;
 
         $currency = config('app.currency', 'EUR');
 
@@ -105,20 +105,20 @@ class FinanceAnalyticsPage extends Page implements HasForms
             'from' => $from->toDateString(),
             'until' => $until->toDateString(),
             'income' => $income->map(fn ($m, $cat) => [
-                'category' => __('finance/transactions.categories.'.$cat, [], $locale) === 'finance/transactions.categories.'.$cat
+                'category' => __('finance/entries.categories.'.$cat, [], $locale) === 'finance/entries.categories.'.$cat
                     ? $cat
-                    : __('finance/transactions.categories.'.$cat),
+                    : __('finance/entries.categories.'.$cat),
                 'amount' => $m->format($locale),
             ])->values(),
-            'expense' => $expense->map(fn ($m, $cat) => [
-                'category' => __('finance/transactions.categories.'.$cat, [], $locale) === 'finance/transactions.categories.'.$cat
+            'loss' => $loss->map(fn ($m, $cat) => [
+                'category' => __('finance/entries.categories.'.$cat, [], $locale) === 'finance/entries.categories.'.$cat
                     ? $cat
-                    : __('finance/transactions.categories.'.$cat),
+                    : __('finance/entries.categories.'.$cat),
                 'amount' => $m->format($locale),
             ])->values(),
             'per_website' => $perWebsite,
             'totalIncome' => (new \App\Shared\ValueObjects\Money($totalIncome, $currency))->format($locale),
-            'totalExpense' => (new \App\Shared\ValueObjects\Money($totalExpense, $currency))->format($locale),
+            'totalLoss' => (new \App\Shared\ValueObjects\Money($totalLoss, $currency))->format($locale),
             'net' => (new \App\Shared\ValueObjects\Money($net, $currency))->format($locale),
             'netNegative' => $net < 0,
         ];

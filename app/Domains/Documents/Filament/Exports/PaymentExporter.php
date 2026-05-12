@@ -31,7 +31,7 @@ class PaymentExporter extends Exporter
             ExportColumn::make('method')->state(fn (Payment $p) => $p->method->value),
             ExportColumn::make('reference'),
             ExportColumn::make('notes'),
-            ExportColumn::make('transaction_id'),
+            ExportColumn::make('financial_entry_id'),
             ExportColumn::make('created_at'),
         ];
     }

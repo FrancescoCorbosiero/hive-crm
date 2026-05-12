@@ -178,6 +178,26 @@ class FatturaResource extends Resource
                     ->label(__('documents/labels.payment.due_date'))
                     ->date('d/m/Y')
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('days_overdue')
+                    ->label(__('documents/labels.payment.days_overdue'))
+                    ->getStateUsing(function (Fattura $f): ?int {
+                        if (! $f->due_date || $f->outstanding()->isZero()) {
+                            return null;
+                        }
+                        $days = \Illuminate\Support\Carbon::parse($f->due_date)->startOfDay()
+                            ->diffInDays(now()->startOfDay(), false);
+                        return $days > 0 ? (int) $days : null;
+                    })
+                    ->badge()
+                    ->color(fn (?int $state) => match (true) {
+                        $state === null => 'gray',
+                        $state > 90 => 'danger',
+                        $state > 30 => 'warning',
+                        default => 'info',
+                    })
+                    ->placeholder('—')
+                    ->alignEnd()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label(__('documents/labels.fields.payment_status'))
                     ->badge()

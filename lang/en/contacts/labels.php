@@ -5,10 +5,14 @@ return [
     'plural' => 'Contacts',
 
     'name' => 'Name',
+    'ragione_sociale' => 'Company name',
     'email' => 'Email',
     'phone' => 'Phone',
     'vat_number' => 'VAT number',
     'tax_code' => 'Tax code',
+    'sdi_code' => 'SDI / Recipient code',
+    'sdi_code_help' => '7-character code for Italian e-invoicing (FatturaPA).',
+    'pec_email' => 'PEC email',
     'roles' => 'Roles',
     'notes' => 'Notes',
     'do_not_email' => 'Do not email',
@@ -29,5 +33,18 @@ return [
         'tax' => 'Tax info',
         'address' => 'Address',
         'preferences' => 'Preferences',
+    ],
+
+    'summary' => [
+        'quotations' => 'Open quotations',
+        'fatture' => 'Unpaid fatture',
+        'calendar' => 'Upcoming events',
+        'calendar_empty' => 'No upcoming events.',
+        'mail' => 'Recent emails',
+        'mail_empty' => 'No recent emails.',
+        'mail_status' => 'Status',
+        'sent_at' => 'Sent',
+        'open' => 'Open',
+        'notes' => 'Notes',
     ],
 ];

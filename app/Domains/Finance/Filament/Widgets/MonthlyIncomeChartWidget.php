@@ -15,7 +15,7 @@ class MonthlyIncomeChartWidget extends ChartWidget
 
     public function getHeading(): string
     {
-        return __('finance/transactions.widgets.monthly_income');
+        return __('finance/entries.widgets.monthly_income');
     }
 
     protected function getData(): array
@@ -34,7 +34,7 @@ class MonthlyIncomeChartWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => __('finance/transactions.type.income').' (€)',
+                    'label' => __('finance/entries.type.income').' (€)',
                     'data' => $values,
                     'borderColor' => 'rgb(16,185,129)',
                     'backgroundColor' => 'rgba(16,185,129,0.2)',
