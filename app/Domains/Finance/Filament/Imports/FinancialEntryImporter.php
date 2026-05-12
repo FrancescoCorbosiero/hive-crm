@@ -4,25 +4,25 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Imports;
 
-use App\Domains\Finance\Enums\TransactionType;
-use App\Domains\Finance\Models\Transaction;
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Models\FinancialEntry;
 use App\Shared\Filament\MoneyInput;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
 
 /**
- * Bank-statement-friendly transaction importer.
+ * Bank-statement-friendly FinancialEntry importer.
  *
  * Required CSV columns: occurred_at, description, amount_cents, type.
  * `amount_cents` is read as a major-unit decimal ("125.50") and stored
- * as integer cents. `type` MUST be 'income' or 'expense' explicitly —
+ * as integer cents. `type` MUST be 'income' or 'loss' explicitly —
  * Filament's per-column cast closures can't peek at sibling cells, so
  * sign-inference from the amount isn't possible.
  */
-class TransactionImporter extends Importer
+class FinancialEntryImporter extends Importer
 {
-    protected static ?string $model = Transaction::class;
+    protected static ?string $model = FinancialEntry::class;
 
     public static function getColumns(): array
     {
@@ -49,9 +49,9 @@ class TransactionImporter extends Importer
             ImportColumn::make('type')
                 ->requiredMapping()
                 ->castStateUsing(fn (?string $state) => $state
-                    ? (TransactionType::tryFrom(strtolower(trim($state)))?->value
-                       ?? TransactionType::Expense->value)
-                    : TransactionType::Expense->value),
+                    ? (FinancialEntryType::tryFrom(strtolower(trim($state)))?->value
+                       ?? FinancialEntryType::Loss->value)
+                    : FinancialEntryType::Loss->value),
             ImportColumn::make('currency')
                 ->castStateUsing(fn (?string $state) => $state ?: 'EUR'),
             ImportColumn::make('category'),
@@ -59,13 +59,13 @@ class TransactionImporter extends Importer
         ];
     }
 
-    public function resolveRecord(): ?Transaction
+    public function resolveRecord(): ?FinancialEntry
     {
-        return new Transaction();
+        return new FinancialEntry();
     }
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        return 'Imported '.number_format($import->successful_rows).' transaction(s).';
+        return 'Imported '.number_format($import->successful_rows).' financial entry(ies).';
     }
 }

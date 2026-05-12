@@ -6,7 +6,7 @@ namespace App\Filament\Pages;
 
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Models\Document;
-use App\Domains\Finance\Models\Transaction;
+use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Leads\Models\Lead;
 use App\Domains\Websites\Models\Website;
 use Filament\Actions\Action;
@@ -55,7 +55,7 @@ class DemoDataPage extends Page
         return [
             'contacts' => Contact::query()->count(),
             'websites' => Website::query()->count(),
-            'transactions' => Transaction::query()->count(),
+            'financial_entries' => FinancialEntry::query()->count(),
             'leads' => Lead::query()->count(),
             'documents' => Document::query()->count(),
         ];

@@ -1,12 +1,12 @@
 <?php
 
 return [
-    'singular' => 'Transaction',
-    'plural' => 'Transactions',
+    'singular' => 'Financial entry',
+    'plural' => 'Financial entries',
 
     'type' => [
         'income' => 'Income',
-        'expense' => 'Expense',
+        'loss' => 'Loss',
     ],
 
     'fields' => [
@@ -29,9 +29,9 @@ return [
 
     'widgets' => [
         'monthly_income' => 'Monthly income (last 12 months)',
-        'recent_transactions' => 'Recent transactions',
+        'recent_entries' => 'Recent entries',
         'ytd_income' => 'YTD income',
-        'ytd_expense' => 'YTD expense',
+        'ytd_loss' => 'YTD loss',
         'ytd_net' => 'YTD net',
     ],
 
@@ -45,5 +45,11 @@ return [
         'travel' => 'Travel',
         'taxes' => 'Taxes',
         'other' => 'Other',
+    ],
+
+    'actions' => [
+        'generate_fattura' => 'Generate Fattura',
+        'generate_fattura_success' => 'Fattura :number created from this entry.',
+        'generate_fattura_failure' => 'Could not generate Fattura.',
     ],
 ];

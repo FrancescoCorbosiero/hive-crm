@@ -9,12 +9,12 @@ return [
     'sections' => [
         'totals' => 'Period totals',
         'income_by_category' => 'Income by category',
-        'expense_by_category' => 'Expense by category',
+        'loss_by_category' => 'Loss by category',
         'income_by_website' => 'Income by website',
     ],
     'totals' => [
         'income' => 'Income',
-        'expense' => 'Expense',
+        'loss' => 'Loss',
         'net' => 'Net',
     ],
     'columns' => [
@@ -22,6 +22,6 @@ return [
         'website' => 'Website',
         'amount' => 'Amount',
     ],
-    'empty' => 'No transactions in the selected period.',
+    'empty' => 'No entries in the selected period.',
     'apply' => 'Apply filter',
 ];

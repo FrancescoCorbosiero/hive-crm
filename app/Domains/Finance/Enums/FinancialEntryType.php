@@ -4,24 +4,31 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Enums;
 
-enum TransactionType: string
+/**
+ * Direction of a FinancialEntry. The DB stores the lowercase value;
+ * UI/translations map to localized labels. INCOME and LOSS are the
+ * only two states — finer-grained accounting categories live in the
+ * `category` column.
+ */
+enum FinancialEntryType: string
 {
     case Income = 'income';
-    case Expense = 'expense';
+    case Loss = 'loss';
 
     public function label(): string
     {
-        return __('finance/transactions.type.'.$this->value);
+        return __('finance/entries.type.'.$this->value);
     }
 
     public function color(): string
     {
         return match ($this) {
             self::Income => 'success',
-            self::Expense => 'danger',
+            self::Loss => 'danger',
         };
     }
 
+    /** @return array<string,string> */
     public static function options(): array
     {
         $out = [];

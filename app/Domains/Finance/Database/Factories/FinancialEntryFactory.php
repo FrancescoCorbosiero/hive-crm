@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Database\Factories;
 
-use App\Domains\Finance\Enums\TransactionType;
-use App\Domains\Finance\Models\Transaction;
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Models\FinancialEntry;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Transaction>
+ * @extends Factory<FinancialEntry>
  */
-class TransactionFactory extends Factory
+class FinancialEntryFactory extends Factory
 {
-    protected $model = Transaction::class;
+    protected $model = FinancialEntry::class;
 
     public function definition(): array
     {
@@ -22,7 +22,7 @@ class TransactionFactory extends Factory
         $isIncome = $faker->boolean(60);
 
         return [
-            'type' => $isIncome ? TransactionType::Income->value : TransactionType::Expense->value,
+            'type' => $isIncome ? FinancialEntryType::Income->value : FinancialEntryType::Loss->value,
             'amount_cents' => $isIncome
                 ? $faker->numberBetween(2_000, 250_000)
                 : $faker->numberBetween(500, 80_000),
@@ -41,15 +41,15 @@ class TransactionFactory extends Factory
     public function income(int $cents = 10_000): self
     {
         return $this->state(fn () => [
-            'type' => TransactionType::Income->value,
+            'type' => FinancialEntryType::Income->value,
             'amount_cents' => $cents,
         ]);
     }
 
-    public function expense(int $cents = 1_000): self
+    public function loss(int $cents = 1_000): self
     {
         return $this->state(fn () => [
-            'type' => TransactionType::Expense->value,
+            'type' => FinancialEntryType::Loss->value,
             'amount_cents' => $cents,
         ]);
     }

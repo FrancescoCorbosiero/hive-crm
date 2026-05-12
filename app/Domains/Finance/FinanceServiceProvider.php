@@ -22,8 +22,8 @@ class FinanceServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
 
         // Cross-domain wiring: when a payment is recorded in Documents,
-        // Finance mirrors it as an Income transaction. The listener is
-        // idempotent (checks payment.transaction_id).
+        // Finance mirrors it as an Income FinancialEntry. The listener
+        // is idempotent (checks payment.financial_entry_id).
         Event::listen(PaymentRecorded::class, RecordIncomeFromPayment::class);
     }
 }

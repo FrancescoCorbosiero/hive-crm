@@ -6,7 +6,7 @@ return [
 
     'type' => [
         'income' => 'Entrata',
-        'expense' => 'Uscita',
+        'loss' => 'Uscita',
     ],
 
     'fields' => [
@@ -29,9 +29,9 @@ return [
 
     'widgets' => [
         'monthly_income' => 'Entrate mensili (ultimi 12 mesi)',
-        'recent_transactions' => 'Movimenti recenti',
+        'recent_entries' => 'Movimenti recenti',
         'ytd_income' => 'Entrate YTD',
-        'ytd_expense' => 'Uscite YTD',
+        'ytd_loss' => 'Uscite YTD',
         'ytd_net' => 'Netto YTD',
     ],
 
@@ -45,5 +45,11 @@ return [
         'travel' => 'Trasferte',
         'taxes' => 'Tasse',
         'other' => 'Altro',
+    ],
+
+    'actions' => [
+        'generate_fattura' => 'Genera Fattura',
+        'generate_fattura_success' => 'Fattura :number creata da questo movimento.',
+        'generate_fattura_failure' => 'Impossibile generare la Fattura.',
     ],
 ];

@@ -11,7 +11,7 @@ return [
     'tables' => [
         'contacts' => 'Contatti',
         'websites' => 'Siti web',
-        'transactions' => 'Movimenti',
+        'financial_entries' => 'Movimenti',
         'leads' => 'Opportunità',
         'documents' => 'Documenti',
     ],

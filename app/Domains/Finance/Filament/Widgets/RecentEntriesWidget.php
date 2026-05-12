@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Widgets;
 
-use App\Domains\Finance\Enums\TransactionType;
-use App\Domains\Finance\Models\Transaction;
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Models\FinancialEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 
-class RecentTransactionsWidget extends TableWidget
+class RecentEntriesWidget extends TableWidget
 {
     protected static ?int $sort = 4;
 
@@ -18,26 +18,26 @@ class RecentTransactionsWidget extends TableWidget
 
     public function getHeading(): string
     {
-        return __('finance/transactions.widgets.recent_transactions');
+        return __('finance/entries.widgets.recent_entries');
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(Transaction::query()->orderByDesc('occurred_at')->orderByDesc('id'))
+            ->query(FinancialEntry::query()->orderByDesc('occurred_at')->orderByDesc('id'))
             ->columns([
                 Tables\Columns\TextColumn::make('occurred_at')
-                    ->label(__('finance/transactions.fields.occurred_at'))
+                    ->label(__('finance/entries.fields.occurred_at'))
                     ->date('d/m/Y'),
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
-                    ->color(fn (TransactionType $state) => $state->color())
-                    ->formatStateUsing(fn (TransactionType $state) => $state->label()),
+                    ->color(fn (FinancialEntryType $state) => $state->color())
+                    ->formatStateUsing(fn (FinancialEntryType $state) => $state->label()),
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50),
                 Tables\Columns\TextColumn::make('amount_cents')
-                    ->label(__('finance/transactions.fields.amount'))
-                    ->getStateUsing(fn (Transaction $tx) => $tx->money->format(app()->getLocale()))
+                    ->label(__('finance/entries.fields.amount'))
+                    ->getStateUsing(fn (FinancialEntry $entry) => $entry->money->format(app()->getLocale()))
                     ->alignEnd(),
             ])
             ->paginated([10]);

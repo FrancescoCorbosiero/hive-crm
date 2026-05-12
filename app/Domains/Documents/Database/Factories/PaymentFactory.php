@@ -25,7 +25,7 @@ class PaymentFactory extends Factory
             'method' => PaymentMethod::BankTransfer->value,
             'reference' => null,
             'notes' => null,
-            'transaction_id' => null,
+            'financial_entry_id' => null,
             'owner_user_id' => null,
         ];
     }

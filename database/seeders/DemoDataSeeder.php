@@ -21,7 +21,7 @@ class DemoDataSeeder extends Seeder
         $this->call([
             \App\Domains\Contacts\Database\Seeders\ContactsSeeder::class,
             \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
-            \App\Domains\Finance\Database\Seeders\TransactionsSeeder::class,
+            \App\Domains\Finance\Database\Seeders\FinancialEntriesSeeder::class,
             \App\Domains\Leads\Database\Seeders\LeadsSeeder::class,
             \App\Domains\Documents\Database\Seeders\DocumentsSeeder::class,
         ]);
