@@ -45,10 +45,13 @@ class Contact extends Model
 
     protected $fillable = [
         'name',
+        'ragione_sociale',
         'email',
         'phone',
         'vat_number',
         'tax_code',
+        'sdi_code',
+        'pec_email',
         'address',
         'notes',
         'roles',
@@ -123,5 +126,37 @@ class Contact extends Model
     public function scopeMailable($query)
     {
         return $query->where('do_not_email', false)->whereNotNull('email');
+    }
+
+    // ── Cross-domain read-only relations ───────────────────────────────
+    // Used by the Customer 360 view's relation managers. These point at
+    // other domains' tables by foreign key — we deliberately keep them
+    // as plain hasMany so the Contacts domain doesn't gain a hard
+    // compile-time dependency on the other models. Reading is fine;
+    // writing is still the responsibility of the owning domain.
+
+    public function quotations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domains\Quotations\Models\Quotation::class, 'client_contact_id');
+    }
+
+    public function fatture(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domains\Documents\Models\Fattura::class, 'client_contact_id');
+    }
+
+    public function campaignRecipients(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domains\Mail\Models\CampaignRecipient::class, 'contact_id');
+    }
+
+    /**
+     * CalendarEvent has no contact FK — Cal.com only gives us the
+     * attendee's email — so the join is on the email column on both
+     * sides. Contacts without an email naturally get an empty set.
+     */
+    public function calendarEvents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domains\Calendar\Models\CalendarEvent::class, 'attendee_email', 'email');
     }
 }

@@ -6,6 +6,7 @@ namespace App\Domains\Contacts\Filament\Resources;
 
 use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Filament\Resources\ContactResource\Pages;
+use App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 use App\Domains\Contacts\Models\Contact;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -26,7 +27,7 @@ class ContactResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name', 'email', 'vat_number', 'tax_code'];
+        return ['name', 'ragione_sociale', 'email', 'vat_number', 'tax_code'];
     }
 
     public static function getGlobalSearchResultDetails($record): array
@@ -68,6 +69,10 @@ class ContactResource extends Resource
                         ->required()
                         ->maxLength(255),
 
+                    Forms\Components\TextInput::make('ragione_sociale')
+                        ->label(__('contacts/labels.ragione_sociale'))
+                        ->maxLength(255),
+
                     Forms\Components\TextInput::make('email')
                         ->label(__('contacts/labels.email'))
                         ->email()
@@ -95,6 +100,16 @@ class ContactResource extends Resource
                     Forms\Components\TextInput::make('tax_code')
                         ->label(__('contacts/labels.tax_code'))
                         ->maxLength(32),
+
+                    Forms\Components\TextInput::make('sdi_code')
+                        ->label(__('contacts/labels.sdi_code'))
+                        ->helperText(__('contacts/labels.sdi_code_help'))
+                        ->maxLength(7),
+
+                    Forms\Components\TextInput::make('pec_email')
+                        ->label(__('contacts/labels.pec_email'))
+                        ->email()
+                        ->maxLength(255),
                 ]),
 
             Forms\Components\Section::make(__('contacts/labels.section.address'))
@@ -177,6 +192,7 @@ class ContactResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
@@ -203,6 +219,10 @@ class ContactResource extends Resource
     public static function getRelations(): array
     {
         return [
+            RelationManagers\QuotationsRelationManager::class,
+            RelationManagers\FattureRelationManager::class,
+            RelationManagers\CalendarEventsRelationManager::class,
+            RelationManagers\MailRelationManager::class,
             \App\Shared\Filament\HistoryRelationManager::class,
         ];
     }
@@ -212,6 +232,7 @@ class ContactResource extends Resource
         return [
             'index' => Pages\ListContacts::route('/'),
             'create' => Pages\CreateContact::route('/create'),
+            'view' => Pages\ViewContact::route('/{record}'),
             'edit' => Pages\EditContact::route('/{record}/edit'),
         ];
     }

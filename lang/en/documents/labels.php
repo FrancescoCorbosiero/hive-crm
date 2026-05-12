@@ -76,6 +76,7 @@ return [
         'outstanding' => 'Outstanding',
         'fully_paid' => 'Fully paid',
         'due_date' => 'Due date',
+        'days_overdue' => 'Days overdue',
     ],
 
     'payment_method' => [

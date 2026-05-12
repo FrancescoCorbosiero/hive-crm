@@ -20,13 +20,17 @@ class ContactFactory extends Factory
         $faker = \Faker\Factory::create('it_IT');
 
         $isCompany = $faker->boolean(40);
+        $companyName = $isCompany ? $faker->company() : null;
 
         return [
-            'name' => $isCompany ? $faker->company() : $faker->name(),
+            'name' => $companyName ?? $faker->name(),
+            'ragione_sociale' => $companyName,
             'email' => $faker->unique()->safeEmail(),
             'phone' => $faker->phoneNumber(),
             'vat_number' => $isCompany ? 'IT'.$faker->numerify('###########') : null,
             'tax_code' => $isCompany ? null : strtoupper($faker->bothify('??????##?##?###?')),
+            'sdi_code' => $isCompany ? strtoupper($faker->bothify('???####')) : null,
+            'pec_email' => $isCompany ? $faker->unique()->safeEmail() : null,
             'address' => [
                 'street' => $faker->streetAddress(),
                 'city' => $faker->city(),

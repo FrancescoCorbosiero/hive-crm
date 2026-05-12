@@ -20,11 +20,17 @@ class ContactImporter extends Importer
             ImportColumn::make('name')
                 ->requiredMapping()
                 ->rules(['required', 'string', 'max:255']),
+            ImportColumn::make('ragione_sociale')
+                ->rules(['nullable', 'string', 'max:255']),
             ImportColumn::make('email')
                 ->rules(['nullable', 'email']),
             ImportColumn::make('phone'),
             ImportColumn::make('vat_number'),
             ImportColumn::make('tax_code'),
+            ImportColumn::make('sdi_code')
+                ->rules(['nullable', 'string', 'max:7']),
+            ImportColumn::make('pec_email')
+                ->rules(['nullable', 'email']),
 
             // Roles arrive as a comma-separated string (customer,vendor) or
             // pipe-separated. Whitespace tolerant. Falls back to ['customer']

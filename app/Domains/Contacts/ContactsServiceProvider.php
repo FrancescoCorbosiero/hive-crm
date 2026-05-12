@@ -6,7 +6,9 @@ namespace App\Domains\Contacts;
 
 use App\Domains\Contacts\Events\ContactCreated;
 use App\Domains\Contacts\Listeners\RegisterContactCreatedActivity;
+use App\Domains\Contacts\Listeners\TagCustomerOnFatturaPaid;
 use App\Domains\Contacts\Services\Public\ContactsService;
+use App\Domains\Documents\Events\FatturaPaid;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -53,5 +55,6 @@ class ContactsServiceProvider extends ServiceProvider
         });
 
         Event::listen(ContactCreated::class, RegisterContactCreatedActivity::class);
+        Event::listen(FatturaPaid::class, TagCustomerOnFatturaPaid::class);
     }
 }
