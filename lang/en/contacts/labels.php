@@ -34,4 +34,17 @@ return [
         'address' => 'Address',
         'preferences' => 'Preferences',
     ],
+
+    'summary' => [
+        'quotations' => 'Open quotations',
+        'fatture' => 'Unpaid fatture',
+        'calendar' => 'Upcoming events',
+        'calendar_empty' => 'No upcoming events.',
+        'mail' => 'Recent emails',
+        'mail_empty' => 'No recent emails.',
+        'mail_status' => 'Status',
+        'sent_at' => 'Sent',
+        'open' => 'Open',
+        'notes' => 'Notes',
+    ],
 ];

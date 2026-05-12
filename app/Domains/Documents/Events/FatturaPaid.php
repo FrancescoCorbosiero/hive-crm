@@ -14,5 +14,8 @@ final class FatturaPaid
 {
     use Dispatchable;
 
-    public function __construct(public readonly int $fatturaId) {}
+    public function __construct(
+        public readonly int $fatturaId,
+        public readonly int $clientContactId,
+    ) {}
 }

@@ -6,6 +6,7 @@ namespace App\Domains\Contacts\Filament\Resources;
 
 use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Filament\Resources\ContactResource\Pages;
+use App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 use App\Domains\Contacts\Models\Contact;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -191,6 +192,7 @@ class ContactResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
@@ -217,6 +219,10 @@ class ContactResource extends Resource
     public static function getRelations(): array
     {
         return [
+            RelationManagers\QuotationsRelationManager::class,
+            RelationManagers\FattureRelationManager::class,
+            RelationManagers\CalendarEventsRelationManager::class,
+            RelationManagers\MailRelationManager::class,
             \App\Shared\Filament\HistoryRelationManager::class,
         ];
     }
@@ -226,6 +232,7 @@ class ContactResource extends Resource
         return [
             'index' => Pages\ListContacts::route('/'),
             'create' => Pages\CreateContact::route('/create'),
+            'view' => Pages\ViewContact::route('/{record}'),
             'edit' => Pages\EditContact::route('/{record}/edit'),
         ];
     }
