@@ -85,6 +85,11 @@ class CalendarEventResource extends Resource
                     ->label(__('calendar/labels.fields.status'))
                     ->options(CalendarEventStatus::options()),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('starts_at', 'desc');
     }
 

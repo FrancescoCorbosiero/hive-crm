@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Domains\Documents\Filament\Resources;
 
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Filament\Resources\FatturaResource\Pages;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
+use App\Domains\Documents\Services\Public\PaymentsService;
+use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -215,11 +218,136 @@ class FatturaResource extends Resource
                         ->pluck('year', 'year')->all()),
             ])
             ->actions([
+                self::recordPaymentAction(),
                 Tables\Actions\EditAction::make(),
                 self::renderPdfAction(),
                 self::downloadPdfAction(),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('recordPaymentsOnIssueDate')
+                        ->label(__('documents/labels.actions.record_payments_bulk'))
+                        ->icon('heroicon-o-banknotes')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('documents/labels.actions.record_payments_bulk_heading'))
+                        ->modalDescription(__('documents/labels.actions.record_payments_bulk_description'))
+                        ->modalSubmitActionLabel(__('documents/labels.actions.record_payments_bulk_submit'))
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $service = app(PaymentsService::class);
+                            $done = 0;
+                            $skipped = 0;
+                            $failed = 0;
+
+                            foreach ($records as $fattura) {
+                                if (in_array($fattura->payment_status, [PaymentStatus::Paid, PaymentStatus::Cancelled], true)) {
+                                    $skipped++;
+                                    continue;
+                                }
+
+                                try {
+                                    $service->record($fattura->id, [
+                                        'amount_cents' => $fattura->outstanding()->cents,
+                                        'paid_at' => $fattura->issued_at?->toDateString() ?? now()->toDateString(),
+                                        'method' => PaymentMethod::BankTransfer->value,
+                                    ]);
+                                    $done++;
+                                } catch (\Throwable $e) {
+                                    $failed++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title(__('documents/labels.actions.record_payments_bulk_success', [
+                                    'done' => $done,
+                                ]))
+                                ->body(__('documents/labels.actions.record_payments_bulk_summary', [
+                                    'skipped' => $skipped,
+                                    'failed' => $failed,
+                                ]))
+                                ->send();
+                        }),
+
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('issued_at', 'desc');
+    }
+
+    /**
+     * One-click "this fattura was paid" action. Records a Payment via
+     * PaymentsService, which fires PaymentRecorded → Finance listener
+     * mirrors it as a FinancialEntry (income). So the revenue row in
+     * the ledger materializes through this action — fattura issuance
+     * alone never creates revenue.
+     */
+    private static function recordPaymentAction(): Action
+    {
+        return Action::make('recordPayment')
+            ->label(__('documents/labels.actions.record_payment'))
+            ->icon('heroicon-o-banknotes')
+            ->color('success')
+            ->visible(fn (Fattura $f) => ! in_array(
+                $f->payment_status,
+                [PaymentStatus::Paid, PaymentStatus::Cancelled],
+                true,
+            ))
+            ->modalHeading(fn (Fattura $f) => __('documents/labels.actions.record_payment_heading', [
+                'number' => $f->displayNumber(),
+            ]))
+            ->modalSubmitActionLabel(__('documents/labels.actions.record_payment'))
+            ->fillForm(fn (Fattura $f) => [
+                'amount_cents' => $f->outstanding()->cents,
+                'paid_at' => $f->issued_at?->toDateString() ?? now()->toDateString(),
+                'method' => PaymentMethod::BankTransfer->value,
+            ])
+            ->form([
+                MoneyInput::make('amount_cents')
+                    ->label(__('documents/labels.payment.amount'))
+                    ->required(),
+
+                Forms\Components\DatePicker::make('paid_at')
+                    ->label(__('documents/labels.payment.paid_at'))
+                    ->displayFormat('d/m/Y')
+                    ->required(),
+
+                Forms\Components\Select::make('method')
+                    ->label(__('documents/labels.payment.method'))
+                    ->options(collect(PaymentMethod::cases())
+                        ->mapWithKeys(fn (PaymentMethod $m) => [
+                            $m->value => __('documents/labels.payment_method.'.$m->value),
+                        ])
+                        ->all())
+                    ->required(),
+
+                Forms\Components\TextInput::make('reference')
+                    ->label(__('documents/labels.payment.reference'))
+                    ->maxLength(255),
+            ])
+            ->action(function (Fattura $f, array $data): void {
+                try {
+                    app(PaymentsService::class)->record($f->id, [
+                        'amount_cents' => (int) $data['amount_cents'],
+                        'paid_at' => $data['paid_at'],
+                        'method' => $data['method'] ?? PaymentMethod::BankTransfer->value,
+                        'reference' => $data['reference'] ?? null,
+                    ]);
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('documents/labels.actions.record_payment_success', [
+                            'number' => $f->displayNumber(),
+                        ]))
+                        ->send();
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('documents/labels.actions.record_payment_failure'))
+                        ->body($e->getMessage())
+                        ->send();
+                }
+            });
     }
 
     private static function renderPdfAction(): Action

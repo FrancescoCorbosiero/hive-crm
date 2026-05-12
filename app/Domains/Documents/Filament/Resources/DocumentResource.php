@@ -96,6 +96,11 @@ class DocumentResource extends Resource
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn (Document $d) => app(DocumentsService::class)->temporaryUrl($d->id), shouldOpenInNewTab: true),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('issued_at', 'desc');
     }
 

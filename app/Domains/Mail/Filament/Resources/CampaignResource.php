@@ -142,6 +142,11 @@ class CampaignResource extends Resource
                 Tables\Actions\EditAction::make(),
                 self::sendNowAction(),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('updated_at', 'desc');
     }
 

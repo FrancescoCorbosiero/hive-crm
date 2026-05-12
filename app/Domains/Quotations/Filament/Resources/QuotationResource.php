@@ -169,6 +169,11 @@ class QuotationResource extends Resource
                 self::renderPdfAction(),
                 self::downloadPdfAction(),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('issued_at', 'desc');
     }
 
