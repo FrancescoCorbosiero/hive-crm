@@ -56,6 +56,42 @@ class LeadsService
     }
 
     /**
+     * Pipeline value summed per stage. Mixed-currency leads are bucketed by
+     * currency and the dominant currency wins; the rest are converted to
+     * 0 cents (we don't pretend to do FX). For a single-currency workspace
+     * this is the right thing.
+     *
+     * @return Collection<string, array{count:int, cents:int, currency:string}>
+     */
+    public function pipelineValueByStage(): Collection
+    {
+        $rows = Lead::query()
+            ->open()
+            ->selectRaw('status, estimated_value_currency AS currency, COUNT(*) AS total, COALESCE(SUM(estimated_value_cents), 0) AS cents')
+            ->groupBy('status', 'estimated_value_currency')
+            ->get();
+
+        $default = (string) config('app.currency', 'EUR');
+
+        return collect(LeadStatus::pipeline())
+            ->mapWithKeys(function (LeadStatus $stage) use ($rows, $default) {
+                $stageRows = $rows->where('status', $stage->value);
+
+                if ($stageRows->isEmpty()) {
+                    return [$stage->value => ['count' => 0, 'cents' => 0, 'currency' => $default]];
+                }
+
+                $dominant = $stageRows->sortByDesc('cents')->first();
+
+                return [$stage->value => [
+                    'count' => (int) $stageRows->sum('total'),
+                    'cents' => (int) ($dominant->cents ?? 0),
+                    'currency' => (string) ($dominant->currency ?? $default),
+                ]];
+            });
+    }
+
+    /**
      * Convert a Lead into a Contact (with the customer role) and
      * optionally a linked Website. The Lead is archived (status=won,
      * converted_contact_id + converted_at populated).

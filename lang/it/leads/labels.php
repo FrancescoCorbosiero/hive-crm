@@ -6,15 +6,22 @@ return [
 
     'fields' => [
         'name' => 'Nome',
+        'company_name' => 'Azienda',
         'email' => 'Email',
         'phone' => 'Telefono',
         'source' => 'Provenienza',
         'status' => 'Stato',
         'estimated_value' => 'Valore stimato',
         'next_action_at' => 'Prossima azione',
+        'last_contacted_at' => 'Ultimo contatto',
+        'lost_reason' => 'Motivo della perdita',
         'notes' => 'Note',
         'converted_contact' => 'Contatto creato',
         'converted_at' => 'Convertito il',
+    ],
+
+    'helpers' => [
+        'company_name' => 'Compilato automaticamente dal dominio email se lasciato vuoto.',
     ],
 
     'sections' => [
@@ -22,6 +29,12 @@ return [
         'pipeline' => 'Pipeline',
         'extras' => 'Note',
     ],
+
+    'filters' => [
+        'stale' => 'Inattive (nessun contatto da 14 giorni)',
+    ],
+
+    'never_contacted' => 'Mai contattato',
 
     'convert' => [
         'action' => 'Converti in cliente',
@@ -37,6 +50,10 @@ return [
 
     'widgets' => [
         'pipeline' => 'Pipeline opportunità',
+        'pipeline_value' => 'Valore pipeline per fase',
+        'lead_count' => '{0} nessuna|{1} :count opportunità|[2,*] :count opportunità',
+        'stale_leads' => 'Opportunità inattive — nessun contatto da :days giorni',
         'no_open_leads' => 'Nessuna opportunità aperta',
+        'no_stale_leads' => 'Nessuna opportunità inattiva — tutte aggiornate di recente.',
     ],
 ];

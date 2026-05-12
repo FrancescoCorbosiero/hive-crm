@@ -52,3 +52,54 @@ it('reports converted state correctly', function () {
 
     expect($lead->isConverted())->toBeTrue();
 });
+
+it('auto-derives company_name from a corporate email domain when blank', function () {
+    $lead = Lead::factory()->create([
+        'company_name' => null,
+        'email' => 'info@studio-bianchi.it',
+    ]);
+
+    expect($lead->fresh()->company_name)->toBe('Studio Bianchi');
+});
+
+it('does not derive company_name from free email providers', function () {
+    $lead = Lead::factory()->create([
+        'company_name' => null,
+        'email' => 'andrea@gmail.com',
+    ]);
+
+    expect($lead->fresh()->company_name)->toBeNull();
+});
+
+it('does not overwrite an explicit company_name', function () {
+    $lead = Lead::factory()->create([
+        'company_name' => 'My Company',
+        'email' => 'info@example.com',
+    ]);
+
+    expect($lead->fresh()->company_name)->toBe('My Company');
+});
+
+it('stamps last_contacted_at when status advances out of new', function () {
+    $lead = Lead::factory()->status(LeadStatus::New)->create(['last_contacted_at' => null]);
+    expect($lead->last_contacted_at)->toBeNull();
+
+    $lead->status = LeadStatus::Contacted;
+    $lead->save();
+
+    expect($lead->fresh()->last_contacted_at)->not->toBeNull();
+});
+
+it('finds stale open leads via the stale scope', function () {
+    Lead::factory()->status(LeadStatus::Contacted)->create([
+        'last_contacted_at' => now()->subDays(30),
+    ]);
+    Lead::factory()->status(LeadStatus::Contacted)->create([
+        'last_contacted_at' => now()->subDays(2),
+    ]);
+    Lead::factory()->status(LeadStatus::Won)->create([
+        'last_contacted_at' => now()->subDays(60),
+    ]);
+
+    expect(Lead::stale(14)->count())->toBe(1);
+});

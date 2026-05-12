@@ -22,6 +22,7 @@ class LeadFactory extends Factory
 
         return [
             'name' => $faker->boolean(50) ? $faker->company() : $faker->name(),
+            'company_name' => $faker->boolean(70) ? $faker->company() : null,
             'email' => $faker->safeEmail(),
             'phone' => $faker->phoneNumber(),
             'source' => $faker->randomElement(array_map(fn (LeadSource $s) => $s->value, LeadSource::cases())),
@@ -30,6 +31,8 @@ class LeadFactory extends Factory
             'estimated_value_currency' => 'EUR',
             'notes' => $faker->boolean(40) ? $faker->sentence() : null,
             'next_action_at' => $faker->dateTimeBetween('+1 day', '+3 weeks'),
+            'last_contacted_at' => null,
+            'lost_reason' => null,
             'converted_contact_id' => null,
             'converted_at' => null,
             'owner_user_id' => null,

@@ -6,6 +6,7 @@ namespace App\Domains\Leads\Filament\Resources;
 
 use App\Domains\Leads\Enums\LeadSource;
 use App\Domains\Leads\Enums\LeadStatus;
+use App\Domains\Leads\Enums\LostReason;
 use App\Domains\Leads\Filament\Resources\LeadResource\Pages;
 use App\Domains\Leads\Models\Lead;
 use App\Domains\Leads\Services\Public\LeadsService;
@@ -74,6 +75,10 @@ class LeadResource extends Resource
                     Forms\Components\TextInput::make('name')
                         ->label(__('leads/labels.fields.name'))
                         ->required(),
+                    Forms\Components\TextInput::make('company_name')
+                        ->label(__('leads/labels.fields.company_name'))
+                        ->helperText(__('leads/labels.helpers.company_name'))
+                        ->maxLength(255),
                     Forms\Components\TextInput::make('email')
                         ->label(__('leads/labels.fields.email'))
                         ->email(),
@@ -93,13 +98,20 @@ class LeadResource extends Resource
                         ->label(__('leads/labels.fields.status'))
                         ->options(LeadStatus::options())
                         ->default(LeadStatus::New->value)
-                        ->required(),
+                        ->required()
+                        ->live(),
                     \App\Shared\Filament\MoneyInput::make('estimated_value_cents')
                         ->label(__('leads/labels.fields.estimated_value')),
                     Forms\Components\DateTimePicker::make('next_action_at')
                         ->label(__('leads/labels.fields.next_action_at'))
                         ->displayFormat('d/m/Y H:i')
                         ->seconds(false),
+                    Forms\Components\Select::make('lost_reason')
+                        ->label(__('leads/labels.fields.lost_reason'))
+                        ->options(LostReason::options())
+                        ->visible(fn (Forms\Get $get) => $get('status') === LeadStatus::Lost->value)
+                        ->required(fn (Forms\Get $get) => $get('status') === LeadStatus::Lost->value)
+                        ->columnSpan(2),
                 ]),
 
             Forms\Components\Section::make(__('leads/labels.sections.extras'))
@@ -119,6 +131,11 @@ class LeadResource extends Resource
                     ->label(__('leads/labels.fields.name'))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('company_name')
+                    ->label(__('leads/labels.fields.company_name'))
+                    ->searchable()
+                    ->toggleable()
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('leads/labels.fields.email'))
                     ->searchable()
@@ -141,6 +158,18 @@ class LeadResource extends Resource
                     ->label(__('leads/labels.fields.next_action_at'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('last_contacted_at')
+                    ->label(__('leads/labels.fields.last_contacted_at'))
+                    ->since()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder(__('leads/labels.never_contacted')),
+                Tables\Columns\TextColumn::make('lost_reason')
+                    ->label(__('leads/labels.fields.lost_reason'))
+                    ->badge()
+                    ->color('danger')
+                    ->formatStateUsing(fn (?LostReason $state) => $state?->label() ?? '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('converted_at')
                     ->label(__('leads/labels.fields.converted_at'))
                     ->dateTime('d/m/Y H:i')
@@ -153,6 +182,10 @@ class LeadResource extends Resource
                 Tables\Filters\SelectFilter::make('source')
                     ->label(__('leads/labels.fields.source'))
                     ->options(LeadSource::options()),
+                Tables\Filters\Filter::make('stale')
+                    ->label(__('leads/labels.filters.stale'))
+                    ->query(fn ($query) => $query->stale(14))
+                    ->toggle(),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([

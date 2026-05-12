@@ -31,3 +31,19 @@ it('returns counts per pipeline stage', function () {
     // Won is terminal — never appears in the open-pipeline counts.
     expect($counts->has(LeadStatus::Won->value))->toBeFalse();
 });
+
+it('returns pipeline value summed by stage with currency', function () {
+    Lead::factory()->status(LeadStatus::New)->create(['estimated_value_cents' => 100_00]);
+    Lead::factory()->status(LeadStatus::New)->create(['estimated_value_cents' => 250_00]);
+    Lead::factory()->status(LeadStatus::Qualified)->create(['estimated_value_cents' => 1_000_00]);
+    // Won is terminal and must be excluded.
+    Lead::factory()->status(LeadStatus::Won)->create(['estimated_value_cents' => 9_999_00]);
+
+    $stages = app(LeadsService::class)->pipelineValueByStage();
+
+    expect($stages[LeadStatus::New->value]['count'])->toBe(2);
+    expect($stages[LeadStatus::New->value]['cents'])->toBe(350_00);
+    expect($stages[LeadStatus::New->value]['currency'])->toBe('EUR');
+    expect($stages[LeadStatus::Qualified->value]['cents'])->toBe(1_000_00);
+    expect($stages[LeadStatus::Contacted->value]['cents'])->toBe(0);
+});

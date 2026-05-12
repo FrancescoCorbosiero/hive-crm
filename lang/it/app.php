@@ -16,5 +16,6 @@ return [
         'calendar' => 'Calendario',
         'mail' => 'Email',
         'documents' => 'Documenti',
+        'settings' => 'Impostazioni',
     ],
 ];
