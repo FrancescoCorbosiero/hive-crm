@@ -63,6 +63,13 @@ return [
         'pause' => 'Pause',
         'resume' => 'Resume',
         'issue_now' => 'Issue now',
+        'backfill' => 'Backfill past months',
+        'backfill_heading' => 'Backfill past invoices',
+        'backfill_description' => 'Issues one invoice per cycle from the chosen date up to (but not including) the configured next-issue date, each backdated to its cycle. Run this BEFORE issuing any current-period invoices for the same year — numbering is assigned in creation order.',
+        'backfill_from' => 'Issue starting from',
+        'backfill_submit' => 'Backfill',
+        'backfill_success' => '{0} No invoices to backfill.|{1} 1 invoice issued.|[2,*] :count invoices issued.',
+        'backfill_failure' => 'Backfill failed',
     ],
 
     'payment' => [

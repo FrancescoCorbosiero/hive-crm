@@ -63,6 +63,13 @@ return [
         'pause' => 'Sospendi',
         'resume' => 'Riattiva',
         'issue_now' => 'Emetti ora',
+        'backfill' => 'Recupera mesi passati',
+        'backfill_heading' => 'Recupera le fatture passate',
+        'backfill_description' => "Emette una fattura per ogni ciclo dalla data scelta fino a (esclusa) la prossima emissione configurata, retrodatando ciascuna alla data del ciclo. Da eseguire PRIMA di emettere fatture correnti per lo stesso anno, perché la numerazione viene assegnata nell'ordine di creazione.",
+        'backfill_from' => 'Emetti a partire da',
+        'backfill_submit' => 'Recupera',
+        'backfill_success' => '{0} Nessuna fattura da recuperare.|{1} 1 fattura emessa.|[2,*] :count fatture emesse.',
+        'backfill_failure' => 'Recupero non riuscito',
     ],
 
     'payment' => [
