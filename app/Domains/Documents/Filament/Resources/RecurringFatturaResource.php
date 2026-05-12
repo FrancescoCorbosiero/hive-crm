@@ -154,6 +154,42 @@ class RecurringFatturaResource extends Resource
                         $f = app(RecurringFatturaService::class)->issue($r->id);
                         Notification::make()->success()->title('Fattura '.$f->displayNumber())->send();
                     }),
+                Action::make('backfill')
+                    ->label(__('documents/labels.actions.backfill'))
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->modalHeading(__('documents/labels.actions.backfill_heading'))
+                    ->modalDescription(__('documents/labels.actions.backfill_description'))
+                    ->modalSubmitActionLabel(__('documents/labels.actions.backfill_submit'))
+                    ->form(fn (RecurringFattura $r) => [
+                        Forms\Components\DatePicker::make('from')
+                            ->label(__('documents/labels.actions.backfill_from'))
+                            ->displayFormat('d/m/Y')
+                            ->required()
+                            ->default(now()->subMonths(6))
+                            ->maxDate($r->next_issue_at?->copy()->subDay() ?? now()),
+                    ])
+                    ->action(function (RecurringFattura $r, array $data) {
+                        try {
+                            $count = app(RecurringFatturaService::class)
+                                ->backfill($r->id, $data['from']);
+
+                            Notification::make()
+                                ->success()
+                                ->title(trans_choice(
+                                    'documents/labels.actions.backfill_success',
+                                    $count,
+                                    ['count' => $count],
+                                ))
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->danger()
+                                ->title(__('documents/labels.actions.backfill_failure'))
+                                ->body($e->getMessage())
+                                ->send();
+                        }
+                    }),
                 Action::make('pause')
                     ->label(__('documents/labels.actions.pause'))
                     ->icon('heroicon-o-pause')

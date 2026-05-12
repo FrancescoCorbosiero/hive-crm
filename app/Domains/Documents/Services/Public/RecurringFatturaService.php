@@ -8,6 +8,7 @@ use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\RecurringFattura;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 class RecurringFatturaService
@@ -64,10 +65,63 @@ class RecurringFatturaService
 
             $rec->update([
                 'last_issued_at' => Carbon::now(),
-                'next_issue_at' => $this->advanceNextIssueAt($rec),
+                'next_issue_at' => $this->advanceFrom($rec, $rec->next_issue_at),
             ]);
 
             return $fattura;
+        });
+    }
+
+    /**
+     * Backfill missing past invoices for this recurring schedule.
+     * Issues one fattura per cycle from $from (inclusive) up to but
+     * NOT INCLUDING the schedule's currently-configured `next_issue_at`,
+     * each backdated to the cycle's date. `next_issue_at` is left
+     * untouched so the forward schedule keeps running as configured;
+     * `last_issued_at` is updated to the most recent generated date.
+     *
+     * Returns the number of fatture generated. The whole loop is one
+     * transaction — partial backfills don't leave the counter in a
+     * weird state.
+     *
+     * NOTE: fattura numbers are allocated sequentially per fiscal year
+     * in the order they are CREATED, not in the order they are dated.
+     * Backfill should therefore run BEFORE issuing any current-period
+     * fatture for the same year, or numbering will be out of order
+     * relative to the dates.
+     */
+    public function backfill(int $recurringId, \DateTimeInterface|string $from): int
+    {
+        return DB::transaction(function () use ($recurringId, $from) {
+            $rec = RecurringFattura::query()->lockForUpdate()->findOrFail($recurringId);
+
+            $stop = $rec->next_issue_at?->copy()->startOfDay()
+                ?? Carbon::now()->startOfDay();
+
+            $cursor = $this->snapToSchedule($rec, Carbon::parse($from)->startOfDay());
+
+            $generated = 0;
+            $lastIssued = null;
+
+            while ($cursor->lt($stop)) {
+                $this->fatture->create([
+                    'client_contact_id' => $rec->client_contact_id,
+                    'issued_at' => $cursor->toDateString(),
+                    'lines' => (array) $rec->lines,
+                    'currency' => $rec->currency,
+                    'owner_user_id' => $rec->owner_user_id,
+                ]);
+
+                $generated++;
+                $lastIssued = $cursor->copy();
+                $cursor = $this->advanceFrom($rec, $cursor);
+            }
+
+            if ($lastIssued !== null) {
+                $rec->update(['last_issued_at' => $lastIssued]);
+            }
+
+            return $generated;
         });
     }
 
@@ -82,22 +136,38 @@ class RecurringFatturaService
     }
 
     /**
-     * Advance next_issue_at by one period of the schedule's frequency.
-     * For monthly schedules with a day_of_month set, lands on that day
-     * of the *target* month, clamped to the month's length so
+     * Advance a date by one period of the schedule's frequency.
+     * For monthly schedules with a day_of_month set, lands on that
+     * day of the *target* month, clamped to the month's length so
      * Jan 31 + 1mo → Feb 28 rather than overflowing into March via
      * Carbon's default addMonth() behaviour.
      */
-    private function advanceNextIssueAt(RecurringFattura $rec): Carbon
+    private function advanceFrom(RecurringFattura $rec, CarbonInterface $from): Carbon
     {
         if ($rec->frequency === RecurringFrequency::Monthly && $rec->day_of_month) {
-            // Snap to first-of-month before adding so addMonth() can't
-            // overflow on a day that doesn't exist in the next month.
-            $base = $rec->next_issue_at->copy()->startOfMonth()->addMonth();
+            $base = Carbon::instance($from)->copy()->startOfMonth()->addMonth();
             $clamped = min($rec->day_of_month, $base->daysInMonth);
+
             return $base->day($clamped);
         }
 
-        return $rec->frequency->advance($rec->next_issue_at);
+        return Carbon::instance($rec->frequency->advance($from));
+    }
+
+    /**
+     * Snap a starting date onto the schedule's day_of_month (for
+     * monthly schedules). For other frequencies the date is returned
+     * unchanged — the caller's chosen "from" date IS the schedule
+     * anchor for that backfill run.
+     */
+    private function snapToSchedule(RecurringFattura $rec, Carbon $date): Carbon
+    {
+        if ($rec->frequency === RecurringFrequency::Monthly && $rec->day_of_month) {
+            $clamped = min($rec->day_of_month, $date->daysInMonth);
+
+            return $date->copy()->day($clamped);
+        }
+
+        return $date;
     }
 }
