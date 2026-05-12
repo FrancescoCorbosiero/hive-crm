@@ -223,6 +223,55 @@ class FatturaResource extends Resource
                 self::renderPdfAction(),
                 self::downloadPdfAction(),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('recordPaymentsOnIssueDate')
+                        ->label(__('documents/labels.actions.record_payments_bulk'))
+                        ->icon('heroicon-o-banknotes')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('documents/labels.actions.record_payments_bulk_heading'))
+                        ->modalDescription(__('documents/labels.actions.record_payments_bulk_description'))
+                        ->modalSubmitActionLabel(__('documents/labels.actions.record_payments_bulk_submit'))
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $service = app(PaymentsService::class);
+                            $done = 0;
+                            $skipped = 0;
+                            $failed = 0;
+
+                            foreach ($records as $fattura) {
+                                if (in_array($fattura->payment_status, [PaymentStatus::Paid, PaymentStatus::Cancelled], true)) {
+                                    $skipped++;
+                                    continue;
+                                }
+
+                                try {
+                                    $service->record($fattura->id, [
+                                        'amount_cents' => $fattura->outstanding()->cents,
+                                        'paid_at' => $fattura->issued_at?->toDateString() ?? now()->toDateString(),
+                                        'method' => PaymentMethod::BankTransfer->value,
+                                    ]);
+                                    $done++;
+                                } catch (\Throwable $e) {
+                                    $failed++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title(__('documents/labels.actions.record_payments_bulk_success', [
+                                    'done' => $done,
+                                ]))
+                                ->body(__('documents/labels.actions.record_payments_bulk_summary', [
+                                    'skipped' => $skipped,
+                                    'failed' => $failed,
+                                ]))
+                                ->send();
+                        }),
+
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('issued_at', 'desc');
     }
 

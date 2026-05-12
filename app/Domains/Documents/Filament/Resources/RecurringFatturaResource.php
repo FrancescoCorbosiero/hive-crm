@@ -201,6 +201,11 @@ class RecurringFatturaResource extends Resource
                     ->visible(fn (RecurringFattura $r) => ! $r->is_active)
                     ->action(fn (RecurringFattura $r) => app(RecurringFatturaService::class)->resume($r->id)),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('next_issue_at');
     }
 
