@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Documents;
 
 use App\Domains\Documents\Console\Commands\IssueRecurringFattureCommand;
+use App\Domains\Documents\Console\Commands\RecomputeOverdueFattureCommand;
 use App\Domains\Documents\Services\Internal\FatturaPdfRenderer;
 use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
@@ -30,6 +31,7 @@ class DocumentsServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 IssueRecurringFattureCommand::class,
+                RecomputeOverdueFattureCommand::class,
             ]);
         }
     }

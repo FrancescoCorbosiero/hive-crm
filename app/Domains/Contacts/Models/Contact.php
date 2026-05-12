@@ -45,10 +45,13 @@ class Contact extends Model
 
     protected $fillable = [
         'name',
+        'ragione_sociale',
         'email',
         'phone',
         'vat_number',
         'tax_code',
+        'sdi_code',
+        'pec_email',
         'address',
         'notes',
         'roles',

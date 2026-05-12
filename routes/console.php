@@ -47,3 +47,9 @@ Schedule::command('fatture:issue-recurring')
     ->dailyAt('06:00')
     ->onOneServer()
     ->withoutOverlapping();
+
+// ── Documents: flip past-due fatture to Overdue ────────────────────────────
+Schedule::command('fatture:recompute-overdue')
+    ->dailyAt('06:15')
+    ->onOneServer()
+    ->withoutOverlapping();
