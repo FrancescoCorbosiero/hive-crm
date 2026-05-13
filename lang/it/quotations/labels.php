@@ -31,6 +31,14 @@ return [
         'line_qty' => 'Quantità',
         'line_unit_price' => 'Prezzo unitario',
         'line_vat_rate' => 'Aliquota IVA %',
+        'line_cadence' => 'Cadenza',
+    ],
+
+    'cadence' => [
+        'una_tantum' => 'Una tantum',
+        'monthly' => 'Mensile',
+        'quarterly' => 'Trimestrale',
+        'yearly' => 'Annuale',
     ],
 
     'sections' => [
@@ -49,7 +57,7 @@ return [
 
     'notifications' => [
         'accepted_title' => 'Preventivo accettato',
-        'accepted_body' => 'Bozza di fattura creata in stato non pagata.',
+        'accepted_body' => 'Fattura iniziale creata e abbonamenti ricorrenti schedulati per le righe non una-tantum.',
         'cannot_transition' => 'Stato non modificabile: il preventivo è già in stato finale.',
     ],
 ];

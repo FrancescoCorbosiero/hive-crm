@@ -6,7 +6,9 @@ namespace App\Domains\Quotations\Services\Public;
 
 use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
+use App\Domains\Documents\Services\Public\RecurringFatturaService;
 use App\Domains\Quotations\DTOs\QuotationDTO;
+use App\Domains\Quotations\Enums\LineCadence;
 use App\Domains\Quotations\Enums\QuotationStatus;
 use App\Domains\Quotations\Models\Quotation;
 use App\Domains\Quotations\Models\QuotationCounter;
@@ -22,6 +24,7 @@ class QuotationsService
     public function __construct(
         private readonly DocumentsService $documents,
         private readonly FatturaService $fatture,
+        private readonly RecurringFatturaService $recurring,
         private readonly QuotationPdfRenderer $renderer,
     ) {}
 
@@ -100,13 +103,25 @@ class QuotationsService
     }
 
     /**
-     * Accept a quotation and spawn a draft Fattura with the same lines
-     * + client. The Fattura allocates its own (separate) sequential
-     * number through FatturaService. Returns the new Fattura id.
+     * Accept a quotation and materialize:
      *
-     * Idempotent in the strong sense: rejected/expired quotations cannot
-     * be accepted; an already-accepted quotation throws (so the caller
-     * decides whether to surface a notice).
+     *  1. An upfront Fattura containing ALL lines (una tantum + the
+     *     first cycle of any recurring line). This is what the
+     *     customer pays at signing.
+     *  2. One RecurringFattura per recurring cadence group present on
+     *     the quotation (monthly / quarterly / yearly). Each schedule
+     *     gets `next_issue_at = issued_at + one period`, so the next
+     *     bill arrives exactly one cycle after the upfront fattura.
+     *
+     * Backward compat: lines without a `cadence` key are treated as
+     * `una_tantum` — older quotations behave exactly as before
+     * (one Fattura, no recurring schedules).
+     *
+     * Idempotent in the strong sense: rejected/expired quotations
+     * cannot be accepted; an already-accepted quotation throws.
+     *
+     * Returns the upfront Fattura id (also persisted to
+     * `quotation.fattura_id` for the existing relation surface).
      */
     public function accept(int $id): int
     {
@@ -117,13 +132,38 @@ class QuotationsService
                 throw new DomainException("Quotation {$id} is already in a final state.");
             }
 
+            $issuedAt = Carbon::now();
+            $allLines = (array) $q->lines;
+
+            // Upfront fattura with EVERY line (una tantum + first cycle
+            // of recurrings). Cadence is dropped — a fattura line is a
+            // single billing event, not a schedule.
             $fattura = $this->fatture->create([
                 'client_contact_id' => $q->client_contact_id,
-                'issued_at' => Carbon::now(),
-                'lines' => (array) $q->lines,
+                'issued_at' => $issuedAt,
+                'lines' => $this->stripCadenceKey($allLines),
                 'currency' => $q->currency,
                 'owner_user_id' => $q->owner_user_id,
             ]);
+
+            // Seed one RecurringFattura per recurring cadence group.
+            foreach ($this->groupRecurringLines($allLines) as $cadenceValue => $lines) {
+                $cadence = LineCadence::from($cadenceValue);
+                $frequency = $cadence->toRecurringFrequency();
+                if ($frequency === null) {
+                    continue;
+                }
+
+                $this->recurring->create([
+                    'name' => $q->name.' — '.$cadence->label(),
+                    'client_contact_id' => $q->client_contact_id,
+                    'frequency' => $frequency->value,
+                    'lines' => $this->stripCadenceKey($lines),
+                    'currency' => $q->currency,
+                    'next_issue_at' => $frequency->advance($issuedAt),
+                    'owner_user_id' => $q->owner_user_id,
+                ]);
+            }
 
             $q->update([
                 'status' => QuotationStatus::Accepted->value,
@@ -132,6 +172,38 @@ class QuotationsService
 
             return $fattura->id;
         });
+    }
+
+    /**
+     * @param  array<int, array<string,mixed>>  $lines
+     * @return array<string, array<int, array<string,mixed>>>
+     *         keyed by cadence value, only non-una_tantum groups
+     */
+    private function groupRecurringLines(array $lines): array
+    {
+        $groups = [];
+        foreach ($lines as $line) {
+            $cadence = $line['cadence'] ?? LineCadence::UnaTantum->value;
+            if ($cadence === LineCadence::UnaTantum->value) {
+                continue;
+            }
+            $groups[$cadence][] = $line;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @param  array<int, array<string,mixed>>  $lines
+     * @return array<int, array<string,mixed>>
+     */
+    private function stripCadenceKey(array $lines): array
+    {
+        return array_map(function (array $line): array {
+            unset($line['cadence']);
+
+            return $line;
+        }, $lines);
     }
 
     public function reject(int $id): void

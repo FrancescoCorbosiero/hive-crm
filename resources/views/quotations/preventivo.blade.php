@@ -51,6 +51,7 @@
         <thead>
             <tr>
                 <th>Descrizione</th>
+                <th>Cadenza</th>
                 <th class="right">Qtà</th>
                 <th class="right">Prezzo</th>
                 <th class="right">IVA %</th>
@@ -64,9 +65,13 @@
                 $unit = (int)($line['unit_price_cents'] ?? 0);
                 $rate = (float)($line['vat_rate'] ?? 0);
                 $sub = (int) round($qty * $unit);
+                $cadence = \App\Domains\Quotations\Enums\LineCadence::tryFrom(
+                    $line['cadence'] ?? \App\Domains\Quotations\Enums\LineCadence::UnaTantum->value
+                ) ?? \App\Domains\Quotations\Enums\LineCadence::UnaTantum;
             @endphp
             <tr>
                 <td>{{ $line['description'] ?? '' }}</td>
+                <td>{{ $cadence->label() }}</td>
                 <td class="right">{{ rtrim(rtrim(number_format($qty, 2, ',', '.'), '0'), ',') }}</td>
                 <td class="right">{{ (new \App\Shared\ValueObjects\Money($unit, $q->currency))->format($locale) }}</td>
                 <td class="right">{{ rtrim(rtrim(number_format($rate, 2, ',', '.'), '0'), ',') }}%</td>
