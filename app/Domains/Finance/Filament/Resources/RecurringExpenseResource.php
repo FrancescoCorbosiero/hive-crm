@@ -74,11 +74,11 @@ class RecurringExpenseResource extends Resource
                         ->options(self::categoryOptions())
                         ->searchable(),
 
-                    Forms\Components\Select::make('vendor_contact_id')
-                        ->label(__('finance/recurring_expenses.fields.vendor'))
-                        ->options(fn () => Contact::query()->orderBy('name')->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload(),
+                    \App\Shared\Filament\ContactPicker::make(
+                        'vendor_contact_id',
+                        [\App\Domains\Contacts\Enums\ContactRole::Vendor],
+                    )
+                        ->label(__('finance/recurring_expenses.fields.vendor')),
                 ]),
 
             Forms\Components\Section::make(__('finance/recurring_expenses.sections.schedule'))

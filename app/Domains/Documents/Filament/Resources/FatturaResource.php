@@ -98,11 +98,8 @@ class FatturaResource extends Resource
                         ->numeric()
                         ->disabled()
                         ->dehydrated(false),
-                    Forms\Components\Select::make('client_contact_id')
+                    \App\Shared\Filament\ContactPicker::make('client_contact_id')
                         ->label(__('documents/labels.fields.client'))
-                        ->options(fn () => Contact::query()->orderBy('name')->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload()
                         ->required(),
                     Forms\Components\DatePicker::make('issued_at')
                         ->label(__('documents/labels.fields.issued_at'))

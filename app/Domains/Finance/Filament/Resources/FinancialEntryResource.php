@@ -100,11 +100,8 @@ class FinancialEntryResource extends Resource
                         ->numeric()
                         ->visible(fn (Forms\Get $get) => filled($get('source_type'))),
 
-                    Forms\Components\Select::make('contact_id')
-                        ->label(__('finance/entries.fields.contact'))
-                        ->options(fn () => Contact::query()->orderBy('name')->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload(),
+                    \App\Shared\Filament\ContactPicker::make('contact_id')
+                        ->label(__('finance/entries.fields.contact')),
                 ]),
 
             Forms\Components\Section::make(__('finance/entries.sections.extras'))

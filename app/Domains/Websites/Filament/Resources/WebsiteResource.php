@@ -91,13 +91,8 @@ class WebsiteResource extends Resource
                         ->default(WebsiteStatus::Active->value)
                         ->required(),
 
-                    Forms\Components\Select::make('owner_contact_id')
-                        ->label(__('websites/labels.owner_contact'))
-                        ->options(fn () => Contact::query()
-                            ->orderBy('name')
-                            ->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload(),
+                    \App\Shared\Filament\ContactPicker::make('owner_contact_id')
+                        ->label(__('websites/labels.owner_contact')),
 
                     Forms\Components\Textarea::make('notes')
                         ->label(__('websites/labels.notes'))

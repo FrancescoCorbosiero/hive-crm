@@ -76,11 +76,8 @@ class QuotationResource extends Resource
                         ->label(__('quotations/labels.fields.name'))
                         ->required()
                         ->columnSpan(3),
-                    Forms\Components\Select::make('client_contact_id')
+                    \App\Shared\Filament\ContactPicker::make('client_contact_id')
                         ->label(__('quotations/labels.fields.client'))
-                        ->options(fn () => Contact::query()->orderBy('name')->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload()
                         ->required(),
                     Forms\Components\DatePicker::make('issued_at')
                         ->label(__('quotations/labels.fields.issued_at'))
