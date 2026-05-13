@@ -31,6 +31,14 @@ return [
         'line_qty' => 'Qty',
         'line_unit_price' => 'Unit price',
         'line_vat_rate' => 'VAT rate %',
+        'line_cadence' => 'Cadence',
+    ],
+
+    'cadence' => [
+        'una_tantum' => 'One-time',
+        'monthly' => 'Monthly',
+        'quarterly' => 'Quarterly',
+        'yearly' => 'Yearly',
     ],
 
     'sections' => [
@@ -49,7 +57,7 @@ return [
 
     'notifications' => [
         'accepted_title' => 'Quotation accepted',
-        'accepted_body' => 'Draft invoice created in unpaid state.',
+        'accepted_body' => 'Upfront invoice issued and recurring schedules created for non-one-time lines.',
         'cannot_transition' => 'Cannot transition: the quotation is already in a final state.',
     ],
 ];

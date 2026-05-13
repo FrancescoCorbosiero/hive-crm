@@ -111,8 +111,13 @@ class QuotationResource extends Resource
                             Forms\Components\TextInput::make('vat_rate')
                                 ->label(__('quotations/labels.fields.line_vat_rate'))
                                 ->numeric()->default(22)->required(),
+                            Forms\Components\Select::make('cadence')
+                                ->label(__('quotations/labels.fields.line_cadence'))
+                                ->options(\App\Domains\Quotations\Enums\LineCadence::options())
+                                ->default(\App\Domains\Quotations\Enums\LineCadence::UnaTantum->value)
+                                ->required(),
                         ])
-                        ->columns(5)
+                        ->columns(6)
                         ->defaultItems(1)
                         ->reorderable(),
                 ]),
