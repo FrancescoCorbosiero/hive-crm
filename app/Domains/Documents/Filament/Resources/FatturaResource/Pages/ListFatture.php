@@ -65,10 +65,22 @@ class ListFatture extends ListRecords
                 $results = $importer->importMany($payload, auth()->id());
 
                 $imported = collect($results)->where('status', 'imported');
+                $outbound = $imported->where('direction', 'outbound');
+                $inbound = $imported->where('direction', 'inbound');
                 $skipped = collect($results)->where('status', 'skipped');
                 $failed = collect($results)->where('status', 'failed');
 
                 $bodyLines = [];
+                if ($outbound->isNotEmpty()) {
+                    $bodyLines[] = __('documents/labels.actions.import_xml_outbound_count', [
+                        'count' => $outbound->count(),
+                    ]);
+                }
+                if ($inbound->isNotEmpty()) {
+                    $bodyLines[] = __('documents/labels.actions.import_xml_inbound_count', [
+                        'count' => $inbound->count(),
+                    ]);
+                }
                 if ($skipped->isNotEmpty()) {
                     $bodyLines[] = __('documents/labels.actions.import_xml_skipped', [
                         'count' => $skipped->count(),

@@ -20,9 +20,28 @@ return [
         'codice_fiscale' => env('OWNER_CODICE_FISCALE'),
         'partita_iva' => env('OWNER_PARTITA_IVA'),
 
-        // RF01 = ordinary regime, RF19 = forfettario. Used by the
-        // exporter (Phase 2). Not consulted during import.
+        // Denominazione (or Nome/Cognome) on the FatturaPA Cedente block.
+        // Forfettario users typically use the full business name here.
+        'denominazione' => env('OWNER_DENOMINAZIONE'),
+
+        // RF01 = ordinary regime, RF19 = forfettario. RF19 invoices
+        // are VAT-exempt; the exporter writes Natura = N2.2 in
+        // DatiRiepilogo by default for those.
         'regime_fiscale' => env('OWNER_REGIME_FISCALE', 'RF19'),
+
+        // Default Natura for VAT-exempt invoices. Override on a
+        // per-fattura basis via the natura column.
+        'natura_default' => env('OWNER_NATURA_DEFAULT', 'N2.2'),
+
+        // Italian fiscal address (Sede) required by the SdI XSD.
+        'sede' => [
+            'indirizzo' => env('OWNER_SEDE_INDIRIZZO'),
+            'numero_civico' => env('OWNER_SEDE_CIVICO'),
+            'cap' => env('OWNER_SEDE_CAP'),
+            'comune' => env('OWNER_SEDE_COMUNE'),
+            'provincia' => env('OWNER_SEDE_PROVINCIA'),
+            'nazione' => env('OWNER_SEDE_NAZIONE', 'IT'),
+        ],
     ],
 
 ];

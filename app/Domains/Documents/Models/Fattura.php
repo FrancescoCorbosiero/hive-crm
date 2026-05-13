@@ -45,6 +45,8 @@ class Fattura extends Model
         'paid_amount_cents',
         'currency',
         'payment_status',
+        'regime_fiscale',
+        'natura',
         'document_id',
         'owner_user_id',
     ];

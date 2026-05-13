@@ -9,6 +9,8 @@ use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Models\FinancialEntry;
 use DomainException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -85,54 +87,14 @@ class FatturaPaImporter
             }
 
             $parsed = $this->parse($doc);
-            $this->guardDirection($parsed);
             $this->guardTotals($parsed);
 
-            return DB::transaction(function () use ($filename, $parsed, $ownerUserId) {
-                // Idempotency: existing (year, number) → skip.
-                $existing = Fattura::query()
-                    ->where('year', $parsed['year'])
-                    ->where('number', $parsed['number'])
-                    ->first();
+            $direction = $this->detectDirection($parsed);
 
-                if ($existing) {
-                    return [
-                        'status' => 'skipped',
-                        'filename' => $filename,
-                        'fattura_id' => $existing->id,
-                        'year' => $parsed['year'],
-                        'number' => $parsed['number'],
-                        'reason' => 'already_exists',
-                    ];
-                }
-
-                $contactId = $this->resolveOrCreateContact($parsed['cessionario']);
-
-                $fattura = Fattura::query()->create([
-                    'year' => $parsed['year'],
-                    'number' => $parsed['number'],
-                    'client_contact_id' => $contactId,
-                    'issued_at' => $parsed['issued_at'],
-                    'lines' => $parsed['lines'],
-                    'subtotal_cents' => $parsed['subtotal_cents'],
-                    'vat_cents' => $parsed['vat_cents'],
-                    'total_cents' => $parsed['total_cents'],
-                    'currency' => $parsed['currency'],
-                    'payment_status' => PaymentStatus::Unpaid->value,
-                    'owner_user_id' => $ownerUserId,
-                ]);
-
-                $this->syncCounter($parsed['year'], $parsed['number']);
-
-                return [
-                    'status' => 'imported',
-                    'filename' => $filename,
-                    'fattura_id' => $fattura->id,
-                    'year' => $parsed['year'],
-                    'number' => $parsed['number'],
-                    'reason' => null,
-                ];
-            });
+            return match ($direction) {
+                'outbound' => $this->persistOutbound($filename, $parsed, $ownerUserId),
+                'inbound' => $this->persistInbound($filename, $parsed, $ownerUserId),
+            };
         } catch (\Throwable $e) {
             return [
                 'status' => 'failed',
@@ -358,11 +320,19 @@ class FatturaPaImporter
     // ── Guards ─────────────────────────────────────────────────────────
 
     /**
-     * Reject XMLs where we aren't the Cedente. Compares against config
-     * keys; if neither is set, errors out — silently importing the
-     * wrong direction would be a tax disaster.
+     * Detect whether this XML is outbound (we are the Cedente — sale,
+     * → Fattura row) or inbound (we are the Cessionario — purchase,
+     * → FinancialEntry(loss) row). Either side matches by Codice
+     * Fiscale or Partita IVA — whichever identifier the XML carries.
+     *
+     * Throws if neither side matches us, or if both do (impossible
+     * data, refuse to guess). Refuses to run when owner config is
+     * blank: silently misclassifying direction would corrupt the
+     * ledger.
+     *
+     * @return 'outbound'|'inbound'
      */
-    private function guardDirection(array $parsed): void
+    private function detectDirection(array $parsed): string
     {
         $ownerCf = strtoupper((string) config('fattura.cedente.codice_fiscale'));
         $ownerPiva = (string) config('fattura.cedente.partita_iva');
@@ -371,21 +341,164 @@ class FatturaPaImporter
             throw new DomainException('OWNER_CODICE_FISCALE / OWNER_PARTITA_IVA are not configured. Set them in .env before importing.');
         }
 
-        $cedenteCf = (string) ($parsed['cedente']['codice_fiscale'] ?? '');
-        $cedentePiva = (string) ($parsed['cedente']['partita_iva'] ?? '');
+        $matches = function (array $party) use ($ownerCf, $ownerPiva): bool {
+            $cf = strtoupper((string) ($party['codice_fiscale'] ?? ''));
+            $piva = (string) ($party['partita_iva'] ?? '');
+            $cfMatches = $ownerCf !== '' && $cf !== '' && $ownerCf === $cf;
+            $pivaMatches = $ownerPiva !== '' && $piva !== '' && $ownerPiva === $piva;
 
-        $cfMatches = $ownerCf !== '' && $cedenteCf !== '' && $ownerCf === $cedenteCf;
-        $pivaMatches = $ownerPiva !== '' && $cedentePiva !== '' && $ownerPiva === $cedentePiva;
+            return $cfMatches || $pivaMatches;
+        };
 
-        if (! $cfMatches && ! $pivaMatches) {
-            throw new DomainException(sprintf(
-                'Direction mismatch: XML Cedente is %s / %s but configured owner is %s / %s. Inbound purchase imports are not supported in this flow.',
-                $cedenteCf ?: '—',
-                $cedentePiva ?: '—',
-                $ownerCf ?: '—',
-                $ownerPiva ?: '—',
-            ));
+        $weAreCedente = $matches($parsed['cedente']);
+        $weAreCessionario = $matches($parsed['cessionario']);
+
+        if ($weAreCedente && $weAreCessionario) {
+            throw new DomainException('XML lists the owner as both Cedente and Cessionario — refusing to guess direction.');
         }
+
+        if ($weAreCedente) {
+            return 'outbound';
+        }
+
+        if ($weAreCessionario) {
+            return 'inbound';
+        }
+
+        throw new DomainException(sprintf(
+            "Neither party in the XML matches the configured owner (%s / %s). Cedente: %s / %s. Cessionario: %s / %s.",
+            $ownerCf ?: '—', $ownerPiva ?: '—',
+            $parsed['cedente']['codice_fiscale'] ?? '—', $parsed['cedente']['partita_iva'] ?? '—',
+            $parsed['cessionario']['codice_fiscale'] ?? '—', $parsed['cessionario']['partita_iva'] ?? '—',
+        ));
+    }
+
+    /**
+     * Outbound (sale): we are the Cedente. Materialize a Fattura row,
+     * bump the per-year counter, resolve / create the Cessionario as
+     * a customer Contact.
+     *
+     * @return array<string, mixed>
+     */
+    private function persistOutbound(string $filename, array $parsed, ?int $ownerUserId): array
+    {
+        return DB::transaction(function () use ($filename, $parsed, $ownerUserId) {
+            $existing = Fattura::query()
+                ->where('year', $parsed['year'])
+                ->where('number', $parsed['number'])
+                ->first();
+
+            if ($existing) {
+                return [
+                    'status' => 'skipped',
+                    'direction' => 'outbound',
+                    'filename' => $filename,
+                    'fattura_id' => $existing->id,
+                    'year' => $parsed['year'],
+                    'number' => $parsed['number'],
+                    'reason' => 'already_exists',
+                ];
+            }
+
+            $contactId = $this->resolveOrCreateContact($parsed['cessionario'], ContactRole::Customer);
+
+            $fattura = Fattura::query()->create([
+                'year' => $parsed['year'],
+                'number' => $parsed['number'],
+                'client_contact_id' => $contactId,
+                'issued_at' => $parsed['issued_at'],
+                'lines' => $parsed['lines'],
+                'subtotal_cents' => $parsed['subtotal_cents'],
+                'vat_cents' => $parsed['vat_cents'],
+                'total_cents' => $parsed['total_cents'],
+                'currency' => $parsed['currency'],
+                'payment_status' => PaymentStatus::Unpaid->value,
+                'owner_user_id' => $ownerUserId,
+            ]);
+
+            $this->syncCounter($parsed['year'], $parsed['number']);
+
+            return [
+                'status' => 'imported',
+                'direction' => 'outbound',
+                'filename' => $filename,
+                'fattura_id' => $fattura->id,
+                'year' => $parsed['year'],
+                'number' => $parsed['number'],
+                'reason' => null,
+            ];
+        });
+    }
+
+    /**
+     * Inbound (purchase): we are the Cessionario. Materialize a
+     * FinancialEntry(loss) tagged with a stable external_ref so
+     * re-importing is idempotent. The Cedente resolves to a vendor
+     * Contact; we do NOT touch the Fattura counter — purchase
+     * invoices are someone else's numbering space.
+     *
+     * @return array<string, mixed>
+     */
+    private function persistInbound(string $filename, array $parsed, ?int $ownerUserId): array
+    {
+        return DB::transaction(function () use ($filename, $parsed, $ownerUserId) {
+            $cedentePiva = (string) ($parsed['cedente']['partita_iva']
+                ?? $parsed['cedente']['codice_fiscale']
+                ?? 'unknown');
+
+            $externalRef = sprintf(
+                'fpa:%s:%d:%d',
+                $cedentePiva,
+                $parsed['year'],
+                $parsed['number'],
+            );
+
+            $existing = FinancialEntry::query()
+                ->where('external_ref', $externalRef)
+                ->first();
+
+            if ($existing) {
+                return [
+                    'status' => 'skipped',
+                    'direction' => 'inbound',
+                    'filename' => $filename,
+                    'financial_entry_id' => $existing->id,
+                    'external_ref' => $externalRef,
+                    'reason' => 'already_exists',
+                ];
+            }
+
+            $vendorId = $this->resolveOrCreateContact($parsed['cedente'], ContactRole::Vendor);
+            $vendorName = $parsed['cedente']['denominazione']
+                ?? $parsed['cedente']['ragione_sociale']
+                ?? 'Fornitore';
+
+            $entry = FinancialEntry::query()->create([
+                'type' => FinancialEntryType::Loss->value,
+                'amount_cents' => $parsed['total_cents'],
+                'currency' => $parsed['currency'],
+                'occurred_at' => $parsed['issued_at'],
+                'description' => sprintf(
+                    'Fattura %d/%03d da %s',
+                    $parsed['year'],
+                    $parsed['number'],
+                    $vendorName,
+                ),
+                'category' => null,
+                'contact_id' => $vendorId,
+                'external_ref' => $externalRef,
+                'owner_user_id' => $ownerUserId,
+            ]);
+
+            return [
+                'status' => 'imported',
+                'direction' => 'inbound',
+                'filename' => $filename,
+                'financial_entry_id' => $entry->id,
+                'external_ref' => $externalRef,
+                'reason' => null,
+            ];
+        });
     }
 
     private function guardTotals(array $parsed): void
@@ -402,34 +515,39 @@ class FatturaPaImporter
 
     // ── Persistence helpers ────────────────────────────────────────────
 
-    private function resolveOrCreateContact(array $cessionario): int
+    /**
+     * Match contact by Partita IVA, then Codice Fiscale; create if
+     * neither hits. The role tag (Customer for outbound counterparties,
+     * Vendor for inbound) is set on create only — an existing contact
+     * keeps whichever roles it already had.
+     */
+    private function resolveOrCreateContact(array $party, ContactRole $defaultRole): int
     {
-        $piva = $cessionario['partita_iva'];
-        $cf = $cessionario['codice_fiscale'];
+        $piva = $party['partita_iva'];
+        $cf = $party['codice_fiscale'];
 
-        $query = Contact::query();
         if ($piva) {
-            $existing = (clone $query)->where('vat_number', $piva)->first();
+            $existing = Contact::query()->where('vat_number', $piva)->first();
             if ($existing) {
                 return $existing->id;
             }
         }
         if ($cf) {
-            $existing = (clone $query)->where('tax_code', $cf)->first();
+            $existing = Contact::query()->where('tax_code', $cf)->first();
             if ($existing) {
                 return $existing->id;
             }
         }
 
-        $name = $cessionario['denominazione'] ?: ($cessionario['ragione_sociale'] ?: 'Cliente sconosciuto');
+        $name = $party['denominazione'] ?: ($party['ragione_sociale'] ?: 'Sconosciuto');
 
         $contact = Contact::query()->create([
             'name' => $name,
-            'ragione_sociale' => $cessionario['ragione_sociale'],
+            'ragione_sociale' => $party['ragione_sociale'],
             'vat_number' => $piva,
             'tax_code' => $cf,
-            'address' => $cessionario['address'],
-            'roles' => [ContactRole::Customer->value],
+            'address' => $party['address'],
+            'roles' => [$defaultRole->value],
             'do_not_email' => false,
         ]);
 

@@ -10,6 +10,7 @@ use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Filament\Resources\FatturaResource\Pages;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Services\Public\DocumentsService;
+use App\Domains\Documents\Services\Internal\FatturaPaExporter;
 use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Shared\Filament\MoneyInput;
@@ -219,6 +220,7 @@ class FatturaResource extends Resource
                 Tables\Actions\EditAction::make(),
                 self::renderPdfAction(),
                 self::downloadPdfAction(),
+                self::exportXmlAction(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -365,6 +367,38 @@ class FatturaResource extends Resource
             ->icon('heroicon-o-arrow-down-tray')
             ->visible(fn (Fattura $f) => $f->document_id !== null)
             ->url(fn (Fattura $f) => app(DocumentsService::class)->temporaryUrl($f->document_id), shouldOpenInNewTab: true);
+    }
+
+    /**
+     * Generate the FatturaPA (FPR12) XML for a single fattura and
+     * stream it as a download. Validates owner config + Cessionario
+     * data BEFORE returning; if anything's missing, surfaces a clear
+     * error notification instead of emitting an invalid XML.
+     */
+    private static function exportXmlAction(): Action
+    {
+        return Action::make('exportXml')
+            ->label(__('documents/labels.actions.export_xml'))
+            ->icon('heroicon-o-code-bracket')
+            ->color('info')
+            ->action(function (Fattura $f) {
+                try {
+                    $out = app(FatturaPaExporter::class)->export($f->id);
+
+                    return response()->streamDownload(
+                        fn () => print($out['xml']),
+                        $out['filename'],
+                        ['Content-Type' => 'application/xml'],
+                    );
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('documents/labels.actions.export_xml_failure'))
+                        ->body($e->getMessage())
+                        ->persistent()
+                        ->send();
+                }
+            });
     }
 
     public static function getRelations(): array

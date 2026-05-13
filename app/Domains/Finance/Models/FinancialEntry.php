@@ -41,6 +41,7 @@ class FinancialEntry extends Model
         'source_id',
         'contact_id',
         'notes',
+        'external_ref',
         'owner_user_id',
     ];
 
