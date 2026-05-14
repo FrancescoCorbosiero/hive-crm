@@ -84,6 +84,7 @@ return [
         'import_xml_failed' => ':count files failed',
         'export_xml' => 'Export XML',
         'export_xml_failure' => 'XML export failed',
+        'duplicate_description' => 'Creates a new fattura with the same lines and client, a freshly-allocated number, status set to unpaid.',
         'backfill' => 'Backfill past months',
         'backfill_heading' => 'Backfill past invoices',
         'backfill_description' => 'Issues one invoice per cycle from the chosen date up to (but not including) the configured next-issue date, each backdated to its cycle. Run this BEFORE issuing any current-period invoices for the same year — numbering is assigned in creation order.',

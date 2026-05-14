@@ -18,4 +18,12 @@ return [
         'documents' => 'Documenti',
         'settings' => 'Impostazioni',
     ],
+
+    'actions' => [
+        'duplicate' => 'Duplica',
+        'duplicate_heading' => 'Duplica record',
+        'duplicate_success' => 'Record duplicato',
+        'duplicate_failure' => 'Duplicazione non riuscita',
+        'copy_suffix' => '(copia)',
+    ],
 ];

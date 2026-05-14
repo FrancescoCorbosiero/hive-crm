@@ -142,6 +142,17 @@ class RecurringFatturaResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ReplicateAction::make()
+                    ->label(__('app.actions.duplicate'))
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->excludeAttributes(['last_issued_at', 'created_at', 'updated_at'])
+                    ->beforeReplicaSaved(function (RecurringFattura $replica) {
+                        $replica->name = $replica->name.' '.__('app.actions.copy_suffix');
+                        $replica->next_issue_at = now()->toDateString();
+                        $replica->is_active = true;
+                    })
+                    ->successNotificationTitle(__('app.actions.duplicate_success')),
                 Action::make('issueNow')
                     ->label(__('documents/labels.actions.issue_now'))
                     ->icon('heroicon-o-document-plus')

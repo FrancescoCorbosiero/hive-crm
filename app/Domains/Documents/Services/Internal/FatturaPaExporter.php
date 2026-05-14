@@ -54,26 +54,33 @@ class FatturaPaExporter
      */
     private function cedenteConfig(): array
     {
-        $cf = (string) config('fattura.cedente.codice_fiscale');
-        $piva = (string) config('fattura.cedente.partita_iva');
-        $deno = (string) config('fattura.cedente.denominazione');
-        $sede = (array) config('fattura.cedente.sede');
+        $cedente = app(\App\Domains\Settings\Services\Public\BusinessProfileService::class)->cedente();
+
+        $cf = (string) ($cedente['codice_fiscale'] ?? '');
+        $piva = (string) ($cedente['partita_iva'] ?? '');
+        $deno = (string) ($cedente['denominazione'] ?? '');
+        $sede = (array) ($cedente['sede'] ?? []);
 
         $missing = [];
-        foreach (['codice_fiscale' => $cf, 'partita_iva' => $piva, 'denominazione' => $deno] as $k => $v) {
-            if ($v === '') {
-                $missing[] = 'OWNER_'.strtoupper($k);
-            }
+        if ($cf === '') {
+            $missing[] = 'codice_fiscale';
+        }
+        if ($piva === '') {
+            $missing[] = 'partita_iva';
+        }
+        if ($deno === '') {
+            $missing[] = 'denominazione';
         }
         foreach (['indirizzo', 'cap', 'comune', 'provincia'] as $k) {
             if (empty($sede[$k])) {
-                $missing[] = 'OWNER_SEDE_'.strtoupper($k);
+                $missing[] = 'sede.'.$k;
             }
         }
 
         if ($missing !== []) {
             throw new DomainException(
-                'Missing cedente config — set in .env: '.implode(', ', $missing),
+                'Missing business profile fields — fill them in Settings → Business profile: '
+                .implode(', ', $missing),
             );
         }
 
@@ -81,7 +88,7 @@ class FatturaPaExporter
             'codice_fiscale' => strtoupper($cf),
             'partita_iva' => $piva,
             'denominazione' => $deno,
-            'regime_fiscale' => (string) config('fattura.cedente.regime_fiscale', 'RF19'),
+            'regime_fiscale' => (string) ($cedente['regime_fiscale'] ?? 'RF19'),
             'sede' => $sede,
         ];
     }
