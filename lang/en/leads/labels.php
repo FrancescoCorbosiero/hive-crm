@@ -7,6 +7,7 @@ return [
     'fields' => [
         'name' => 'Name',
         'company_name' => 'Company',
+        'social_url' => 'Social URL',
         'email' => 'Email',
         'phone' => 'Phone',
         'source' => 'Source',
@@ -18,14 +19,22 @@ return [
         'notes' => 'Notes',
         'converted_contact' => 'Created contact',
         'converted_at' => 'Converted at',
+        'business_category' => 'Industry',
+        'website_type' => 'Website type',
+        'budget_tier' => 'Budget tier',
+        'is_redesign' => 'Redesign',
+        'is_estero' => 'Foreign client',
     ],
 
     'helpers' => [
         'company_name' => 'Auto-filled from the email domain when left blank.',
+        'is_redesign' => 'They already have a website and want it redone.',
+        'is_estero' => 'Client is based outside Italy.',
     ],
 
     'sections' => [
         'identity' => 'Identity',
+        'qualification' => 'Qualification',
         'pipeline' => 'Pipeline',
         'extras' => 'Notes',
     ],

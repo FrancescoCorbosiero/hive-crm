@@ -7,6 +7,7 @@ return [
     'fields' => [
         'name' => 'Nome',
         'company_name' => 'Azienda',
+        'social_url' => 'URL social',
         'email' => 'Email',
         'phone' => 'Telefono',
         'source' => 'Provenienza',
@@ -18,14 +19,22 @@ return [
         'notes' => 'Note',
         'converted_contact' => 'Contatto creato',
         'converted_at' => 'Convertito il',
+        'business_category' => 'Settore',
+        'website_type' => 'Tipo sito',
+        'budget_tier' => 'Fascia budget',
+        'is_redesign' => 'Redesign',
+        'is_estero' => 'Estero',
     ],
 
     'helpers' => [
         'company_name' => 'Compilato automaticamente dal dominio email se lasciato vuoto.',
+        'is_redesign' => 'Il cliente ha già un sito e vuole rifarlo.',
+        'is_estero' => 'Cliente con sede fuori dall\'Italia.',
     ],
 
     'sections' => [
         'identity' => 'Anagrafica',
+        'qualification' => 'Qualifica',
         'pipeline' => 'Pipeline',
         'extras' => 'Note',
     ],

@@ -85,10 +85,41 @@ class LeadResource extends Resource
                     Forms\Components\TextInput::make('phone')
                         ->label(__('leads/labels.fields.phone'))
                         ->tel(),
+                    Forms\Components\TextInput::make('social_url')
+                        ->label(__('leads/labels.fields.social_url'))
+                        ->url()
+                        ->placeholder('https://instagram.com/...')
+                        ->maxLength(255)
+                        ->columnSpan(2),
                     Forms\Components\Select::make('source')
                         ->label(__('leads/labels.fields.source'))
                         ->options(LeadSource::options())
                         ->searchable(),
+                ]),
+
+            Forms\Components\Section::make(__('leads/labels.sections.qualification'))
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Select::make('business_category')
+                        ->label(__('leads/labels.fields.business_category'))
+                        ->options(\App\Domains\Leads\Enums\BusinessCategory::options())
+                        ->searchable(),
+                    Forms\Components\Select::make('website_type')
+                        ->label(__('leads/labels.fields.website_type'))
+                        ->options(\App\Domains\Leads\Enums\WebsiteType::options())
+                        ->searchable(),
+                    Forms\Components\Select::make('budget_tier')
+                        ->label(__('leads/labels.fields.budget_tier'))
+                        ->options(\App\Domains\Leads\Enums\BudgetTier::options())
+                        ->default(\App\Domains\Leads\Enums\BudgetTier::Unknown->value),
+                    Forms\Components\Group::make([
+                        Forms\Components\Toggle::make('is_redesign')
+                            ->label(__('leads/labels.fields.is_redesign'))
+                            ->helperText(__('leads/labels.helpers.is_redesign')),
+                        Forms\Components\Toggle::make('is_estero')
+                            ->label(__('leads/labels.fields.is_estero'))
+                            ->helperText(__('leads/labels.helpers.is_estero')),
+                    ]),
                 ]),
 
             Forms\Components\Section::make(__('leads/labels.sections.pipeline'))
@@ -141,10 +172,37 @@ class LeadResource extends Resource
                     ->searchable()
                     ->copyable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('business_category')
+                    ->label(__('leads/labels.fields.business_category'))
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn (?\App\Domains\Leads\Enums\BusinessCategory $state) => $state?->label() ?? '—')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('website_type')
+                    ->label(__('leads/labels.fields.website_type'))
+                    ->badge()
+                    ->color('info')
+                    ->formatStateUsing(fn (?\App\Domains\Leads\Enums\WebsiteType $state) => $state?->label() ?? '—')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('budget_tier')
+                    ->label(__('leads/labels.fields.budget_tier'))
+                    ->badge()
+                    ->color(fn (?\App\Domains\Leads\Enums\BudgetTier $state) => $state?->color() ?? 'gray')
+                    ->formatStateUsing(fn (?\App\Domains\Leads\Enums\BudgetTier $state) => $state?->label() ?? '—')
+                    ->toggleable(),
+                Tables\Columns\IconColumn::make('is_redesign')
+                    ->label(__('leads/labels.fields.is_redesign'))
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('is_estero')
+                    ->label(__('leads/labels.fields.is_estero'))
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('source')
                     ->label(__('leads/labels.fields.source'))
                     ->badge()
-                    ->formatStateUsing(fn (?LeadSource $state) => $state?->label() ?? '—'),
+                    ->formatStateUsing(fn (?LeadSource $state) => $state?->label() ?? '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('leads/labels.fields.status'))
                     ->badge()
@@ -179,6 +237,20 @@ class LeadResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label(__('leads/labels.fields.status'))
                     ->options(LeadStatus::options()),
+                Tables\Filters\SelectFilter::make('business_category')
+                    ->label(__('leads/labels.fields.business_category'))
+                    ->options(\App\Domains\Leads\Enums\BusinessCategory::options())
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('website_type')
+                    ->label(__('leads/labels.fields.website_type'))
+                    ->options(\App\Domains\Leads\Enums\WebsiteType::options()),
+                Tables\Filters\SelectFilter::make('budget_tier')
+                    ->label(__('leads/labels.fields.budget_tier'))
+                    ->options(\App\Domains\Leads\Enums\BudgetTier::options()),
+                Tables\Filters\TernaryFilter::make('is_redesign')
+                    ->label(__('leads/labels.fields.is_redesign')),
+                Tables\Filters\TernaryFilter::make('is_estero')
+                    ->label(__('leads/labels.fields.is_estero')),
                 Tables\Filters\SelectFilter::make('source')
                     ->label(__('leads/labels.fields.source'))
                     ->options(LeadSource::options()),

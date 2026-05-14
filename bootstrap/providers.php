@@ -15,4 +15,5 @@ return [
     App\Domains\Documents\DocumentsServiceProvider::class,
     App\Domains\Quotations\QuotationsServiceProvider::class,
     App\Domains\Scheduling\SchedulingServiceProvider::class,
+    App\Domains\Settings\SettingsServiceProvider::class,
 ];

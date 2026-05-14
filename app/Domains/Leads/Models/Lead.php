@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Domains\Leads\Models;
 
 use App\Domains\Leads\Database\Factories\LeadFactory;
+use App\Domains\Leads\Enums\BudgetTier;
+use App\Domains\Leads\Enums\BusinessCategory;
 use App\Domains\Leads\Enums\LeadSource;
 use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Enums\LostReason;
+use App\Domains\Leads\Enums\WebsiteType;
 use App\Shared\Casts\MoneyCast;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
@@ -55,6 +58,12 @@ class Lead extends Model
     protected $fillable = [
         'name',
         'company_name',
+        'social_url',
+        'is_redesign',
+        'budget_tier',
+        'business_category',
+        'website_type',
+        'is_estero',
         'email',
         'phone',
         'source',
@@ -76,6 +85,11 @@ class Lead extends Model
             'status' => LeadStatus::class,
             'source' => LeadSource::class,
             'lost_reason' => LostReason::class,
+            'budget_tier' => BudgetTier::class,
+            'business_category' => BusinessCategory::class,
+            'website_type' => WebsiteType::class,
+            'is_redesign' => 'boolean',
+            'is_estero' => 'boolean',
             'next_action_at' => 'datetime',
             'last_contacted_at' => 'datetime',
             'converted_at' => 'datetime',

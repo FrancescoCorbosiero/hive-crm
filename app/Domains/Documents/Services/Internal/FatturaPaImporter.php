@@ -334,11 +334,12 @@ class FatturaPaImporter
      */
     private function detectDirection(array $parsed): string
     {
-        $ownerCf = strtoupper((string) config('fattura.cedente.codice_fiscale'));
-        $ownerPiva = (string) config('fattura.cedente.partita_iva');
+        $cedente = app(\App\Domains\Settings\Services\Public\BusinessProfileService::class)->cedente();
+        $ownerCf = strtoupper((string) ($cedente['codice_fiscale'] ?? ''));
+        $ownerPiva = (string) ($cedente['partita_iva'] ?? '');
 
         if ($ownerCf === '' && $ownerPiva === '') {
-            throw new DomainException('OWNER_CODICE_FISCALE / OWNER_PARTITA_IVA are not configured. Set them in .env before importing.');
+            throw new DomainException('Owner identity is not configured. Fill Codice Fiscale / Partita IVA in Settings → Business profile before importing.');
         }
 
         $matches = function (array $party) use ($ownerCf, $ownerPiva): bool {
