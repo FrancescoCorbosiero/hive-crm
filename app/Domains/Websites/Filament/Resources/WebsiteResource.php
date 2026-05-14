@@ -222,6 +222,13 @@ class WebsiteResource extends Resource
             ->defaultSort('next_renewal_at');
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            \App\Domains\Websites\Filament\Resources\WebsiteResource\RelationManagers\DomainNamesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [

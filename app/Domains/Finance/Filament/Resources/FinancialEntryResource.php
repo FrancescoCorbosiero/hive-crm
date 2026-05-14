@@ -47,7 +47,7 @@ class FinancialEntryResource extends Resource
     private static function categoryOptions(): array
     {
         return collect(['website_subscription', 'one_time_project', 'consulting',
-            'hosting', 'software', 'tools', 'travel', 'taxes', 'other'])
+            'hosting', 'domains', 'software', 'tools', 'travel', 'taxes', 'other'])
             ->mapWithKeys(fn (string $key) => [$key => __('finance/entries.categories.'.$key)])
             ->all();
     }

@@ -82,4 +82,14 @@ class Website extends Model
     {
         return $query->where('status', WebsiteStatus::Active->value);
     }
+
+    // ── Cross-domain read-only relation ────────────────────────────────
+    // Domains pointing at this website. Kept as a plain hasMany (not a
+    // hard belongsTo dependency) — reading is fine, writing stays with
+    // the DomainNames domain. Mirrors the Contact model's pattern.
+
+    public function domainNames(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domains\DomainNames\Models\DomainName::class, 'website_id');
+    }
 }

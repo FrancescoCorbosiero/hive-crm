@@ -58,6 +58,7 @@ class HomeDashboard extends Dashboard
             \Filament\Widgets\AccountWidget::class,
             OpenQuotationsWidget::class,
             ActiveSubscriptionsWidget::class,
+            \App\Domains\DomainNames\Filament\Widgets\ExpiringDomainsWidget::class,
             TopLeadsWidget::class,
         ];
     }

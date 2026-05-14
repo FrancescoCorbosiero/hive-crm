@@ -42,7 +42,7 @@ class RecurringExpenseResource extends Resource
 
     private static function categoryOptions(): array
     {
-        return collect(['hosting', 'software', 'tools', 'website_subscription', 'other'])
+        return collect(['hosting', 'domains', 'software', 'tools', 'website_subscription', 'other'])
             ->mapWithKeys(fn (string $key) => [$key => __('finance/entries.categories.'.$key)])
             ->all();
     }

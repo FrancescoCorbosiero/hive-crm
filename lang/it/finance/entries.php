@@ -40,6 +40,7 @@ return [
         'one_time_project' => 'Progetto una-tantum',
         'consulting' => 'Consulenza',
         'hosting' => 'Hosting',
+        'domains' => 'Domini',
         'software' => 'Software',
         'tools' => 'Strumenti',
         'travel' => 'Trasferte',

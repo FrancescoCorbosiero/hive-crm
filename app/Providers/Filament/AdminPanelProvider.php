@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Domains\Calendar\Filament\CalendarPanelPlugin;
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
+use App\Domains\DomainNames\Filament\DomainNamesPanelPlugin;
 use App\Domains\Documents\Filament\DocumentsPanelPlugin;
 use App\Domains\Quotations\Filament\QuotationsPanelPlugin;
 use App\Domains\Finance\Filament\FinancePanelPlugin;
@@ -51,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
                 // panel plugin. Add new domains here.
                 ContactsPanelPlugin::make(),
                 WebsitesPanelPlugin::make(),
+                DomainNamesPanelPlugin::make(),
                 FinancePanelPlugin::make(),
                 LeadsPanelPlugin::make(),
                 CalendarPanelPlugin::make(),

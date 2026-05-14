@@ -97,10 +97,23 @@ class FinanceService
             'source_id' => $attributes['source_id'] ?? null,
             'contact_id' => $attributes['contact_id'] ?? null,
             'notes' => $attributes['notes'] ?? null,
+            'external_ref' => $attributes['external_ref'] ?? null,
             'owner_user_id' => $attributes['owner_user_id'] ?? null,
         ]);
 
         return $entry->id;
+    }
+
+    /**
+     * Look up an entry id by its stable external reference, or null.
+     * Callers use this to make "log this recurring thing" actions
+     * idempotent (the column carries a partial-unique index).
+     */
+    public function findIdByExternalRef(string $externalRef): ?int
+    {
+        return FinancialEntry::query()
+            ->where('external_ref', $externalRef)
+            ->value('id');
     }
 
     public function delete(int $id): void

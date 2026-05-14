@@ -40,6 +40,7 @@ return [
         'one_time_project' => 'One-off project',
         'consulting' => 'Consulting',
         'hosting' => 'Hosting',
+        'domains' => 'Domains',
         'software' => 'Software',
         'tools' => 'Tools',
         'travel' => 'Travel',
