@@ -95,4 +95,19 @@ class DomainName extends Model
         return $query->whereNotNull('expires_at')
             ->whereBetween('expires_at', [$start, $end]);
     }
+
+    /**
+     * Domains that need the operator's eyes: expiring within $days OR
+     * already past expiry. `expiringWithin` deliberately excludes the
+     * past — this scope deliberately includes it, because an already-
+     * expired domain is the single most urgent row in the portfolio
+     * and must never fall out of the highlight.
+     */
+    public function scopeNeedsAttention(Builder $query, int $days, ?Carbon $now = null): Builder
+    {
+        $cutoff = ($now ?? now())->copy()->startOfDay()->addDays($days);
+
+        return $query->whereNotNull('expires_at')
+            ->whereDate('expires_at', '<=', $cutoff);
+    }
 }

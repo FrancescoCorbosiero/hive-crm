@@ -34,9 +34,19 @@ return [
         'expired' => 'Expired',
     ],
 
+    'actions' => [
+        'log_renewal' => 'Log renewal',
+        'log_renewal_hint' => 'Creates an expense entry for the renewal and rolls the expiry date forward by one period.',
+        'log_renewal_description' => 'Domain renewal :name (:registrar)',
+        'log_renewal_success' => 'Renewal logged and expiry updated.',
+        'log_renewal_already' => 'Renewal already logged for this cycle.',
+        'log_renewal_no_cost' => 'Set the domain renewal cost first.',
+    ],
+
     'widgets' => [
-        'expiring' => 'Expiring domains — next :days days',
+        'expiring' => 'Expiring or expired domains — :days-day window',
         'no_expiring' => 'No domains expiring soon.',
+        'expired_badge' => ':days days overdue',
         'total' => 'Total domains',
         'active_count' => ':count active',
         'expiring_30' => 'Expiring (30 days)',

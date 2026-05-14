@@ -9,11 +9,15 @@ use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\DomainNames\Filament\Resources\DomainNameResource\Pages;
 use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Websites\Models\Website;
 use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -46,14 +50,19 @@ class DomainNameResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = DomainName::query()->expiringWithin(30)->count();
+        // Expiring within 30 days OR already expired — the badge is the
+        // at-a-glance "domains need attention" signal.
+        $count = DomainName::query()->needsAttention(30)->count();
 
         return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'warning';
+        // Red when something is already past expiry, amber otherwise.
+        $expired = DomainName::query()->whereDate('expires_at', '<', now())->exists();
+
+        return $expired ? 'danger' : 'warning';
     }
 
     public static function getEloquentQuery(): Builder
@@ -241,6 +250,7 @@ class DomainNameResource extends Resource
                     ->toggle(),
             ])
             ->actions([
+                self::logRenewalAction(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\ReplicateAction::make()
                     ->label(__('app.actions.duplicate'))
@@ -264,6 +274,74 @@ class DomainNameResource extends Resource
                 ]),
             ])
             ->defaultSort('expires_at', 'asc');
+    }
+
+    /**
+     * Materialise a domain renewal as a FinancialEntry(loss) and roll
+     * `expires_at` forward by the renewal period — the cost-side
+     * counterpart to RecurringExpense's "log occurrence".
+     *
+     * Idempotent: the entry is tagged with a stable external_ref
+     * (`domain_renewal:{id}:{expires_at}`), so logging the same cycle
+     * twice is a no-op rather than a duplicate loss.
+     */
+    private static function logRenewalAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('logRenewal')
+            ->label(__('domain_names/labels.actions.log_renewal'))
+            ->icon('heroicon-o-banknotes')
+            ->color('warning')
+            ->visible(fn (DomainName $d) => $d->expires_at !== null)
+            ->requiresConfirmation()
+            ->modalDescription(__('domain_names/labels.actions.log_renewal_hint'))
+            ->action(function (DomainName $domain): void {
+                if ($domain->renewal_cost_cents === null) {
+                    Notification::make()
+                        ->warning()
+                        ->title(__('domain_names/labels.actions.log_renewal_no_cost'))
+                        ->send();
+
+                    return;
+                }
+
+                $renewedCycle = $domain->expires_at?->toDateString() ?? now()->toDateString();
+                $externalRef = sprintf('domain_renewal:%d:%s', $domain->id, $renewedCycle);
+
+                $finance = app(FinanceService::class);
+                if ($finance->findIdByExternalRef($externalRef) !== null) {
+                    Notification::make()
+                        ->warning()
+                        ->title(__('domain_names/labels.actions.log_renewal_already'))
+                        ->send();
+
+                    return;
+                }
+
+                $finance->record(FinancialEntryType::Loss, [
+                    'amount_cents' => (int) $domain->renewal_cost_cents,
+                    'currency' => $domain->currency,
+                    'occurred_at' => $renewedCycle,
+                    'description' => __('domain_names/labels.actions.log_renewal_description', [
+                        'name' => $domain->name,
+                        'registrar' => $domain->registrar->label(),
+                    ]),
+                    'category' => 'domains',
+                    'contact_id' => $domain->owner_contact_id,
+                    'external_ref' => $externalRef,
+                    'owner_user_id' => $domain->owner_user_id,
+                ]);
+
+                $months = max(1, (int) $domain->renewal_period_months);
+                $domain->update([
+                    'expires_at' => Carbon::parse($renewedCycle)->addMonths($months)->toDateString(),
+                    'status' => DomainStatus::Active->value,
+                ]);
+
+                Notification::make()
+                    ->success()
+                    ->title(__('domain_names/labels.actions.log_renewal_success'))
+                    ->send();
+            });
     }
 
     public static function getPages(): array

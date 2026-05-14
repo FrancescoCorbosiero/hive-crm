@@ -27,15 +27,18 @@ class ExpiringDomainsWidget extends TableWidget
 
     public static function canView(): bool
     {
-        return DomainName::query()->expiringWithin(self::WINDOW_DAYS)->exists();
+        return DomainName::query()->needsAttention(self::WINDOW_DAYS)->exists();
     }
 
     public function table(Table $table): Table
     {
         return $table
             ->query(
+                // needsAttention, not expiringWithin: an already-expired
+                // domain must stay in the highlight, not drop out of the
+                // forward-looking window.
                 DomainName::query()
-                    ->expiringWithin(self::WINDOW_DAYS)
+                    ->needsAttention(self::WINDOW_DAYS)
                     ->addSelect([
                         'owner_name' => Contact::query()
                             ->select('name')
@@ -73,6 +76,9 @@ class ExpiringDomainsWidget extends TableWidget
                     ->label(__('domain_names/labels.fields.days_left'))
                     ->getStateUsing(fn (DomainName $d) => $d->daysUntilExpiry())
                     ->badge()
+                    ->formatStateUsing(fn (?int $state) => $state !== null && $state < 0
+                        ? __('domain_names/labels.widgets.expired_badge', ['days' => abs($state)])
+                        : $state)
                     ->color(fn ($state) => $state === null
                         ? 'gray'
                         : ($state <= 14 ? 'danger' : ($state <= 30 ? 'warning' : 'success'))),
