@@ -23,6 +23,7 @@ class DemoDataSeeder extends Seeder
             \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
             \App\Domains\Finance\Database\Seeders\FinancialEntriesSeeder::class,
             \App\Domains\Leads\Database\Seeders\LeadsSeeder::class,
+            \App\Domains\Catalog\Database\Seeders\CatalogSeeder::class,
             \App\Domains\Documents\Database\Seeders\DocumentsSeeder::class,
         ]);
     }
