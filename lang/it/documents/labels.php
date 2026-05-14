@@ -84,6 +84,7 @@ return [
         'import_xml_failed' => ':count file falliti',
         'export_xml' => 'Esporta XML',
         'export_xml_failure' => 'Generazione XML non riuscita',
+        'duplicate_description' => 'Crea una nuova fattura con righe e cliente identici, numero allocato automaticamente, stato non pagata.',
         'backfill' => 'Recupera mesi passati',
         'backfill_heading' => 'Recupera le fatture passate',
         'backfill_description' => "Emette una fattura per ogni ciclo dalla data scelta fino a (esclusa) la prossima emissione configurata, retrodatando ciascuna alla data del ciclo. Da eseguire PRIMA di emettere fatture correnti per lo stesso anno, perché la numerazione viene assegnata nell'ordine di creazione.",

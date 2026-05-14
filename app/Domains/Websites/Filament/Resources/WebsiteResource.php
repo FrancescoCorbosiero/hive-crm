@@ -195,6 +195,24 @@ class WebsiteResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ReplicateAction::make()
+                    ->label(__('app.actions.duplicate'))
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->excludeAttributes([
+                        'subscription_started_at', 'next_renewal_at',
+                        'is_up', 'last_status_code', 'last_pinged_at',
+                        'created_at', 'updated_at',
+                    ])
+                    ->beforeReplicaSaved(function (\App\Domains\Websites\Models\Website $replica) {
+                        // Translatable name column needs to be mutated
+                        // through getTranslations / setTranslation to
+                        // append the copy suffix in every locale.
+                        foreach ($replica->getTranslations('name') as $locale => $value) {
+                            $replica->setTranslation('name', $locale, $value.' '.__('app.actions.copy_suffix'));
+                        }
+                    })
+                    ->successNotificationTitle(__('app.actions.duplicate_success')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

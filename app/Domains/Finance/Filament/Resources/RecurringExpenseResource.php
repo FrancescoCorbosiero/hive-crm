@@ -187,6 +187,18 @@ class RecurringExpenseResource extends Resource
                     }),
 
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ReplicateAction::make()
+                    ->label(__('app.actions.duplicate'))
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->excludeAttributes(['last_logged_at', 'created_at', 'updated_at'])
+                    ->beforeReplicaSaved(function (RecurringExpense $replica) {
+                        $replica->name = $replica->name.' '.__('app.actions.copy_suffix');
+                        $replica->started_at = now()->toDateString();
+                        $replica->next_due_at = now()->toDateString();
+                        $replica->is_active = true;
+                    })
+                    ->successNotificationTitle(__('app.actions.duplicate_success')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

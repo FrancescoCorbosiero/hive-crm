@@ -190,6 +190,20 @@ class LeadResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ReplicateAction::make()
+                    ->label(__('app.actions.duplicate'))
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->excludeAttributes([
+                        'converted_contact_id', 'converted_at',
+                        'last_contacted_at', 'lost_reason',
+                        'created_at', 'updated_at', 'deleted_at',
+                    ])
+                    ->beforeReplicaSaved(function (Lead $replica) {
+                        $replica->status = LeadStatus::New->value;
+                        $replica->next_action_at = null;
+                    })
+                    ->successNotificationTitle(__('app.actions.duplicate_success')),
                 self::convertAction(),
                 self::issueInvoiceAction(),
                 Tables\Actions\DeleteAction::make(),

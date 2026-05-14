@@ -165,6 +165,7 @@ class QuotationResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                self::duplicateAction(),
                 self::markSentAction(),
                 self::acceptAction(),
                 self::rejectAction(),
@@ -187,6 +188,65 @@ class QuotationResource extends Resource
             ->visible(fn (Quotation $q) => $q->status === QuotationStatus::Draft)
             ->action(function (Quotation $q) {
                 app(QuotationsService::class)->markSent($q->id);
+            });
+    }
+
+    /**
+     * Duplicate a quotation as a fresh Draft with a newly-allocated
+     * (year, number) pair. The lines, client, currency, notes and
+     * cadence are cloned; status/fattura_id/document_id reset.
+     */
+    private static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label(__('app.actions.duplicate'))
+            ->icon('heroicon-o-document-duplicate')
+            ->color('gray')
+            ->modalHeading(__('app.actions.duplicate_heading'))
+            ->fillForm(fn (Quotation $q) => [
+                'issued_at' => now()->toDateString(),
+                'valid_until' => now()->addDays(30)->toDateString(),
+                'name' => $q->name.' '.__('app.actions.copy_suffix'),
+            ])
+            ->form([
+                Forms\Components\TextInput::make('name')
+                    ->label(__('quotations/labels.fields.name'))
+                    ->required()
+                    ->columnSpanFull(),
+                Forms\Components\DatePicker::make('issued_at')
+                    ->label(__('quotations/labels.fields.issued_at'))
+                    ->displayFormat('d/m/Y')
+                    ->required(),
+                Forms\Components\DatePicker::make('valid_until')
+                    ->label(__('quotations/labels.fields.valid_until'))
+                    ->displayFormat('d/m/Y'),
+            ])
+            ->action(function (Quotation $q, array $data) {
+                try {
+                    $new = app(QuotationsService::class)->create([
+                        'name' => $data['name'],
+                        'client_contact_id' => (int) $q->client_contact_id,
+                        'lead_id' => $q->lead_id,
+                        'issued_at' => $data['issued_at'],
+                        'valid_until' => $data['valid_until'] ?? null,
+                        'lines' => (array) $q->lines,
+                        'currency' => $q->currency,
+                        'notes' => $q->notes,
+                        'owner_user_id' => $q->owner_user_id,
+                    ]);
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('app.actions.duplicate_success'))
+                        ->body($new->displayNumber())
+                        ->send();
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('app.actions.duplicate_failure'))
+                        ->body($e->getMessage())
+                        ->send();
+                }
             });
     }
 

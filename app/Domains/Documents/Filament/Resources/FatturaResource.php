@@ -218,6 +218,7 @@ class FatturaResource extends Resource
             ->actions([
                 self::recordPaymentAction(),
                 Tables\Actions\EditAction::make(),
+                self::duplicateAction(),
                 self::renderPdfAction(),
                 self::downloadPdfAction(),
                 self::exportXmlAction(),
@@ -367,6 +368,66 @@ class FatturaResource extends Resource
             ->icon('heroicon-o-arrow-down-tray')
             ->visible(fn (Fattura $f) => $f->document_id !== null)
             ->url(fn (Fattura $f) => app(DocumentsService::class)->temporaryUrl($f->document_id), shouldOpenInNewTab: true);
+    }
+
+    /**
+     * Duplicate a fattura as a fresh Unpaid one with a newly-allocated
+     * (year, number) pair from FatturaService. Lines, client, currency
+     * and fiscal flags are cloned; payment state and document linkage
+     * reset. Issuance date defaults to today but is editable.
+     */
+    private static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label(__('app.actions.duplicate'))
+            ->icon('heroicon-o-document-duplicate')
+            ->color('gray')
+            ->modalHeading(__('app.actions.duplicate_heading'))
+            ->modalDescription(__('documents/labels.actions.duplicate_description'))
+            ->fillForm(fn (Fattura $f) => [
+                'issued_at' => now()->toDateString(),
+            ])
+            ->form([
+                Forms\Components\DatePicker::make('issued_at')
+                    ->label(__('documents/labels.fields.issued_at'))
+                    ->displayFormat('d/m/Y')
+                    ->required(),
+            ])
+            ->action(function (Fattura $f, array $data) {
+                try {
+                    $attrs = [
+                        'client_contact_id' => (int) $f->client_contact_id,
+                        'issued_at' => $data['issued_at'],
+                        'lines' => (array) $f->lines,
+                        'currency' => $f->currency,
+                        'owner_user_id' => $f->owner_user_id,
+                    ];
+
+                    $new = app(FatturaService::class)->create($attrs);
+
+                    // Carry over the fiscal flags that FatturaService::create
+                    // doesn't take as input (regime/natura live on the
+                    // fattura row, not in the create payload).
+                    if ($f->regime_fiscale || $f->natura) {
+                        $new->update(array_filter([
+                            'regime_fiscale' => $f->regime_fiscale,
+                            'natura' => $f->natura,
+                        ], fn ($v) => $v !== null));
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('app.actions.duplicate_success'))
+                        ->body($new->displayNumber())
+                        ->send();
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('app.actions.duplicate_failure'))
+                        ->body($e->getMessage())
+                        ->send();
+                }
+            });
     }
 
     /**

@@ -194,6 +194,21 @@ class ContactResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ReplicateAction::make()
+                    ->label(__('app.actions.duplicate'))
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->excludeAttributes([
+                        // Fiscal identifiers must NOT be cloned —
+                        // they're meant to be unique per legal entity.
+                        // The user fills them in afresh on the copy.
+                        'vat_number', 'tax_code', 'sdi_code', 'pec_email',
+                        'created_at', 'updated_at', 'deleted_at',
+                    ])
+                    ->beforeReplicaSaved(function (\App\Domains\Contacts\Models\Contact $replica) {
+                        $replica->name = $replica->name.' '.__('app.actions.copy_suffix');
+                    })
+                    ->successNotificationTitle(__('app.actions.duplicate_success')),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
