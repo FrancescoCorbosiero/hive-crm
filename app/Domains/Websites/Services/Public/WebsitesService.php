@@ -60,6 +60,43 @@ class WebsitesService
     }
 
     /**
+     * Find a Website by hostname — used by the DomainNames domain to
+     * auto-link a registered domain to the site that runs on it.
+     *
+     * Matches the registrable host case-insensitively, ignoring scheme,
+     * a leading "www." and any path: a website stored as
+     * "https://www.example.com/" matches the host "example.com".
+     */
+    public function findByHost(string $host): ?WebsiteDTO
+    {
+        $needle = $this->normalizeHost($host);
+        if ($needle === '') {
+            return null;
+        }
+
+        $website = Website::query()
+            ->get()
+            ->first(fn (Website $w) => $this->normalizeHost($w->url) === $needle);
+
+        return $website ? WebsiteDTO::fromModel($website) : null;
+    }
+
+    private function normalizeHost(string $value): string
+    {
+        $value = trim(mb_strtolower($value));
+        if ($value === '') {
+            return '';
+        }
+
+        // Accept a bare host or a full URL.
+        $host = str_contains($value, '://')
+            ? (string) parse_url($value, PHP_URL_HOST)
+            : (string) (parse_url('//'.$value, PHP_URL_HOST) ?: $value);
+
+        return preg_replace('/^www\./', '', $host) ?? $host;
+    }
+
+    /**
      * Websites belonging to the given Contact (scalar FK by design).
      *
      * @return Collection<int, WebsiteDTO>
