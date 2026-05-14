@@ -66,11 +66,8 @@ class RecurringFatturaResource extends Resource
                         ->label(__('documents/labels.recurring.name'))
                         ->required()
                         ->columnSpan(2),
-                    Forms\Components\Select::make('client_contact_id')
+                    \App\Shared\Filament\ContactPicker::make('client_contact_id')
                         ->label(__('documents/labels.fields.client'))
-                        ->options(fn () => Contact::query()->orderBy('name')->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload()
                         ->required(),
                     Forms\Components\Select::make('frequency')
                         ->label(__('documents/labels.recurring.frequency'))

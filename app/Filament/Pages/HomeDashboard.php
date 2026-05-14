@@ -235,11 +235,11 @@ class HomeDashboard extends Dashboard
                     ])->mapWithKeys(fn ($k) => [$k => __('finance/entries.categories.'.$k)])->all())
                     ->searchable(),
 
-                Forms\Components\Select::make('contact_id')
-                    ->label(__('dashboard.fast_entry.log_expense.vendor'))
-                    ->options(fn () => Contact::query()->orderBy('name')->pluck('name', 'id'))
-                    ->searchable()
-                    ->preload(),
+                \App\Shared\Filament\ContactPicker::make(
+                    'contact_id',
+                    [\App\Domains\Contacts\Enums\ContactRole::Vendor],
+                )
+                    ->label(__('dashboard.fast_entry.log_expense.vendor')),
             ])
             ->action(function (array $data): void {
                 try {
