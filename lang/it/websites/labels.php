@@ -14,6 +14,9 @@ return [
     'next_renewal_at' => 'Prossimo rinnovo',
     'renewal_period_months' => 'Periodo di rinnovo (mesi)',
     'days_until_renewal' => 'Giorni al rinnovo',
+    'trello_board_url' => 'URL board Trello',
+    'trello_board_url_short' => 'Trello',
+    'trello_open' => 'Apri Trello',
 
     'section' => [
         'general' => 'Informazioni generali',

@@ -18,6 +18,9 @@ return [
     'do_not_email' => 'Non inviare email',
     'do_not_email_short' => 'Email',
     'do_not_email_help' => 'Quando attivo, le campagne saltano questo contatto.',
+    'trello_board_url' => 'URL board Trello',
+    'trello_board_url_short' => 'Trello',
+    'trello_open' => 'Apri Trello',
     'updated_at' => 'Aggiornato',
 
     'address' => [
@@ -33,6 +36,8 @@ return [
         'tax' => 'Dati fiscali',
         'address' => 'Indirizzo',
         'preferences' => 'Preferenze',
+        'links' => 'Collegamenti',
+        'links_hint' => 'Link esterni associati al contatto, come la board Trello del cliente.',
     ],
 
     'summary' => [

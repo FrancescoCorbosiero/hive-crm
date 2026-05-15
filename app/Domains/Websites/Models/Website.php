@@ -27,6 +27,7 @@ class Website extends Model
     protected $fillable = [
         'name',
         'notes',
+        'trello_board_url',
         'url',
         'status',
         'owner_contact_id',

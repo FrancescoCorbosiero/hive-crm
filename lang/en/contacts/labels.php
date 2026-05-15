@@ -18,6 +18,9 @@ return [
     'do_not_email' => 'Do not email',
     'do_not_email_short' => 'Email',
     'do_not_email_help' => 'When on, this contact is skipped by every campaign.',
+    'trello_board_url' => 'Trello board URL',
+    'trello_board_url_short' => 'Trello',
+    'trello_open' => 'Open Trello',
     'updated_at' => 'Updated',
 
     'address' => [
@@ -33,6 +36,8 @@ return [
         'tax' => 'Tax info',
         'address' => 'Address',
         'preferences' => 'Preferences',
+        'links' => 'Links',
+        'links_hint' => "External links tied to this contact, such as the customer's Trello board.",
     ],
 
     'summary' => [
