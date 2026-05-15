@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Domains\Calendar\Filament\CalendarPanelPlugin;
+use App\Domains\Catalog\Filament\CatalogPanelPlugin;
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
 use App\Domains\DomainNames\Filament\DomainNamesPanelPlugin;
 use App\Domains\Documents\Filament\DocumentsPanelPlugin;
@@ -53,6 +54,7 @@ class AdminPanelProvider extends PanelProvider
                 ContactsPanelPlugin::make(),
                 WebsitesPanelPlugin::make(),
                 DomainNamesPanelPlugin::make(),
+                CatalogPanelPlugin::make(),
                 FinancePanelPlugin::make(),
                 LeadsPanelPlugin::make(),
                 CalendarPanelPlugin::make(),

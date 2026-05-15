@@ -95,6 +95,31 @@ class QuotationResource extends Resource
                     Forms\Components\Repeater::make('lines')
                         ->label('')
                         ->schema([
+                            Forms\Components\Select::make('service_id')
+                                ->label(__('catalog/labels.line_picker.label'))
+                                ->helperText(__('catalog/labels.line_picker.hint'))
+                                ->options(fn () => app(\App\Domains\Catalog\Services\Public\CatalogService::class)->activeOptions())
+                                ->searchable()
+                                ->live()
+                                ->afterStateUpdated(function ($state, Forms\Set $set): void {
+                                    if (blank($state)) {
+                                        return;
+                                    }
+                                    $defaults = app(\App\Domains\Catalog\Services\Public\CatalogService::class)
+                                        ->lineDefaults((int) $state);
+                                    if ($defaults === null) {
+                                        return;
+                                    }
+                                    $set('description', $defaults['description']);
+                                    if ($defaults['unit_price_cents'] !== null) {
+                                        $set('unit_price_cents', \App\Shared\Filament\MoneyInput::centsToMajor($defaults['unit_price_cents']));
+                                    }
+                                    $set('vat_rate', $defaults['vat_rate']);
+                                    if ($defaults['cadence'] !== null) {
+                                        $set('cadence', $defaults['cadence']);
+                                    }
+                                })
+                                ->columnSpanFull(),
                             Forms\Components\TextInput::make('description')
                                 ->label(__('quotations/labels.fields.line_description'))
                                 ->required()

@@ -9,6 +9,7 @@ return [
     App\Domains\Contacts\ContactsServiceProvider::class,
     App\Domains\Websites\WebsitesServiceProvider::class,
     App\Domains\DomainNames\DomainNamesServiceProvider::class,
+    App\Domains\Catalog\CatalogServiceProvider::class,
     App\Domains\Finance\FinanceServiceProvider::class,
     App\Domains\Leads\LeadsServiceProvider::class,
     App\Domains\Calendar\CalendarServiceProvider::class,

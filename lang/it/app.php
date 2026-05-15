@@ -16,6 +16,7 @@ return [
         'calendar' => 'Calendario',
         'mail' => 'Email',
         'documents' => 'Documenti',
+        'catalog' => 'Catalogo',
         'settings' => 'Impostazioni',
     ],
 
