@@ -140,6 +140,17 @@ class ContactResource extends Resource
                         ->label(__('contacts/labels.notes'))
                         ->rows(3),
                 ]),
+
+            Forms\Components\Section::make(__('contacts/labels.section.links'))
+                ->description(__('contacts/labels.section.links_hint'))
+                ->schema([
+                    Forms\Components\TextInput::make('trello_board_url')
+                        ->label(__('contacts/labels.trello_board_url'))
+                        ->placeholder('https://trello.com/b/…')
+                        ->url()
+                        ->maxLength(255)
+                        ->suffixIcon('heroicon-o-arrow-top-right-on-square'),
+                ]),
         ]);
     }
 
@@ -170,6 +181,14 @@ class ContactResource extends Resource
                     ->trueColor('danger')
                     ->falseIcon('heroicon-o-envelope')
                     ->falseColor('success'),
+                Tables\Columns\TextColumn::make('trello_board_url')
+                    ->label(__('contacts/labels.trello_board_url_short'))
+                    ->placeholder('—')
+                    ->url(fn (?string $state) => $state, shouldOpenInNewTab: true)
+                    ->formatStateUsing(fn (?string $state) => $state ? __('contacts/labels.trello_open') : null)
+                    ->icon(fn (?string $state) => $state ? 'heroicon-o-arrow-top-right-on-square' : null)
+                    ->color('primary')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('contacts/labels.updated_at'))
                     ->dateTime('d/m/Y H:i')

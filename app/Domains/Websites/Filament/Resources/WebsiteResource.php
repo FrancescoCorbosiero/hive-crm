@@ -98,6 +98,14 @@ class WebsiteResource extends Resource
                         ->label(__('websites/labels.notes'))
                         ->columnSpanFull()
                         ->rows(3),
+
+                    Forms\Components\TextInput::make('trello_board_url')
+                        ->label(__('websites/labels.trello_board_url'))
+                        ->placeholder('https://trello.com/b/…')
+                        ->url()
+                        ->maxLength(255)
+                        ->suffixIcon('heroicon-o-arrow-top-right-on-square')
+                        ->columnSpanFull(),
                 ]),
 
             Forms\Components\Section::make(__('websites/labels.section.subscription'))
@@ -187,6 +195,15 @@ class WebsiteResource extends Resource
                         }
                         return 'success';
                     }),
+
+                Tables\Columns\TextColumn::make('trello_board_url')
+                    ->label(__('websites/labels.trello_board_url_short'))
+                    ->placeholder('—')
+                    ->url(fn (?string $state) => $state, shouldOpenInNewTab: true)
+                    ->formatStateUsing(fn (?string $state) => $state ? __('websites/labels.trello_open') : null)
+                    ->icon(fn (?string $state) => $state ? 'heroicon-o-arrow-top-right-on-square' : null)
+                    ->color('primary')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

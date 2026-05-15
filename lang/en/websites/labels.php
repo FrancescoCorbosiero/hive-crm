@@ -14,6 +14,9 @@ return [
     'next_renewal_at' => 'Next renewal',
     'renewal_period_months' => 'Renewal period (months)',
     'days_until_renewal' => 'Days until renewal',
+    'trello_board_url' => 'Trello board URL',
+    'trello_board_url_short' => 'Trello',
+    'trello_open' => 'Open Trello',
 
     'section' => [
         'general' => 'General',

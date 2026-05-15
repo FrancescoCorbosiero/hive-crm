@@ -6,6 +6,7 @@ use App\Domains\Calendar\Filament\CalendarPanelPlugin;
 use App\Domains\Catalog\Filament\CatalogPanelPlugin;
 use App\Domains\Contacts\Filament\ContactsPanelPlugin;
 use App\Domains\DomainNames\Filament\DomainNamesPanelPlugin;
+use App\Domains\Repositories\Filament\RepositoriesPanelPlugin;
 use App\Domains\Documents\Filament\DocumentsPanelPlugin;
 use App\Domains\Quotations\Filament\QuotationsPanelPlugin;
 use App\Domains\Finance\Filament\FinancePanelPlugin;
@@ -54,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
                 ContactsPanelPlugin::make(),
                 WebsitesPanelPlugin::make(),
                 DomainNamesPanelPlugin::make(),
+                RepositoriesPanelPlugin::make(),
                 CatalogPanelPlugin::make(),
                 FinancePanelPlugin::make(),
                 LeadsPanelPlugin::make(),

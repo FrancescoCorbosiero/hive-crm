@@ -54,6 +54,7 @@ class Contact extends Model
         'pec_email',
         'address',
         'notes',
+        'trello_board_url',
         'roles',
         'do_not_email',
         'owner_user_id',
