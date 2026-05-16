@@ -70,6 +70,13 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::USER_MENU_BEFORE,
                 fn (): string => view('filament.locale-switcher')->render(),
             )
+            // Inject the dashboard-extras CSS bundle so the custom dashboard
+            // widgets can use Tailwind utilities outside Filament's
+            // precompiled palette (sky/emerald/violet/… plus gradients).
+            ->renderHook(
+                PanelsRenderHook::STYLES_AFTER,
+                fn (): string => app(\Illuminate\Foundation\Vite::class)('resources/css/dashboard-extras.css')->toHtml(),
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
