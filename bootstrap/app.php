@@ -18,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // The app sits behind an edge reverse proxy in production (Caddy
+        // via caddy-docker-proxy). Trust X-Forwarded-* from any upstream
+        // so generated URLs honour the public https scheme and session
+        // cookies get the Secure flag. The Docker network is the only
+        // hop a request takes between the edge and us.
+        $middleware->trustProxies(at: '*');
+
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
             'unsubscribe/*',

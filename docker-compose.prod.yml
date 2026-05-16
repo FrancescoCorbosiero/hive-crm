@@ -1,3 +1,22 @@
+# Production stack. Designed to live BEHIND an existing `caddy-docker-proxy`
+# instance (lucaslorentz/caddy-docker-proxy) that terminates TLS at the
+# edge and routes by container labels. The reverse-proxy stack is NOT
+# defined here — it runs separately on the host and owns ports 80/443.
+#
+# This stack publishes nothing; the edge caddy reaches the `app` container
+# over the shared external `caddy` network. Inter-service traffic
+# (pgsql, redis, queue, scheduler) stays on the private `internal` net.
+#
+# Required external network — create once with the caddy proxy stack:
+#     docker network create caddy
+#
+# Required .env keys (deltas vs .env.example):
+#     APP_HOSTNAME=hive.example.com        # public FQDN; the cert subject
+#     APP_URL=https://hive.example.com
+#     DB_HOST=pgsql                        # service name, not 127.0.0.1
+#     REDIS_HOST=redis
+#     TRUSTED_PROXIES=*                    # honour edge caddy's X-Forwarded-*
+
 services:
     app:
         build:
@@ -14,24 +33,36 @@ services:
         environment:
             CONTAINER_ROLE: app
         volumes:
-            - app-code:/var/www/html
-            - app-storage:/var/www/html/storage
+            - app-storage:/app/storage
         networks:
+            - caddy
             - internal
+        labels:
+            # caddy-docker-proxy reads these on the shared `caddy` network
+            # and conjures up the vhost + ACME cert automatically. The
+            # upstream port matches FrankenPHP's EXPOSE 80 in the Dockerfile.
+            caddy: ${APP_HOSTNAME}
+            caddy.reverse_proxy: "{{upstreams 80}}"
+            caddy.encode: zstd gzip
+            caddy.header.Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+            caddy.header.X-Content-Type-Options: "nosniff"
+            caddy.header.X-Frame-Options: "SAMEORIGIN"
+            caddy.header.Referrer-Policy: "same-origin"
 
     queue:
         image: hive-crm/app:latest
         restart: unless-stopped
         depends_on:
-            - app
-            - redis
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         env_file: .env
         environment:
             CONTAINER_ROLE: queue
         command: ["php", "artisan", "horizon"]
         volumes:
-            - app-code:/var/www/html
-            - app-storage:/var/www/html/storage
+            - app-storage:/app/storage
         networks:
             - internal
 
@@ -39,14 +70,16 @@ services:
         image: hive-crm/app:latest
         restart: unless-stopped
         depends_on:
-            - app
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         env_file: .env
         environment:
             CONTAINER_ROLE: scheduler
         command: ["php", "artisan", "schedule:work"]
         volumes:
-            - app-code:/var/www/html
-            - app-storage:/var/www/html/storage
+            - app-storage:/app/storage
         networks:
             - internal
 
@@ -81,34 +114,16 @@ services:
             timeout: 5s
             retries: 5
 
-    caddy:
-        image: caddy:2-alpine
-        restart: unless-stopped
-        depends_on:
-            - app
-        ports:
-            - "80:80"
-            - "443:443"
-            - "443:443/udp"
-        environment:
-            APP_DOMAIN: ${APP_DOMAIN}
-            ACME_EMAIL: ${ACME_EMAIL}
-        volumes:
-            - ./docker/prod/Caddyfile:/etc/caddy/Caddyfile:ro
-            - app-code:/var/www/html:ro
-            - caddy-data:/data
-            - caddy-config:/config
-        networks:
-            - internal
-
 networks:
+    # Shared with the caddy-docker-proxy stack on the host. Must already
+    # exist; create it via the edge caddy compose or `docker network create caddy`.
+    caddy:
+        external: true
+    # Private bus: pgsql / redis / queue / scheduler. Never seen by the edge.
     internal:
         driver: bridge
 
 volumes:
     pgsql-data:
     redis-data:
-    app-code:
     app-storage:
-    caddy-data:
-    caddy-config:
