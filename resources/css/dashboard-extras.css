@@ -1,0 +1,13 @@
+/*
+ * Dashboard extras — emits ONLY the utility classes used by the
+ * custom dashboard widgets (welcome hero + quick-actions tile grid)
+ * that aren't part of Filament's vendored precompiled palette.
+ *
+ * No @tailwind base / @tailwind components: those would conflict
+ * with Filament's own reset. We piggy-back on Filament's reset and
+ * only inject the additional utilities Tailwind's JIT picks up from
+ * scanning resources/views/**.blade.php (incl. the safelist comment
+ * at the top of quick-actions.blade.php).
+ */
+
+@tailwind utilities;

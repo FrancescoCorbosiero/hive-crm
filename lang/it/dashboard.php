@@ -4,6 +4,82 @@ return [
     'title' => 'Cruscotto',
     'subtitle' => 'Panoramica operativa e inserimento rapido dati.',
 
+    'hero' => [
+        'greeting' => [
+            'morning' => 'Buongiorno',
+            'afternoon' => 'Buon pomeriggio',
+            'evening' => 'Buonasera',
+        ],
+        'tagline' => 'Ecco il riepilogo della tua attività. Da qui puoi aggiungere nuovi record, registrare movimenti e monitorare scadenze.',
+        'counters' => [
+            'open_leads' => 'Opportunità aperte',
+            'unpaid_invoices' => 'Fatture da incassare',
+            'active_websites' => 'Siti attivi',
+            'contacts' => 'Contatti',
+        ],
+    ],
+
+    'quick_actions' => [
+        'heading' => 'Azioni rapide',
+        'description' => 'Crea in un clic i record che usi più spesso.',
+        'tiles' => [
+            'contact' => [
+                'label' => 'Nuovo contatto',
+                'description' => 'Aggiungi un cliente, fornitore o lead all\'anagrafica.',
+            ],
+            'website' => [
+                'label' => 'Nuovo sito',
+                'description' => 'Registra un sito web con scadenze e abbonamento.',
+            ],
+            'lead' => [
+                'label' => 'Nuova opportunità',
+                'description' => 'Apri un\'opportunità commerciale nel pipeline vendite.',
+            ],
+            'quotation' => [
+                'label' => 'Nuovo preventivo',
+                'description' => 'Componi un preventivo da inviare al cliente.',
+            ],
+            'fattura' => [
+                'label' => 'Nuova fattura',
+                'description' => 'Emetti una fattura o ricevuta con linee personalizzate.',
+            ],
+            'domain' => [
+                'label' => 'Nuovo dominio',
+                'description' => 'Traccia un dominio e la sua data di scadenza.',
+            ],
+            'expense' => [
+                'label' => 'Nuova spesa',
+                'description' => 'Registra una spesa sostenuta nella contabilità.',
+            ],
+            'service' => [
+                'label' => 'Nuovo servizio',
+                'description' => 'Aggiungi un servizio al catalogo per i preventivi.',
+            ],
+        ],
+    ],
+
+    'kpis' => [
+        'ytd_income' => 'Fatturato (anno)',
+        'ytd_income_desc' => 'Incassi da inizio anno',
+        'ytd_expense' => 'Spese (anno)',
+        'ytd_expense_desc' => 'Uscite da inizio anno',
+        'ytd_net' => 'Risultato netto',
+        'ytd_net_positive' => 'In utile',
+        'ytd_net_negative' => 'In perdita',
+        'pipeline' => 'Pipeline aperto',
+        'pipeline_desc' => ':count opportunità in lavorazione',
+    ],
+
+    'new_record' => [
+        'label' => 'Nuovo',
+        'contact' => 'Contatto',
+        'website' => 'Sito web',
+        'quotation' => 'Preventivo',
+        'fattura' => 'Fattura',
+        'domain' => 'Dominio',
+        'lead' => 'Opportunità',
+    ],
+
     'fast_entry' => [
         'failure' => 'Operazione non riuscita',
 

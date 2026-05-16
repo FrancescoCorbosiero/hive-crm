@@ -4,19 +4,28 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\Filament\Resources\ContactResource;
+use App\Domains\Documents\Filament\Resources\FatturaResource;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Services\Public\PaymentsService;
+use App\Domains\DomainNames\Filament\Resources\DomainNameResource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Leads\Enums\LeadSource;
 use App\Domains\Leads\Enums\LeadStatus;
+use App\Domains\Leads\Filament\Resources\LeadResource;
 use App\Domains\Leads\Models\Lead;
+use App\Domains\Quotations\Filament\Resources\QuotationResource;
+use App\Domains\Websites\Filament\Resources\WebsiteResource;
 use App\Filament\Widgets\ActiveSubscriptionsWidget;
+use App\Filament\Widgets\DashboardKpisWidget;
 use App\Filament\Widgets\OpenQuotationsWidget;
+use App\Filament\Widgets\QuickActionsWidget;
 use App\Filament\Widgets\TopLeadsWidget;
+use App\Filament\Widgets\WelcomeHeroWidget;
 use App\Shared\Filament\MoneyInput;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard;
@@ -24,13 +33,17 @@ use Throwable;
 
 /**
  * The CRM homepage. Replaces Filament's default Dashboard with a layout
- * optimised for the May 2026 data-entry backlog:
+ * optimised for the May 2026 data-entry backlog and visual polish:
  *
- *   - Three header "Fast Entry" actions (Record Payment / Add Lead / Log
- *     Expense) so each is one click + a small slide-over form away from
- *     anywhere on the panel.
- *   - Widgets stacked underneath: Open Quotations, Active Subscriptions
- *     (revenue + cost, delay-highlighted), Top 5 Leads.
+ *   - Header: a "Nuovo" dropdown grouping direct create deep-links
+ *     (contact / website / quotation / fattura / domain / lead) plus
+ *     three slide-over fast-entry actions (Record Payment / Add Lead /
+ *     Log Expense) for one-shot logging without navigating away.
+ *   - Welcome hero with personalised greeting + counters strip.
+ *   - Quick Actions tile grid (8 colour-coded create deep-links).
+ *   - KPI strip (YTD income / expense / net / open pipeline).
+ *   - Operational widgets: Open Quotations, Active Subscriptions
+ *     (revenue + cost, delay-highlighted), Expiring Domains, Top Leads.
  */
 class HomeDashboard extends Dashboard
 {
@@ -55,7 +68,9 @@ class HomeDashboard extends Dashboard
     public function getWidgets(): array
     {
         return [
-            \Filament\Widgets\AccountWidget::class,
+            WelcomeHeroWidget::class,
+            QuickActionsWidget::class,
+            DashboardKpisWidget::class,
             OpenQuotationsWidget::class,
             ActiveSubscriptionsWidget::class,
             \App\Domains\DomainNames\Filament\Widgets\ExpiringDomainsWidget::class,
@@ -66,10 +81,54 @@ class HomeDashboard extends Dashboard
     protected function getHeaderActions(): array
     {
         return [
+            $this->newRecordActionGroup(),
             $this->recordPaymentAction(),
             $this->addLeadAction(),
             $this->logExpenseAction(),
         ];
+    }
+
+    /**
+     * Dropdown grouping the direct "create new entity" deep-links so they
+     * sit next to (not crowd out) the three slide-over fast-entry actions.
+     */
+    private function newRecordActionGroup(): ActionGroup
+    {
+        return ActionGroup::make([
+            Action::make('newContact')
+                ->label(__('dashboard.new_record.contact'))
+                ->icon('heroicon-o-user-plus')
+                ->url(fn () => ContactResource::getUrl('create')),
+
+            Action::make('newWebsite')
+                ->label(__('dashboard.new_record.website'))
+                ->icon('heroicon-o-globe-alt')
+                ->url(fn () => WebsiteResource::getUrl('create')),
+
+            Action::make('newQuotation')
+                ->label(__('dashboard.new_record.quotation'))
+                ->icon('heroicon-o-clipboard-document-list')
+                ->url(fn () => QuotationResource::getUrl('create')),
+
+            Action::make('newFattura')
+                ->label(__('dashboard.new_record.fattura'))
+                ->icon('heroicon-o-document-text')
+                ->url(fn () => FatturaResource::getUrl('create')),
+
+            Action::make('newDomain')
+                ->label(__('dashboard.new_record.domain'))
+                ->icon('heroicon-o-server-stack')
+                ->url(fn () => DomainNameResource::getUrl('create')),
+
+            Action::make('newLeadFull')
+                ->label(__('dashboard.new_record.lead'))
+                ->icon('heroicon-o-funnel')
+                ->url(fn () => LeadResource::getUrl('create')),
+        ])
+            ->label(__('dashboard.new_record.label'))
+            ->icon('heroicon-o-plus-circle')
+            ->color('primary')
+            ->button();
     }
 
     private function recordPaymentAction(): Action
