@@ -5,13 +5,18 @@ FROM composer:2 AS vendor
 WORKDIR /app
 
 COPY composer.json composer.lock ./
+# `--ignore-platform-reqs`: the composer:2 image's PHP doesn't ship the
+# extensions Filament/Horizon require (intl, pcntl, …) — but the runtime
+# stage below installs them in the FrankenPHP image. Resolution here is
+# pure file assembly, no app code runs, so platform reqs are irrelevant.
 RUN composer install \
     --no-dev \
     --no-scripts \
     --no-autoloader \
     --prefer-dist \
     --no-interaction \
-    --no-progress
+    --no-progress \
+    --ignore-platform-reqs
 
 # ─── Frontend assets ─────────────────────────────────────────────────────
 FROM node:22-alpine AS assets
@@ -37,7 +42,8 @@ RUN composer dump-autoload \
     --optimize \
     --no-dev \
     --classmap-authoritative \
-    --no-interaction
+    --no-interaction \
+    --ignore-platform-reqs
 
 # ─── Runtime: FrankenPHP (Caddy + PHP, single binary) ────────────────────
 #
