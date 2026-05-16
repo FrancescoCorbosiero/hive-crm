@@ -1,0 +1,57 @@
+# Keep image layers lean and avoid copying secrets into the build context.
+
+# Local-only env files. The runtime reads .env via compose's env_file, NOT
+# from inside the image.
+.env
+.env.*
+!.env.example
+
+# VCS and editor noise
+.git
+.gitignore
+.gitattributes
+.editorconfig
+.idea
+.vscode
+
+# Dev-only docker bits
+docker-compose.yml
+
+# CI / docs / tests are not needed at runtime
+.github
+README.md
+phpunit.xml
+tests
+.phpactor.json
+phpstan.neon
+phpstan.neon.dist
+pint.json
+
+# Will be rebuilt inside the image
+vendor
+node_modules
+public/build
+public/hot
+public/storage
+
+# Runtime artefacts that should never leak from the dev host into the image.
+# Each rule keeps the directory itself (via the .gitignore exception) so the
+# Laravel skeleton survives — the Dockerfile bakes a pristine copy of this
+# tree as /app/storage-init for the entrypoint to seed empty volumes from.
+storage/logs/*
+!storage/logs/.gitignore
+storage/framework/cache/data/*
+!storage/framework/cache/data/.gitignore
+storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+storage/framework/views/*
+!storage/framework/views/.gitignore
+storage/framework/testing/*
+!storage/framework/testing/.gitignore
+storage/app/public/*
+!storage/app/public/.gitignore
+storage/app/private/*
+!storage/app/private/.gitignore
+storage/scheduled_tasks/*
+bootstrap/cache/*.php
+!bootstrap/cache/.gitignore
