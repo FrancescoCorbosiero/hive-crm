@@ -8,11 +8,10 @@ use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Documents\DTOs\FatturaPayloadDTO;
 use App\Domains\Documents\Enums\DocumentCategory;
 use App\Domains\Documents\Enums\PaymentStatus;
+use App\Domains\Documents\Events\FatturaIssued;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
 use App\Domains\Documents\Services\Internal\FatturaPdfRenderer;
-use App\Shared\ValueObjects\Money;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -87,7 +86,7 @@ class FatturaService
             $counter->last_number = $next;
             $counter->save();
 
-            return Fattura::query()->create([
+            $fattura = Fattura::query()->create([
                 'year' => $year,
                 'number' => $next,
                 'client_contact_id' => $attributes['client_contact_id'],
@@ -100,6 +99,10 @@ class FatturaService
                 'payment_status' => $attributes['payment_status'] ?? PaymentStatus::Unpaid->value,
                 'owner_user_id' => $attributes['owner_user_id'] ?? null,
             ]);
+
+            FatturaIssued::dispatch($fattura->id);
+
+            return $fattura;
         });
     }
 
@@ -161,7 +164,7 @@ class FatturaService
 
     /**
      * @param  array<int, array<string,mixed>>  $lines
-     * @return array{0:int,1:int,2:int}  [subtotal, vat, total] in cents
+     * @return array{0:int,1:int,2:int} [subtotal, vat, total] in cents
      */
     private function computeTotals(array $lines): array
     {
