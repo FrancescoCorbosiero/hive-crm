@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domains\Leads\Filament\Resources;
 
+use App\Domains\Documents\Filament\Resources\FatturaResource;
+use App\Domains\Leads\Enums\BudgetTier;
+use App\Domains\Leads\Enums\BusinessCategory;
 use App\Domains\Leads\Enums\LeadSource;
 use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Enums\LostReason;
+use App\Domains\Leads\Enums\WebsiteType;
 use App\Domains\Leads\Filament\Resources\LeadResource\Pages;
 use App\Domains\Leads\Models\Lead;
 use App\Domains\Leads\Services\Public\LeadsService;
+use App\Shared\Filament\HistoryRelationManager;
+use App\Shared\Filament\MoneyInput;
 use DomainException;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,6 +24,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class LeadResource extends Resource
 {
@@ -102,16 +110,16 @@ class LeadResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('business_category')
                         ->label(__('leads/labels.fields.business_category'))
-                        ->options(\App\Domains\Leads\Enums\BusinessCategory::options())
+                        ->options(BusinessCategory::options())
                         ->searchable(),
                     Forms\Components\Select::make('website_type')
                         ->label(__('leads/labels.fields.website_type'))
-                        ->options(\App\Domains\Leads\Enums\WebsiteType::options())
+                        ->options(WebsiteType::options())
                         ->searchable(),
                     Forms\Components\Select::make('budget_tier')
                         ->label(__('leads/labels.fields.budget_tier'))
-                        ->options(\App\Domains\Leads\Enums\BudgetTier::options())
-                        ->default(\App\Domains\Leads\Enums\BudgetTier::Unknown->value),
+                        ->options(BudgetTier::options())
+                        ->default(BudgetTier::Unknown->value),
                     Forms\Components\Group::make([
                         Forms\Components\Toggle::make('is_redesign')
                             ->label(__('leads/labels.fields.is_redesign'))
@@ -131,7 +139,7 @@ class LeadResource extends Resource
                         ->default(LeadStatus::New->value)
                         ->required()
                         ->live(),
-                    \App\Shared\Filament\MoneyInput::make('estimated_value_cents')
+                    MoneyInput::make('estimated_value_cents')
                         ->label(__('leads/labels.fields.estimated_value')),
                     Forms\Components\DateTimePicker::make('next_action_at')
                         ->label(__('leads/labels.fields.next_action_at'))
@@ -176,19 +184,19 @@ class LeadResource extends Resource
                     ->label(__('leads/labels.fields.business_category'))
                     ->badge()
                     ->color('gray')
-                    ->formatStateUsing(fn (?\App\Domains\Leads\Enums\BusinessCategory $state) => $state?->label() ?? '—')
+                    ->formatStateUsing(fn (?BusinessCategory $state) => $state?->label() ?? '—')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('website_type')
                     ->label(__('leads/labels.fields.website_type'))
                     ->badge()
                     ->color('info')
-                    ->formatStateUsing(fn (?\App\Domains\Leads\Enums\WebsiteType $state) => $state?->label() ?? '—')
+                    ->formatStateUsing(fn (?WebsiteType $state) => $state?->label() ?? '—')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('budget_tier')
                     ->label(__('leads/labels.fields.budget_tier'))
                     ->badge()
-                    ->color(fn (?\App\Domains\Leads\Enums\BudgetTier $state) => $state?->color() ?? 'gray')
-                    ->formatStateUsing(fn (?\App\Domains\Leads\Enums\BudgetTier $state) => $state?->label() ?? '—')
+                    ->color(fn (?BudgetTier $state) => $state?->color() ?? 'gray')
+                    ->formatStateUsing(fn (?BudgetTier $state) => $state?->label() ?? '—')
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('is_redesign')
                     ->label(__('leads/labels.fields.is_redesign'))
@@ -239,14 +247,14 @@ class LeadResource extends Resource
                     ->options(LeadStatus::options()),
                 Tables\Filters\SelectFilter::make('business_category')
                     ->label(__('leads/labels.fields.business_category'))
-                    ->options(\App\Domains\Leads\Enums\BusinessCategory::options())
+                    ->options(BusinessCategory::options())
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('website_type')
                     ->label(__('leads/labels.fields.website_type'))
-                    ->options(\App\Domains\Leads\Enums\WebsiteType::options()),
+                    ->options(WebsiteType::options()),
                 Tables\Filters\SelectFilter::make('budget_tier')
                     ->label(__('leads/labels.fields.budget_tier'))
-                    ->options(\App\Domains\Leads\Enums\BudgetTier::options()),
+                    ->options(BudgetTier::options()),
                 Tables\Filters\TernaryFilter::make('is_redesign')
                     ->label(__('leads/labels.fields.is_redesign')),
                 Tables\Filters\TernaryFilter::make('is_estero')
@@ -292,11 +300,11 @@ class LeadResource extends Resource
             ->defaultSort('next_action_at');
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
-                \Illuminate\Database\Eloquent\SoftDeletingScope::class,
+                SoftDeletingScope::class,
             ]);
     }
 
@@ -327,6 +335,10 @@ class LeadResource extends Resource
                     ->url()
                     ->visible(fn (Forms\Get $get) => (bool) $get('create_website'))
                     ->required(fn (Forms\Get $get) => (bool) $get('create_website')),
+                Forms\Components\Toggle::make('create_quotation')
+                    ->label(__('leads/labels.convert.create_quotation'))
+                    ->helperText(__('leads/labels.convert.create_quotation_helper'))
+                    ->default(true),
             ])
             ->action(function (Lead $lead, array $data) {
                 $websiteAttributes = ($data['create_website'] ?? false)
@@ -336,8 +348,10 @@ class LeadResource extends Resource
                     ]
                     : null;
 
+                $quotationAttributes = ($data['create_quotation'] ?? false) ? [] : null;
+
                 try {
-                    app(LeadsService::class)->convert($lead->id, $websiteAttributes);
+                    app(LeadsService::class)->convert($lead->id, $websiteAttributes, $quotationAttributes);
                 } catch (DomainException $e) {
                     Notification::make()
                         ->danger()
@@ -388,7 +402,7 @@ class LeadResource extends Resource
                     ->send();
 
                 return redirect()->to(
-                    \App\Domains\Documents\Filament\Resources\FatturaResource::getUrl('edit', ['record' => $fatturaId])
+                    FatturaResource::getUrl('edit', ['record' => $fatturaId])
                 );
             });
     }
@@ -396,7 +410,7 @@ class LeadResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \App\Shared\Filament\HistoryRelationManager::class,
+            HistoryRelationManager::class,
         ];
     }
 

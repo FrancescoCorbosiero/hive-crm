@@ -32,6 +32,15 @@ return [
         'vat' => 'IVA',
         'total' => 'Totale',
         'payment_status' => 'Stato pagamento',
+        'auto_render_pdf' => 'Genera PDF',
+        'auto_render_pdf_helper' => 'Genera e archivia il PDF FatturaPA appena la fattura viene salvata.',
+        'mark_as_paid' => 'Segna come pagata',
+        'mark_as_paid_helper' => 'Registra un pagamento per l\'intero importo alla data di emissione — utile per vendite in contanti e fatture già saldate.',
+    ],
+
+    'auto_populate' => [
+        'render_failed' => 'Generazione PDF non riuscita — la fattura è stata comunque salvata.',
+        'mark_paid_failed' => 'Registrazione pagamento non riuscita — la fattura è stata comunque salvata.',
     ],
 
     'category' => [
@@ -54,6 +63,8 @@ return [
         'lines' => 'Righe fattura',
         'totals' => 'Totali',
         'payment' => 'Pagamento',
+        'auto_actions' => 'Dopo il salvataggio',
+        'auto_actions_hint' => 'Salta i soliti click successivi alla creazione: genera il PDF e / o registra il pagamento totale in un colpo solo.',
     ],
 
     'actions' => [
@@ -126,6 +137,14 @@ return [
         'next_issue_at' => 'Prossima emissione',
         'last_issued_at' => 'Ultima emissione',
         'is_active' => 'Attiva',
+        'auto_actions' => 'Dopo il salvataggio',
+        'auto_actions_hint' => 'Emetti subito la prima fattura per far partire il ciclo immediatamente, invece di aspettare la prossima emissione.',
+        'issue_first_cycle_now' => 'Emetti subito la prima fattura',
+        'issue_first_cycle_now_helper' => 'Genera una fattura per il primo ciclo e sposta avanti la prossima emissione di un periodo.',
+        'auto_populate' => [
+            'issued' => 'Prima fattura emessa: :number',
+            'issue_failed' => 'Impossibile emettere la prima fattura — la pianificazione è stata comunque salvata.',
+        ],
     ],
 
     'frequency' => [

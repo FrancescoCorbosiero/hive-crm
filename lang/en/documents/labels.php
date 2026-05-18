@@ -32,6 +32,15 @@ return [
         'vat' => 'VAT',
         'total' => 'Total',
         'payment_status' => 'Payment status',
+        'auto_render_pdf' => 'Render PDF',
+        'auto_render_pdf_helper' => 'Generate and store the FatturaPA PDF as soon as the invoice is saved.',
+        'mark_as_paid' => 'Mark as paid in full',
+        'mark_as_paid_helper' => 'Records a payment for the full total at the issue date — useful for cash sales and pre-paid invoices.',
+    ],
+
+    'auto_populate' => [
+        'render_failed' => 'PDF rendering failed — the invoice was still saved.',
+        'mark_paid_failed' => 'Could not record the payment — the invoice was still saved.',
     ],
 
     'category' => [
@@ -54,6 +63,8 @@ return [
         'lines' => 'Invoice lines',
         'totals' => 'Totals',
         'payment' => 'Payment',
+        'auto_actions' => 'After save',
+        'auto_actions_hint' => 'Skip the usual post-create clicks: render the PDF and / or record full payment in one shot.',
     ],
 
     'actions' => [
@@ -126,6 +137,14 @@ return [
         'next_issue_at' => 'Next issue',
         'last_issued_at' => 'Last issued',
         'is_active' => 'Active',
+        'auto_actions' => 'After save',
+        'auto_actions_hint' => 'Seed the first invoice immediately so the cycle starts right away instead of on next_issue_at.',
+        'issue_first_cycle_now' => 'Issue the first invoice now',
+        'issue_first_cycle_now_helper' => 'Generates a fattura for the first cycle and advances next_issue_at by one period.',
+        'auto_populate' => [
+            'issued' => 'First invoice issued: :number',
+            'issue_failed' => 'Could not issue the first invoice — the schedule was still saved.',
+        ],
     ],
 
     'frequency' => [

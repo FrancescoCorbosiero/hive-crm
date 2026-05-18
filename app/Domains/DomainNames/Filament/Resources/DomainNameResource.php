@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\DomainNames\Filament\Resources;
 
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\DomainNames\Filament\Resources\DomainNameResource\Pages;
@@ -17,6 +18,7 @@ use App\Shared\Filament\MoneyInput;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -142,6 +144,70 @@ class DomainNameResource extends Resource
                     ContactPicker::make('owner_contact_id')
                         ->label(__('domain_names/labels.fields.owner_contact'))
                         ->placeholder(__('domain_names/labels.auto_link_placeholder')),
+                ]),
+
+            // Cross-domain auto-spawn: "register payment". Only shown on
+            // create — editing an existing domain uses the per-row
+            // "Log renewal" action instead. Idempotent in the Finance
+            // listener via external_ref = "domain_registration:{id}".
+            Forms\Components\Section::make(__('domain_names/labels.sections.register_payment'))
+                ->description(__('domain_names/labels.sections.register_payment_hint'))
+                ->columns(3)
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('register_payment_enabled')
+                        ->label(__('domain_names/labels.fields.register_payment_enabled'))
+                        ->default(true)
+                        ->live()
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
+                    MoneyInput::make('registration_cost_cents')
+                        ->label(__('domain_names/labels.fields.registration_cost'))
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_payment_enabled'))
+                        ->required(fn (Get $get) => (bool) $get('register_payment_enabled')),
+                    Forms\Components\DatePicker::make('registration_paid_at')
+                        ->label(__('domain_names/labels.fields.registration_paid_at'))
+                        ->displayFormat('d/m/Y')
+                        ->default(now())
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_payment_enabled')),
+                    Forms\Components\Select::make('registration_method')
+                        ->label(__('domain_names/labels.fields.registration_method'))
+                        ->options(PaymentMethod::options())
+                        ->default(PaymentMethod::BankTransfer->value)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_payment_enabled')),
+                ]),
+
+            // Cross-domain auto-spawn: "create website". Only shown on
+            // create. Idempotent in the Websites listener (skips when
+            // domain.website_id is already set, e.g. via autoLink).
+            Forms\Components\Section::make(__('domain_names/labels.sections.create_website'))
+                ->description(__('domain_names/labels.sections.create_website_hint'))
+                ->columns(2)
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('create_website_enabled')
+                        ->label(__('domain_names/labels.fields.create_website_enabled'))
+                        ->helperText(__('domain_names/labels.fields.create_website_helper'))
+                        ->default(true)
+                        ->live()
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
+                    Forms\Components\TextInput::make('new_website_url')
+                        ->label(__('domain_names/labels.fields.new_website_url'))
+                        ->placeholder(fn (Get $get) => 'https://'.($get('name') ?: 'example.com'))
+                        ->url()
+                        ->maxLength(255)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('create_website_enabled'))
+                        ->required(fn (Get $get) => (bool) $get('create_website_enabled')),
+                    Forms\Components\TextInput::make('new_website_name')
+                        ->label(__('domain_names/labels.fields.new_website_name'))
+                        ->maxLength(255)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('create_website_enabled')),
                 ]),
 
             Forms\Components\Section::make(__('domain_names/labels.sections.extras'))

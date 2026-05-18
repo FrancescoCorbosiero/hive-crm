@@ -32,6 +32,11 @@ return [
         'line_unit_price' => 'Unit price',
         'line_vat_rate' => 'VAT rate %',
         'line_cadence' => 'Cadence',
+
+        'auto_render_pdf' => 'Render PDF',
+        'auto_render_pdf_helper' => 'Generate and store the quotation PDF as soon as it is saved.',
+        'mark_as_sent' => 'Mark as sent',
+        'mark_as_sent_helper' => 'Flip the status from Draft to Sent. Does NOT send any email — purely a status flag.',
     ],
 
     'cadence' => [
@@ -45,6 +50,8 @@ return [
         'header' => 'Header',
         'lines' => 'Quotation lines',
         'extras' => 'Notes',
+        'auto_actions' => 'After save',
+        'auto_actions_hint' => 'Render the PDF and / or flip the status to Sent in one shot. No email is sent — Sent here is just a status flag.',
     ],
 
     'actions' => [
@@ -53,6 +60,11 @@ return [
         'reject' => 'Reject',
         'render_pdf' => 'Render PDF',
         'download_pdf' => 'Download PDF',
+    ],
+
+    'auto_populate' => [
+        'render_failed' => 'PDF rendering failed — the quotation was still saved.',
+        'mark_sent_failed' => 'Could not flip the status to Sent — the quotation was still saved.',
     ],
 
     'notifications' => [

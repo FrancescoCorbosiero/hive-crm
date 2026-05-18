@@ -9,6 +9,10 @@ return [
         'renewal' => 'Rinnovo',
         'links' => 'Collegamenti',
         'links_hint' => 'Lascia vuoto per collegare automaticamente: il sito viene trovato dall\'URL e il cliente dal sito.',
+        'register_payment' => 'Registra pagamento',
+        'register_payment_hint' => 'Annota il costo di registrazione come uscita nel registro. Etichettato in modo che non possa essere registrato due volte per lo stesso dominio.',
+        'create_website' => 'Crea sito web',
+        'create_website_hint' => 'Crea il sito web collegato e lo collega automaticamente a questo dominio.',
         'extras' => 'Note',
     ],
 
@@ -25,6 +29,19 @@ return [
         'website' => 'Sito web',
         'notes' => 'Note',
         'days_left' => 'Giorni alla scadenza',
+        'register_payment_enabled' => 'Registra il costo nel registro contabile',
+        'registration_cost' => 'Costo di registrazione',
+        'registration_paid_at' => 'Pagato il',
+        'registration_method' => 'Metodo di pagamento',
+        'create_website_enabled' => 'Crea il sito web corrispondente',
+        'create_website_helper' => 'Saltato automaticamente se esiste già un sito con questo dominio.',
+        'new_website_url' => 'URL del sito',
+        'new_website_name' => 'Nome del sito',
+    ],
+
+    'auto_populate' => [
+        'registration_description' => 'Registrazione dominio :name (:registrar)',
+        'payment_method_note' => 'Pagato con :method',
     ],
 
     'auto_link_placeholder' => 'Automatico',

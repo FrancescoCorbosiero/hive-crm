@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Contacts\Filament\Resources\ContactResource\Pages;
 
 use App\Domains\Contacts\Filament\Resources\ContactResource;
+use App\Domains\Contacts\Models\Contact;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -14,7 +15,11 @@ class EditContact extends EditRecord
 
     protected function getHeaderActions(): array
     {
+        /** @var Contact $contact */
+        $contact = $this->record;
+
         return [
+            ...ContactResource::quickCreateHeaderActions($contact),
             Actions\DeleteAction::make(),
         ];
     }

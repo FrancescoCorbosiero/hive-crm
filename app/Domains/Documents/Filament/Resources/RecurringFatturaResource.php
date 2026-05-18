@@ -9,6 +9,8 @@ use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Domains\Documents\Filament\Resources\RecurringFatturaResource\Pages;
 use App\Domains\Documents\Models\RecurringFattura;
 use App\Domains\Documents\Services\Public\RecurringFatturaService;
+use App\Shared\Filament\ContactPicker;
+use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -16,6 +18,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class RecurringFatturaResource extends Resource
 {
@@ -25,7 +28,7 @@ class RecurringFatturaResource extends Resource
 
     protected static ?int $navigationSort = 7;
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->addSelect([
@@ -66,7 +69,7 @@ class RecurringFatturaResource extends Resource
                         ->label(__('documents/labels.recurring.name'))
                         ->required()
                         ->columnSpan(2),
-                    \App\Shared\Filament\ContactPicker::make('client_contact_id')
+                    ContactPicker::make('client_contact_id')
                         ->label(__('documents/labels.fields.client'))
                         ->required(),
                     Forms\Components\Select::make('frequency')
@@ -101,11 +104,27 @@ class RecurringFatturaResource extends Resource
                                 ->required()
                                 ->columnSpan(2),
                             Forms\Components\TextInput::make('qty')->numeric()->default(1)->required(),
-                            \App\Shared\Filament\MoneyInput::make('unit_price_cents')->required(),
+                            MoneyInput::make('unit_price_cents')->required(),
                             Forms\Components\TextInput::make('vat_rate')->numeric()->default(22)->required(),
                         ])
                         ->columns(5)
                         ->defaultItems(1),
+                ]),
+
+            // Cross-domain auto-spawn (create only): one opt-in that
+            // seeds the first invoice immediately, advancing
+            // next_issue_at by one period via the existing
+            // RecurringFatturaService::issue() flow. Defaults OFF — the
+            // operator typically schedules first, issues later.
+            Forms\Components\Section::make(__('documents/labels.recurring.auto_actions'))
+                ->description(__('documents/labels.recurring.auto_actions_hint'))
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('issue_first_cycle_now')
+                        ->label(__('documents/labels.recurring.issue_first_cycle_now'))
+                        ->helperText(__('documents/labels.recurring.issue_first_cycle_now_helper'))
+                        ->default(false)
+                        ->dehydrated(false),
                 ]),
         ]);
     }

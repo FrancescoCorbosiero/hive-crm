@@ -8,11 +8,10 @@ use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Documents\DTOs\FatturaPayloadDTO;
 use App\Domains\Documents\Enums\DocumentCategory;
 use App\Domains\Documents\Enums\PaymentStatus;
+use App\Domains\Documents\Events\FatturaIssued;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
 use App\Domains\Documents\Services\Internal\FatturaPdfRenderer;
-use App\Shared\ValueObjects\Money;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -44,6 +43,7 @@ class FatturaService
      * @param  array{
      *     client_contact_id: int,
      *     issued_at?: \DateTimeInterface|string|null,
+     *     due_date?: \DateTimeInterface|string|null,
      *     lines: array<int, array{
      *         description: string,
      *         qty: int|float,
@@ -61,12 +61,15 @@ class FatturaService
         $issuedAt = isset($attributes['issued_at'])
             ? Carbon::parse($attributes['issued_at'])
             : Carbon::now();
+        $dueDate = isset($attributes['due_date']) && $attributes['due_date'] !== null
+            ? Carbon::parse($attributes['due_date'])
+            : null;
         $year = (int) ($attributes['year'] ?? $issuedAt->year);
         $currency = $attributes['currency'] ?? config('app.currency', 'EUR');
 
         [$subtotalCents, $vatCents, $totalCents] = $this->computeTotals($attributes['lines']);
 
-        return DB::transaction(function () use ($attributes, $year, $issuedAt, $currency, $subtotalCents, $vatCents, $totalCents) {
+        return DB::transaction(function () use ($attributes, $year, $issuedAt, $dueDate, $currency, $subtotalCents, $vatCents, $totalCents) {
             // Lock the counter row for this year. firstOrCreate creates
             // it the first time we issue a fattura in a new fiscal year.
             $counter = FatturaCounter::query()
@@ -87,11 +90,12 @@ class FatturaService
             $counter->last_number = $next;
             $counter->save();
 
-            return Fattura::query()->create([
+            $fattura = Fattura::query()->create([
                 'year' => $year,
                 'number' => $next,
                 'client_contact_id' => $attributes['client_contact_id'],
                 'issued_at' => $issuedAt,
+                'due_date' => $dueDate,
                 'lines' => $attributes['lines'],
                 'subtotal_cents' => $subtotalCents,
                 'vat_cents' => $vatCents,
@@ -100,6 +104,10 @@ class FatturaService
                 'payment_status' => $attributes['payment_status'] ?? PaymentStatus::Unpaid->value,
                 'owner_user_id' => $attributes['owner_user_id'] ?? null,
             ]);
+
+            FatturaIssued::dispatch($fattura->id);
+
+            return $fattura;
         });
     }
 
@@ -161,7 +169,7 @@ class FatturaService
 
     /**
      * @param  array<int, array<string,mixed>>  $lines
-     * @return array{0:int,1:int,2:int}  [subtotal, vat, total] in cents
+     * @return array{0:int,1:int,2:int} [subtotal, vat, total] in cents
      */
     private function computeTotals(array $lines): array
     {

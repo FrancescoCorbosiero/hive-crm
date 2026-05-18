@@ -43,6 +43,10 @@ return [
     'summary' => [
         'quotations' => 'Open quotations',
         'fatture' => 'Unpaid fatture',
+        'websites' => 'Websites',
+        'websites_empty' => 'No websites linked to this contact yet.',
+        'domains' => 'Domains',
+        'domains_empty' => 'No domains registered for this contact yet.',
         'calendar' => 'Upcoming events',
         'calendar_empty' => 'No upcoming events.',
         'mail' => 'Recent emails',
@@ -51,5 +55,12 @@ return [
         'sent_at' => 'Sent',
         'open' => 'Open',
         'notes' => 'Notes',
+    ],
+
+    'actions' => [
+        'issue_fattura' => 'Issue invoice',
+        'create_quotation' => 'Draft quotation',
+        'create_website' => 'Create website',
+        'register_domain' => 'Register domain',
     ],
 ];

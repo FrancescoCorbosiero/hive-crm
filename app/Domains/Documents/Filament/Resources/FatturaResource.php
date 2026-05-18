@@ -4,23 +4,31 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\Filament\Resources;
 
+use App\Domains\Catalog\Services\Public\CatalogService;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Filament\Resources\FatturaResource\Pages;
+use App\Domains\Documents\Filament\Resources\FatturaResource\RelationManagers\PaymentsRelationManager;
 use App\Domains\Documents\Models\Fattura;
-use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Internal\FatturaPaExporter;
+use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Documents\Services\Public\PaymentsService;
+use App\Shared\Filament\ContactPicker;
+use App\Shared\Filament\HistoryRelationManager;
 use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 class FatturaResource extends Resource
 {
@@ -50,7 +58,7 @@ class FatturaResource extends Resource
         return 'danger';
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         // Avoid N+1 on the client column: inline a correlated subquery
         // returning the client's name as `client_name` on each row.
@@ -99,7 +107,7 @@ class FatturaResource extends Resource
                         ->numeric()
                         ->disabled()
                         ->dehydrated(false),
-                    \App\Shared\Filament\ContactPicker::make('client_contact_id')
+                    ContactPicker::make('client_contact_id')
                         ->label(__('documents/labels.fields.client'))
                         ->required(),
                     Forms\Components\DatePicker::make('issued_at')
@@ -120,6 +128,39 @@ class FatturaResource extends Resource
                         ->helperText('Aggiornato automaticamente dai pagamenti registrati.'),
                 ]),
 
+            // Cross-domain auto-spawn (create only): two opt-ins that
+            // remove the most common post-create clicks. Default ON for
+            // PDF (you almost always want it), default OFF for payment
+            // (most fatture aren't paid at issuance).
+            //
+            // Both reuse existing event chains:
+            //   - render PDF → FatturaService::render() → Document row + document_id back-link
+            //   - mark as paid → PaymentsService::record() → PaymentRecorded → existing Finance listener creates the Income entry
+            Forms\Components\Section::make(__('documents/labels.sections.auto_actions'))
+                ->description(__('documents/labels.sections.auto_actions_hint'))
+                ->columns(2)
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('auto_render_pdf')
+                        ->label(__('documents/labels.fields.auto_render_pdf'))
+                        ->helperText(__('documents/labels.fields.auto_render_pdf_helper'))
+                        ->default(true)
+                        ->dehydrated(false),
+                    Forms\Components\Toggle::make('mark_as_paid')
+                        ->label(__('documents/labels.fields.mark_as_paid'))
+                        ->helperText(__('documents/labels.fields.mark_as_paid_helper'))
+                        ->default(false)
+                        ->live()
+                        ->dehydrated(false),
+                    Forms\Components\Select::make('mark_as_paid_method')
+                        ->label(__('documents/labels.payment.method'))
+                        ->options(PaymentMethod::options())
+                        ->default(PaymentMethod::BankTransfer->value)
+                        ->dehydrated(false)
+                        ->columnSpanFull()
+                        ->visible(fn (Get $get) => (bool) $get('mark_as_paid')),
+                ]),
+
             Forms\Components\Section::make(__('documents/labels.sections.lines'))
                 ->schema([
                     Forms\Components\Repeater::make('lines')
@@ -128,14 +169,14 @@ class FatturaResource extends Resource
                             Forms\Components\Select::make('service_id')
                                 ->label(__('catalog/labels.line_picker.label'))
                                 ->helperText(__('catalog/labels.line_picker.hint'))
-                                ->options(fn () => app(\App\Domains\Catalog\Services\Public\CatalogService::class)->activeOptions())
+                                ->options(fn () => app(CatalogService::class)->activeOptions())
                                 ->searchable()
                                 ->live()
                                 ->afterStateUpdated(function ($state, Forms\Set $set): void {
                                     if (blank($state)) {
                                         return;
                                     }
-                                    $defaults = app(\App\Domains\Catalog\Services\Public\CatalogService::class)
+                                    $defaults = app(CatalogService::class)
                                         ->lineDefaults((int) $state);
                                     if ($defaults === null) {
                                         return;
@@ -156,7 +197,7 @@ class FatturaResource extends Resource
                                 ->numeric()
                                 ->default(1)
                                 ->required(),
-                            \App\Shared\Filament\MoneyInput::make('unit_price_cents')
+                            MoneyInput::make('unit_price_cents')
                                 ->label(__('documents/labels.fields.line_unit_price'))
                                 ->required(),
                             Forms\Components\TextInput::make('vat_rate')
@@ -207,8 +248,9 @@ class FatturaResource extends Resource
                         if (! $f->due_date || $f->outstanding()->isZero()) {
                             return null;
                         }
-                        $days = \Illuminate\Support\Carbon::parse($f->due_date)->startOfDay()
+                        $days = Carbon::parse($f->due_date)->startOfDay()
                             ->diffInDays(now()->startOfDay(), false);
+
                         return $days > 0 ? (int) $days : null;
                     })
                     ->badge()
@@ -255,7 +297,7 @@ class FatturaResource extends Resource
                         ->modalHeading(__('documents/labels.actions.record_payments_bulk_heading'))
                         ->modalDescription(__('documents/labels.actions.record_payments_bulk_description'))
                         ->modalSubmitActionLabel(__('documents/labels.actions.record_payments_bulk_submit'))
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->action(function (Collection $records) {
                             $service = app(PaymentsService::class);
                             $done = 0;
                             $skipped = 0;
@@ -264,6 +306,7 @@ class FatturaResource extends Resource
                             foreach ($records as $fattura) {
                                 if (in_array($fattura->payment_status, [PaymentStatus::Paid, PaymentStatus::Cancelled], true)) {
                                     $skipped++;
+
                                     continue;
                                 }
 
@@ -469,7 +512,7 @@ class FatturaResource extends Resource
                     $out = app(FatturaPaExporter::class)->export($f->id);
 
                     return response()->streamDownload(
-                        fn () => print($out['xml']),
+                        fn () => print ($out['xml']),
                         $out['filename'],
                         ['Content-Type' => 'application/xml'],
                     );
@@ -487,8 +530,8 @@ class FatturaResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \App\Domains\Documents\Filament\Resources\FatturaResource\RelationManagers\PaymentsRelationManager::class,
-            \App\Shared\Filament\HistoryRelationManager::class,
+            PaymentsRelationManager::class,
+            HistoryRelationManager::class,
         ];
     }
 

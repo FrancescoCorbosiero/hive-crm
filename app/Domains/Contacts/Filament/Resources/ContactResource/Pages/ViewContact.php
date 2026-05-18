@@ -24,7 +24,11 @@ class ViewContact extends ViewRecord
 
     protected function getHeaderActions(): array
     {
+        /** @var Contact $contact */
+        $contact = $this->record;
+
         return [
+            ...ContactResource::quickCreateHeaderActions($contact),
             Actions\EditAction::make(),
         ];
     }

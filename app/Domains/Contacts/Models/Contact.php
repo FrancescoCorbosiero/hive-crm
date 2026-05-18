@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domains\Contacts\Models;
 
+use App\Domains\Calendar\Models\CalendarEvent;
 use App\Domains\Contacts\Database\Factories\ContactFactory;
 use App\Domains\Contacts\Enums\ContactRole;
+use App\Domains\Documents\Models\Fattura;
+use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\Mail\Models\CampaignRecipient;
+use App\Domains\Quotations\Models\Quotation;
+use App\Domains\Websites\Models\Website;
 use App\Shared\Concerns\BelongsToOwner;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -121,7 +128,7 @@ class Contact extends Model
             return $query->whereRaw('roles @> ?::jsonb', [json_encode([$value])]);
         }
 
-        return $query->whereRaw("roles LIKE ?", ['%"'.$value.'"%']);
+        return $query->whereRaw('roles LIKE ?', ['%"'.$value.'"%']);
     }
 
     public function scopeMailable($query)
@@ -136,19 +143,29 @@ class Contact extends Model
     // compile-time dependency on the other models. Reading is fine;
     // writing is still the responsibility of the owning domain.
 
-    public function quotations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function quotations(): HasMany
     {
-        return $this->hasMany(\App\Domains\Quotations\Models\Quotation::class, 'client_contact_id');
+        return $this->hasMany(Quotation::class, 'client_contact_id');
     }
 
-    public function fatture(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function fatture(): HasMany
     {
-        return $this->hasMany(\App\Domains\Documents\Models\Fattura::class, 'client_contact_id');
+        return $this->hasMany(Fattura::class, 'client_contact_id');
     }
 
-    public function campaignRecipients(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function websites(): HasMany
     {
-        return $this->hasMany(\App\Domains\Mail\Models\CampaignRecipient::class, 'contact_id');
+        return $this->hasMany(Website::class, 'owner_contact_id');
+    }
+
+    public function domainNames(): HasMany
+    {
+        return $this->hasMany(DomainName::class, 'owner_contact_id');
+    }
+
+    public function campaignRecipients(): HasMany
+    {
+        return $this->hasMany(CampaignRecipient::class, 'contact_id');
     }
 
     /**
@@ -156,8 +173,8 @@ class Contact extends Model
      * attendee's email — so the join is on the email column on both
      * sides. Contacts without an email naturally get an empty set.
      */
-    public function calendarEvents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function calendarEvents(): HasMany
     {
-        return $this->hasMany(\App\Domains\Calendar\Models\CalendarEvent::class, 'attendee_email', 'email');
+        return $this->hasMany(CalendarEvent::class, 'attendee_email', 'email');
     }
 }

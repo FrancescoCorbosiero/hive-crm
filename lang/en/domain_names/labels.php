@@ -9,6 +9,10 @@ return [
         'renewal' => 'Renewal',
         'links' => 'Links',
         'links_hint' => 'Leave blank to auto-link: the website is matched from the URL, the customer from the website.',
+        'register_payment' => 'Register payment',
+        'register_payment_hint' => 'Log the registration cost as an expense in your ledger. Tagged so it can\'t be logged twice for the same domain.',
+        'create_website' => 'Create website',
+        'create_website_hint' => 'Spin up the sibling Website row and link it back to this domain in one shot.',
         'extras' => 'Notes',
     ],
 
@@ -25,6 +29,19 @@ return [
         'website' => 'Website',
         'notes' => 'Notes',
         'days_left' => 'Days to expiry',
+        'register_payment_enabled' => 'Log registration cost in the ledger',
+        'registration_cost' => 'Registration cost',
+        'registration_paid_at' => 'Paid on',
+        'registration_method' => 'Payment method',
+        'create_website_enabled' => 'Create the matching website',
+        'create_website_helper' => 'Skipped automatically if a website with this domain already exists.',
+        'new_website_url' => 'Website URL',
+        'new_website_name' => 'Website name',
+    ],
+
+    'auto_populate' => [
+        'registration_description' => 'Domain registration :name (:registrar)',
+        'payment_method_note' => 'Paid via :method',
     ],
 
     'auto_link_placeholder' => 'Automatic',

@@ -48,10 +48,12 @@ return [
     'convert' => [
         'action' => 'Convert to customer',
         'modal_heading' => 'Convert lead to customer',
-        'modal_description' => 'Creates a Contact with the customer role. Optionally also creates a linked Website.',
+        'modal_description' => 'Creates a Contact with the customer role. Optionally also creates a linked Website and a draft Quotation.',
         'create_website' => 'Also create a Website',
         'website_name' => 'Website name',
         'website_url' => 'Website URL',
+        'create_quotation' => 'Also create a draft Quotation',
+        'create_quotation_helper' => 'Pre-fills name, client and a placeholder line from this lead — ready to edit in the Quotations resource.',
         'success_title' => 'Lead converted',
         'success_body' => 'Contact created and lead archived.',
         'already_converted' => 'This lead has already been converted.',
