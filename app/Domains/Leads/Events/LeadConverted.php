@@ -14,5 +14,6 @@ final class LeadConverted
         public readonly int $leadId,
         public readonly int $contactId,
         public readonly ?int $websiteId = null,
+        public readonly ?int $quotationId = null,
     ) {}
 }

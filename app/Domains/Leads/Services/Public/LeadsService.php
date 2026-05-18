@@ -12,6 +12,8 @@ use App\Domains\Leads\DTOs\LeadDTO;
 use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Events\LeadConverted;
 use App\Domains\Leads\Models\Lead;
+use App\Domains\Quotations\DTOs\QuotationDTO;
+use App\Domains\Quotations\Services\Public\QuotationsService;
 use App\Domains\Websites\DTOs\WebsiteDTO;
 use App\Domains\Websites\Services\Public\WebsitesService;
 use DomainException;
@@ -33,6 +35,7 @@ class LeadsService
         private readonly ContactsService $contacts,
         private readonly WebsitesService $websites,
         private readonly FatturaService $fatture,
+        private readonly QuotationsService $quotations,
     ) {}
 
     public function find(int $id): ?LeadDTO
@@ -95,17 +98,32 @@ class LeadsService
 
     /**
      * Convert a Lead into a Contact (with the customer role) and
-     * optionally a linked Website. The Lead is archived (status=won,
-     * converted_contact_id + converted_at populated).
+     * optionally a linked Website and / or a draft Quotation. The Lead
+     * is archived (status=won, converted_contact_id + converted_at
+     * populated).
+     *
+     * The quotation, when requested, is created in Draft status with a
+     * single placeholder line auto-derived from the lead (description =
+     * lead name, qty 1, unit price = lead.estimated_value or 0, VAT 22%).
+     * The operator edits it from the QuotationResource afterwards.
      *
      * Idempotent: re-converting an already-converted lead throws so the
-     * caller can decide what to do.
+     * caller can decide what to do. Everything happens in one
+     * transaction — Contact, Website and Quotation either all materialise
+     * or none do.
      *
-     * @return array{contact: ContactDTO, website: ?WebsiteDTO}
+     * @param  array<string,mixed>|null  $websiteAttributes
+     *                                                       Pass to create a Website with these attributes (owner_contact_id
+     *                                                       and owner_user_id are filled in). Null = no Website.
+     * @param  array<string,mixed>|null  $quotationAttributes
+     *                                                         Pass an empty array `[]` to create a Quotation with defaults, or
+     *                                                         override individual keys (name, lines, currency, ...). Null = no
+     *                                                         Quotation.
+     * @return array{contact: ContactDTO, website: ?WebsiteDTO, quotation: ?QuotationDTO}
      */
-    public function convert(int $leadId, ?array $websiteAttributes = null): array
+    public function convert(int $leadId, ?array $websiteAttributes = null, ?array $quotationAttributes = null): array
     {
-        return DB::transaction(function () use ($leadId, $websiteAttributes) {
+        return DB::transaction(function () use ($leadId, $websiteAttributes, $quotationAttributes) {
             $lead = Lead::query()->lockForUpdate()->findOrFail($leadId);
 
             if ($lead->isConverted()) {
@@ -128,14 +146,32 @@ class LeadsService
                 ], $websiteAttributes));
             }
 
+            $quotation = null;
+            if ($quotationAttributes !== null) {
+                $quotationModel = $this->quotations->create(array_merge([
+                    'name' => $lead->name,
+                    'client_contact_id' => $contact->id,
+                    'lead_id' => $lead->id,
+                    'lines' => [[
+                        'description' => $lead->name,
+                        'qty' => 1,
+                        'unit_price_cents' => (int) ($lead->estimated_value_cents ?? 0),
+                        'vat_rate' => 22,
+                    ]],
+                    'currency' => $lead->estimated_value_currency ?: (string) config('app.currency', 'EUR'),
+                    'owner_user_id' => $lead->owner_user_id,
+                ], $quotationAttributes));
+                $quotation = QuotationDTO::fromModel($quotationModel);
+            }
+
             $lead->status = LeadStatus::Won;
             $lead->converted_contact_id = $contact->id;
             $lead->converted_at = now();
             $lead->save();
 
-            LeadConverted::dispatch($lead->id, $contact->id, $website?->id);
+            LeadConverted::dispatch($lead->id, $contact->id, $website?->id, $quotation?->id);
 
-            return ['contact' => $contact, 'website' => $website];
+            return ['contact' => $contact, 'website' => $website, 'quotation' => $quotation];
         });
     }
 

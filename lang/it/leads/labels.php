@@ -48,10 +48,12 @@ return [
     'convert' => [
         'action' => 'Converti in cliente',
         'modal_heading' => 'Converti opportunità in cliente',
-        'modal_description' => 'Crea un Contatto con ruolo cliente. Opzionalmente, crea anche un Sito web associato.',
+        'modal_description' => 'Crea un Contatto con ruolo cliente. Opzionalmente, crea anche un Sito web associato e un Preventivo in bozza.',
         'create_website' => 'Crea anche un Sito web',
         'website_name' => 'Nome del sito',
         'website_url' => 'URL del sito',
+        'create_quotation' => 'Crea anche un Preventivo in bozza',
+        'create_quotation_helper' => 'Pre-compila nome, cliente e una riga segnaposto dall\'opportunità — pronto da modificare nella sezione Preventivi.',
         'success_title' => 'Opportunità convertita',
         'success_body' => 'Contatto creato e opportunità archiviata.',
         'already_converted' => 'Questa opportunità è già stata convertita.',
