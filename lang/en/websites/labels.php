@@ -22,6 +22,20 @@ return [
         'general' => 'General',
         'subscription' => 'Subscription',
         'tech' => 'Tech stack',
+        'register_cost' => 'Register setup cost',
+        'register_cost_hint' => 'Log the setup or first-cycle hosting cost as an expense. Tagged so it can\'t be logged twice for the same website.',
+    ],
+
+    'cost' => [
+        'toggle' => 'Log setup cost in the ledger',
+        'amount' => 'Cost amount',
+        'paid_at' => 'Paid on',
+        'method' => 'Payment method',
+    ],
+
+    'auto_populate' => [
+        'setup_description' => 'Website setup / hosting — :name',
+        'payment_method_note' => 'Paid via :method',
     ],
 
     'widgets' => [

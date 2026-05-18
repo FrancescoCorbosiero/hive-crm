@@ -8,7 +8,9 @@ use App\Domains\Documents\Events\PaymentRecorded;
 use App\Domains\DomainNames\Events\DomainRegistered;
 use App\Domains\Finance\Listeners\RecordIncomeFromPayment;
 use App\Domains\Finance\Listeners\RecordLossFromDomainRegistration;
+use App\Domains\Finance\Listeners\RecordLossFromWebsiteSetup;
 use App\Domains\Finance\Services\Public\FinanceService;
+use App\Domains\Websites\Events\WebsiteCreated;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,5 +35,11 @@ class FinanceServiceProvider extends ServiceProvider
         // tagged with external_ref = "domain_registration:{id}" so
         // duplicate dispatch is a no-op.
         Event::listen(DomainRegistered::class, RecordLossFromDomainRegistration::class);
+
+        // Symmetric flow for Websites: setup / first-cycle hosting cost
+        // becomes a LOSS entry tagged source_type=website + source_id
+        // and external_ref = "website_setup:{id}". Same idempotency
+        // discipline as the domain flow.
+        Event::listen(WebsiteCreated::class, RecordLossFromWebsiteSetup::class);
     }
 }

@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Websites\Filament\Resources;
 
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Domains\Websites\Filament\Resources\WebsiteResource\Pages;
+use App\Domains\Websites\Filament\Resources\WebsiteResource\RelationManagers\DomainNamesRelationManager;
 use App\Domains\Websites\Models\Website;
+use App\Shared\Filament\ContactPicker;
+use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Concerns\Translatable;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -91,7 +95,7 @@ class WebsiteResource extends Resource
                         ->default(WebsiteStatus::Active->value)
                         ->required(),
 
-                    \App\Shared\Filament\ContactPicker::make('owner_contact_id')
+                    ContactPicker::make('owner_contact_id')
                         ->label(__('websites/labels.owner_contact')),
 
                     Forms\Components\Textarea::make('notes')
@@ -133,6 +137,42 @@ class WebsiteResource extends Resource
                         ->label(__('websites/labels.tech_stack'))
                         ->placeholder('Laravel, Tailwind…')
                         ->reorderable(),
+                ]),
+
+            // Cross-domain auto-spawn (create only): log the setup or
+            // first-cycle hosting cost as a LOSS entry in Finance.
+            // Default off because not every Website tracks a discrete
+            // setup cost (some are bundled into a larger Quotation).
+            // Idempotent in the Finance listener via external_ref =
+            // "website_setup:{id}".
+            Forms\Components\Section::make(__('websites/labels.section.register_cost'))
+                ->description(__('websites/labels.section.register_cost_hint'))
+                ->columns(3)
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('register_cost_enabled')
+                        ->label(__('websites/labels.cost.toggle'))
+                        ->default(false)
+                        ->live()
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
+                    MoneyInput::make('setup_cost_cents')
+                        ->label(__('websites/labels.cost.amount'))
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_cost_enabled'))
+                        ->required(fn (Get $get) => (bool) $get('register_cost_enabled')),
+                    Forms\Components\DatePicker::make('setup_paid_at')
+                        ->label(__('websites/labels.cost.paid_at'))
+                        ->displayFormat('d/m/Y')
+                        ->default(now())
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_cost_enabled')),
+                    Forms\Components\Select::make('setup_method')
+                        ->label(__('websites/labels.cost.method'))
+                        ->options(PaymentMethod::options())
+                        ->default(PaymentMethod::BankTransfer->value)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_cost_enabled')),
                 ]),
         ]);
     }
@@ -193,6 +233,7 @@ class WebsiteResource extends Resource
                         if ($state <= 30) {
                             return 'warning';
                         }
+
                         return 'success';
                     }),
 
@@ -221,7 +262,7 @@ class WebsiteResource extends Resource
                         'is_up', 'last_status_code', 'last_pinged_at',
                         'created_at', 'updated_at',
                     ])
-                    ->beforeReplicaSaved(function (\App\Domains\Websites\Models\Website $replica) {
+                    ->beforeReplicaSaved(function (Website $replica) {
                         // Translatable name column needs to be mutated
                         // through getTranslations / setTranslation to
                         // append the copy suffix in every locale.
@@ -242,7 +283,7 @@ class WebsiteResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \App\Domains\Websites\Filament\Resources\WebsiteResource\RelationManagers\DomainNamesRelationManager::class,
+            DomainNamesRelationManager::class,
         ];
     }
 

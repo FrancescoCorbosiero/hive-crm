@@ -22,6 +22,20 @@ return [
         'general' => 'Informazioni generali',
         'subscription' => 'Abbonamento',
         'tech' => 'Tecnologie',
+        'register_cost' => 'Registra costo iniziale',
+        'register_cost_hint' => 'Annota il costo di setup o del primo ciclo di hosting come uscita. Etichettato in modo che non possa essere registrato due volte per lo stesso sito.',
+    ],
+
+    'cost' => [
+        'toggle' => 'Registra il costo nel registro contabile',
+        'amount' => 'Importo',
+        'paid_at' => 'Pagato il',
+        'method' => 'Metodo di pagamento',
+    ],
+
+    'auto_populate' => [
+        'setup_description' => 'Setup / hosting sito — :name',
+        'payment_method_note' => 'Pagato con :method',
     ],
 
     'widgets' => [
