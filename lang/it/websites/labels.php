@@ -41,6 +41,10 @@ return [
         'registrar' => 'Provider',
         'registered_at' => 'Registrato il',
         'renewal_period_months' => 'Periodo di rinnovo (mesi)',
+        'cost_amount' => 'Costo registrazione dominio',
+        'cost_helper' => 'Lascia vuoto per non registrare il costo. Altrimenti crea una voce di uscita in Finance, etichettata in modo che non venga registrata due volte.',
+        'cost_paid_at' => 'Dominio pagato il',
+        'cost_method' => 'Metodo di pagamento dominio',
     ],
 
     'auto_populate' => [

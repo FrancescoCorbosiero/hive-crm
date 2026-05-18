@@ -41,6 +41,10 @@ return [
         'registrar' => 'Registrar',
         'registered_at' => 'Registered on',
         'renewal_period_months' => 'Renewal period (months)',
+        'cost_amount' => 'Domain registration cost',
+        'cost_helper' => 'Leave blank to skip logging the cost. Otherwise a LOSS entry is created in Finance, tagged so it can\'t be logged twice.',
+        'cost_paid_at' => 'Domain paid on',
+        'cost_method' => 'Domain payment method',
     ],
 
     'auto_populate' => [

@@ -101,6 +101,43 @@ it('is idempotent — does not spawn a second Website when one already exists by
     expect($domain->fresh()->website_id)->toBe(Website::first()->id);
 });
 
+it('also creates a Finance LOSS entry for the new website when cost data is in the intent', function () {
+    $domain = makeDomain(['name' => 'sito-nuovo.it']);
+
+    DomainRegistered::dispatch($domain->id, null, [
+        'url' => 'https://sito-nuovo.it',
+        'name' => 'Sito Nuovo',
+        'cost_amount_cents' => 4_500,
+        'cost_currency' => 'EUR',
+        'cost_paid_at' => '2026-05-01',
+        'cost_method' => 'stripe',
+    ]);
+
+    $website = Website::query()->where('url', 'https://sito-nuovo.it')->firstOrFail();
+
+    expect(FinancialEntry::count())->toBe(1);
+    $entry = FinancialEntry::first();
+    expect($entry->type)->toBe(FinancialEntryType::Loss);
+    expect($entry->amount_cents)->toBe(4_500);
+    expect($entry->category)->toBe('hosting');
+    expect($entry->external_ref)->toBe('website_setup:'.$website->id);
+});
+
+it('does not create a LOSS entry when re-linking an existing website (no duplicate cost)', function () {
+    $existing = Website::factory()->create(['url' => 'https://alreadyhere.com']);
+    $domain = makeDomain(['name' => 'alreadyhere.com']);
+
+    DomainRegistered::dispatch($domain->id, null, [
+        'url' => 'https://alreadyhere.com',
+        'cost_amount_cents' => 9_999,
+    ]);
+
+    expect(Website::count())->toBe(1);
+    expect($domain->fresh()->website_id)->toBe($existing->id);
+    // No new LOSS — the website wasn't actually created here.
+    expect(FinancialEntry::count())->toBe(0);
+});
+
 it('is idempotent — does not spawn a Website when the domain is already linked', function () {
     $existing = Website::factory()->create(['url' => 'https://already-linked.com']);
     $domain = makeDomain([

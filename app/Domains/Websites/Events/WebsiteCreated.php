@@ -37,7 +37,15 @@ final class WebsiteCreated
      *     registered_at?: \DateTimeInterface|string|null,
      *     renewal_period_months?: ?int,
      *     name_override?: ?string,
+     *     cost_amount_cents?: ?int,
+     *     cost_currency?: ?string,
+     *     cost_paid_at?: \DateTimeInterface|string|null,
+     *     cost_method?: ?string,
      * }|null  $domainIntent
+     *   When `cost_amount_cents` > 0, the DomainNames listener fans out a
+     *   follow-up `DomainRegistered` carrying just the payment slice, so
+     *   Finance materialises a LOSS entry for the domain registration
+     *   too — symmetric to the website's own setup-cost flow.
      */
     public function __construct(
         public readonly int $websiteId,

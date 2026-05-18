@@ -37,6 +37,10 @@ return [
         'create_website_helper' => 'Skipped automatically if a website with this domain already exists.',
         'new_website_url' => 'Website URL',
         'new_website_name' => 'Website name',
+        'new_website_cost' => 'Website setup cost',
+        'new_website_cost_helper' => 'Leave blank to skip logging the cost. Otherwise a LOSS entry is created in Finance, idempotent per website.',
+        'new_website_paid_at' => 'Website paid on',
+        'new_website_method' => 'Website payment method',
     ],
 
     'auto_populate' => [

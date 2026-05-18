@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Events\LeadConverted;
 use App\Domains\Leads\Models\Lead;
 use App\Domains\Leads\Services\Public\LeadsService;
 use App\Domains\Quotations\Enums\QuotationStatus;
 use App\Domains\Quotations\Models\Quotation;
+use App\Domains\Websites\Models\Website;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -99,4 +102,44 @@ it('rolls back the Quotation if the Lead has already been converted', function (
 
     expect(Quotation::count())->toBe(0);
     expect($lead->fresh()->status)->not->toBe(LeadStatus::New); // already converted
+});
+
+it('also creates a Finance LOSS entry for the new website when a payment intent is passed', function () {
+    $lead = Lead::factory()->create();
+
+    app(LeadsService::class)->convert(
+        $lead->id,
+        [
+            'name' => 'Sito del cliente',
+            'url' => 'https://sito-cliente.it',
+        ],
+        null,
+        [
+            'amount_cents' => 7_500,
+            'currency' => 'EUR',
+            'paid_at' => '2026-05-01',
+            'method' => 'bank_transfer',
+        ],
+    );
+
+    $website = Website::query()->latest('id')->firstOrFail();
+
+    expect(FinancialEntry::count())->toBe(1);
+    $entry = FinancialEntry::first();
+    expect($entry->type)->toBe(FinancialEntryType::Loss);
+    expect($entry->amount_cents)->toBe(7_500);
+    expect($entry->category)->toBe('hosting');
+    expect($entry->external_ref)->toBe('website_setup:'.$website->id);
+});
+
+it('does not create a LOSS entry when convert is called without a payment intent (existing flow stays clean)', function () {
+    $lead = Lead::factory()->create();
+
+    app(LeadsService::class)->convert($lead->id, [
+        'name' => 'Sito senza costo',
+        'url' => 'https://no-cost.it',
+    ]);
+
+    expect(Website::count())->toBe(1);
+    expect(FinancialEntry::count())->toBe(0);
 });

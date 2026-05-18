@@ -185,7 +185,7 @@ class DomainNameResource extends Resource
             // domain.website_id is already set, e.g. via autoLink).
             Forms\Components\Section::make(__('domain_names/labels.sections.create_website'))
                 ->description(__('domain_names/labels.sections.create_website_hint'))
-                ->columns(2)
+                ->columns(3)
                 ->visibleOn('create')
                 ->schema([
                     Forms\Components\Toggle::make('create_website_enabled')
@@ -201,11 +201,29 @@ class DomainNameResource extends Resource
                         ->url()
                         ->maxLength(255)
                         ->dehydrated(false)
+                        ->columnSpan(2)
                         ->visible(fn (Get $get) => (bool) $get('create_website_enabled'))
                         ->required(fn (Get $get) => (bool) $get('create_website_enabled')),
                     Forms\Components\TextInput::make('new_website_name')
                         ->label(__('domain_names/labels.fields.new_website_name'))
                         ->maxLength(255)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('create_website_enabled')),
+                    MoneyInput::make('new_website_cost_cents')
+                        ->label(__('domain_names/labels.fields.new_website_cost'))
+                        ->helperText(__('domain_names/labels.fields.new_website_cost_helper'))
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('create_website_enabled')),
+                    Forms\Components\DatePicker::make('new_website_paid_at')
+                        ->label(__('domain_names/labels.fields.new_website_paid_at'))
+                        ->displayFormat('d/m/Y')
+                        ->default(now())
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('create_website_enabled')),
+                    Forms\Components\Select::make('new_website_method')
+                        ->label(__('domain_names/labels.fields.new_website_method'))
+                        ->options(PaymentMethod::options())
+                        ->default(PaymentMethod::BankTransfer->value)
                         ->dehydrated(false)
                         ->visible(fn (Get $get) => (bool) $get('create_website_enabled')),
                 ]),

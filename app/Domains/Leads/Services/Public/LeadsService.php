@@ -15,6 +15,7 @@ use App\Domains\Leads\Models\Lead;
 use App\Domains\Quotations\DTOs\QuotationDTO;
 use App\Domains\Quotations\Services\Public\QuotationsService;
 use App\Domains\Websites\DTOs\WebsiteDTO;
+use App\Domains\Websites\Events\WebsiteCreated;
 use App\Domains\Websites\Services\Public\WebsitesService;
 use DomainException;
 use Illuminate\Support\Collection;
@@ -119,11 +120,19 @@ class LeadsService
      *                                                         Pass an empty array `[]` to create a Quotation with defaults, or
      *                                                         override individual keys (name, lines, currency, ...). Null = no
      *                                                         Quotation.
+     * @param  array{amount_cents: int, currency?: string, paid_at?: \DateTimeInterface|string|null, method?: ?string}|null  $websitePaymentIntent
+     *                                                                                                                                              When the website is created AND the operator captured its setup
+     *                                                                                                                                              cost, the service dispatches WebsiteCreated with this payload so
+     *                                                                                                                                              Finance materialises a LOSS entry (idempotent via external_ref).
      * @return array{contact: ContactDTO, website: ?WebsiteDTO, quotation: ?QuotationDTO}
      */
-    public function convert(int $leadId, ?array $websiteAttributes = null, ?array $quotationAttributes = null): array
-    {
-        return DB::transaction(function () use ($leadId, $websiteAttributes, $quotationAttributes) {
+    public function convert(
+        int $leadId,
+        ?array $websiteAttributes = null,
+        ?array $quotationAttributes = null,
+        ?array $websitePaymentIntent = null,
+    ): array {
+        return DB::transaction(function () use ($leadId, $websiteAttributes, $quotationAttributes, $websitePaymentIntent) {
             $lead = Lead::query()->lockForUpdate()->findOrFail($leadId);
 
             if ($lead->isConverted()) {
@@ -144,6 +153,17 @@ class LeadsService
                     'owner_contact_id' => $contact->id,
                     'owner_user_id' => $lead->owner_user_id,
                 ], $websiteAttributes));
+
+                // Cost capture: if the operator entered website setup cost
+                // on the convert modal, fan out a paymentIntent-only
+                // WebsiteCreated so Finance's existing idempotent listener
+                // creates the LOSS entry (external_ref = "website_setup:{id}").
+                // domainIntent is null — we don't auto-register a domain
+                // from a lead conversion.
+                if ($websitePaymentIntent !== null
+                    && (int) ($websitePaymentIntent['amount_cents'] ?? 0) > 0) {
+                    WebsiteCreated::dispatch($website->id, $websitePaymentIntent, null);
+                }
             }
 
             $quotation = null;

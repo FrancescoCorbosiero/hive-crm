@@ -32,7 +32,14 @@ final class DomainRegistered
      * @param  array{
      *     url: string,
      *     name?: ?string,
+     *     cost_amount_cents?: ?int,
+     *     cost_currency?: ?string,
+     *     cost_paid_at?: \DateTimeInterface|string|null,
+     *     cost_method?: ?string,
      * }|null  $websiteIntent
+     *   When `cost_amount_cents` > 0, the Websites listener fans out a
+     *   follow-up `WebsiteCreated` carrying just the payment slice, so
+     *   Finance materialises a LOSS entry for the website setup too.
      */
     public function __construct(
         public readonly int $domainId,
