@@ -8,12 +8,21 @@ use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Filament\Resources\ContactResource\Pages;
 use App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Filament\Resources\FatturaResource;
+use App\Domains\Documents\Services\Public\FatturaService;
+use App\Domains\DomainNames\Filament\Resources\DomainNameResource;
+use App\Domains\Quotations\Filament\Resources\QuotationResource;
+use App\Domains\Quotations\Services\Public\QuotationsService;
+use App\Domains\Websites\Filament\Resources\WebsiteResource;
+use App\Shared\Filament\HistoryRelationManager;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ContactResource extends Resource
 {
@@ -224,7 +233,7 @@ class ContactResource extends Resource
                         'vat_number', 'tax_code', 'sdi_code', 'pec_email',
                         'created_at', 'updated_at', 'deleted_at',
                     ])
-                    ->beforeReplicaSaved(function (\App\Domains\Contacts\Models\Contact $replica) {
+                    ->beforeReplicaSaved(function (Contact $replica) {
                         $replica->name = $replica->name.' '.__('app.actions.copy_suffix');
                     })
                     ->successNotificationTitle(__('app.actions.duplicate_success')),
@@ -246,18 +255,84 @@ class ContactResource extends Resource
     {
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
-                \Illuminate\Database\Eloquent\SoftDeletingScope::class,
+                SoftDeletingScope::class,
             ]);
     }
 
     public static function getRelations(): array
     {
         return [
+            RelationManagers\WebsitesRelationManager::class,
+            RelationManagers\DomainNamesRelationManager::class,
             RelationManagers\QuotationsRelationManager::class,
             RelationManagers\FattureRelationManager::class,
             RelationManagers\CalendarEventsRelationManager::class,
             RelationManagers\MailRelationManager::class,
-            \App\Shared\Filament\HistoryRelationManager::class,
+            HistoryRelationManager::class,
+        ];
+    }
+
+    /**
+     * Quick-create header actions for the Customer 360 (View/Edit
+     * pages). Each one spawns a related entity pre-filled with this
+     * contact:
+     *   - Fattura / Quotation: go through their public services so a
+     *     real draft row is created + the operator lands on the edit
+     *     page ready to refine.
+     *   - Website / DomainName: redirect to the create page with the
+     *     owner_contact_id pre-baked into the URL (the create page
+     *     reads it from the query string on mount).
+     *
+     * @return array<int, Action>
+     */
+    public static function quickCreateHeaderActions(Contact $contact): array
+    {
+        return [
+            Action::make('issueFattura')
+                ->label(__('contacts/labels.actions.issue_fattura'))
+                ->icon('heroicon-o-document-text')
+                ->color('warning')
+                ->action(function () use ($contact) {
+                    $fattura = app(FatturaService::class)->create([
+                        'client_contact_id' => $contact->id,
+                        'issued_at' => now(),
+                        'lines' => [],
+                        'owner_user_id' => $contact->owner_user_id,
+                    ]);
+
+                    return redirect()->to(
+                        FatturaResource::getUrl('edit', ['record' => $fattura->id]),
+                    );
+                }),
+
+            Action::make('createQuotation')
+                ->label(__('contacts/labels.actions.create_quotation'))
+                ->icon('heroicon-o-document-currency-euro')
+                ->color('primary')
+                ->action(function () use ($contact) {
+                    $quotation = app(QuotationsService::class)->create([
+                        'name' => $contact->name,
+                        'client_contact_id' => $contact->id,
+                        'lines' => [],
+                        'owner_user_id' => $contact->owner_user_id,
+                    ]);
+
+                    return redirect()->to(
+                        QuotationResource::getUrl('edit', ['record' => $quotation->id]),
+                    );
+                }),
+
+            Action::make('createWebsite')
+                ->label(__('contacts/labels.actions.create_website'))
+                ->icon('heroicon-o-globe-alt')
+                ->color('success')
+                ->url(fn () => WebsiteResource::getUrl('create').'?owner_contact_id='.$contact->id),
+
+            Action::make('registerDomain')
+                ->label(__('contacts/labels.actions.register_domain'))
+                ->icon('heroicon-o-globe-europe-africa')
+                ->color('gray')
+                ->url(fn () => DomainNameResource::getUrl('create').'?owner_contact_id='.$contact->id),
         ];
     }
 

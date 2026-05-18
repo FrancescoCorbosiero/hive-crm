@@ -26,6 +26,24 @@ class CreateWebsite extends CreateRecord
     }
 
     /**
+     * Pre-fill owner_contact_id from the ?owner_contact_id query
+     * parameter, so the Contact 360 "Create Website" quick-action
+     * lands the operator on a form already tied to the right
+     * customer.
+     */
+    public function mount(): void
+    {
+        parent::mount();
+
+        $contactId = request()->query('owner_contact_id');
+        if ($contactId !== null && is_numeric($contactId)) {
+            $this->form->fill(array_merge($this->data, [
+                'owner_contact_id' => (int) $contactId,
+            ]));
+        }
+    }
+
+    /**
      * Fan out the operator's opt-in auto-spawns via the WebsiteCreated
      * event. The transient toggle / inline fields are dehydrated(false),
      * so they live on $this->data (full form state) but never reach the

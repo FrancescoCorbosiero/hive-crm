@@ -16,6 +16,24 @@ class CreateDomainName extends CreateRecord
     protected static string $resource = DomainNameResource::class;
 
     /**
+     * Pre-fill owner_contact_id from the ?owner_contact_id query
+     * parameter, so the Contact 360 "Register Domain" quick-action
+     * lands the operator on a form already tied to the right
+     * customer.
+     */
+    public function mount(): void
+    {
+        parent::mount();
+
+        $contactId = request()->query('owner_contact_id');
+        if ($contactId !== null && is_numeric($contactId)) {
+            $this->form->fill(array_merge($this->data, [
+                'owner_contact_id' => (int) $contactId,
+            ]));
+        }
+    }
+
+    /**
      * Resolve the website / owner-contact links from the domain name
      * when the user left them blank.
      *

@@ -43,6 +43,10 @@ return [
     'summary' => [
         'quotations' => 'Preventivi aperti',
         'fatture' => 'Fatture da incassare',
+        'websites' => 'Siti web',
+        'websites_empty' => 'Nessun sito collegato a questo contatto.',
+        'domains' => 'Domini',
+        'domains_empty' => 'Nessun dominio registrato per questo contatto.',
         'calendar' => 'Prossimi appuntamenti',
         'calendar_empty' => 'Nessun appuntamento in agenda.',
         'mail' => 'Ultime email inviate',
@@ -51,5 +55,12 @@ return [
         'sent_at' => 'Inviata',
         'open' => 'Apri',
         'notes' => 'Note',
+    ],
+
+    'actions' => [
+        'issue_fattura' => 'Emetti fattura',
+        'create_quotation' => 'Crea preventivo',
+        'create_website' => 'Crea sito web',
+        'register_domain' => 'Registra dominio',
     ],
 ];
