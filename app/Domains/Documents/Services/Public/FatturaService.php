@@ -43,6 +43,7 @@ class FatturaService
      * @param  array{
      *     client_contact_id: int,
      *     issued_at?: \DateTimeInterface|string|null,
+     *     due_date?: \DateTimeInterface|string|null,
      *     lines: array<int, array{
      *         description: string,
      *         qty: int|float,
@@ -60,12 +61,15 @@ class FatturaService
         $issuedAt = isset($attributes['issued_at'])
             ? Carbon::parse($attributes['issued_at'])
             : Carbon::now();
+        $dueDate = isset($attributes['due_date']) && $attributes['due_date'] !== null
+            ? Carbon::parse($attributes['due_date'])
+            : null;
         $year = (int) ($attributes['year'] ?? $issuedAt->year);
         $currency = $attributes['currency'] ?? config('app.currency', 'EUR');
 
         [$subtotalCents, $vatCents, $totalCents] = $this->computeTotals($attributes['lines']);
 
-        return DB::transaction(function () use ($attributes, $year, $issuedAt, $currency, $subtotalCents, $vatCents, $totalCents) {
+        return DB::transaction(function () use ($attributes, $year, $issuedAt, $dueDate, $currency, $subtotalCents, $vatCents, $totalCents) {
             // Lock the counter row for this year. firstOrCreate creates
             // it the first time we issue a fattura in a new fiscal year.
             $counter = FatturaCounter::query()
@@ -91,6 +95,7 @@ class FatturaService
                 'number' => $next,
                 'client_contact_id' => $attributes['client_contact_id'],
                 'issued_at' => $issuedAt,
+                'due_date' => $dueDate,
                 'lines' => $attributes['lines'],
                 'subtotal_cents' => $subtotalCents,
                 'vat_cents' => $vatCents,

@@ -30,6 +30,7 @@ class CreateFattura extends CreateRecord
         return app(FatturaService::class)->create([
             'client_contact_id' => (int) $data['client_contact_id'],
             'issued_at' => $data['issued_at'],
+            'due_date' => $data['due_date'] ?? null,
             'lines' => $data['lines'] ?? [],
             'payment_status' => $data['payment_status'],
         ]);
