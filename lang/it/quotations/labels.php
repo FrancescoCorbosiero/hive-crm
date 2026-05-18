@@ -45,6 +45,8 @@ return [
         'header' => 'Intestazione',
         'lines' => 'Righe preventivo',
         'extras' => 'Note',
+        'auto_actions' => 'Dopo il salvataggio',
+        'auto_actions_hint' => 'Genera il PDF e / o cambia lo stato in Inviato in un colpo solo. Non viene inviata alcuna email — Inviato è solo un\'etichetta di stato.',
     ],
 
     'actions' => [
@@ -53,6 +55,18 @@ return [
         'reject' => 'Rifiuta',
         'render_pdf' => 'Genera PDF',
         'download_pdf' => 'Scarica PDF',
+    ],
+
+    'fields' => [
+        'auto_render_pdf' => 'Genera PDF',
+        'auto_render_pdf_helper' => 'Genera e archivia il PDF del preventivo appena viene salvato.',
+        'mark_as_sent' => 'Segna come inviato',
+        'mark_as_sent_helper' => 'Cambia lo stato da Bozza a Inviato. NON invia alcuna email — è solo un\'etichetta di stato.',
+    ],
+
+    'auto_populate' => [
+        'render_failed' => 'Generazione PDF non riuscita — il preventivo è stato comunque salvato.',
+        'mark_sent_failed' => 'Impossibile aggiornare lo stato a Inviato — il preventivo è stato comunque salvato.',
     ],
 
     'notifications' => [

@@ -137,6 +137,14 @@ return [
         'next_issue_at' => 'Next issue',
         'last_issued_at' => 'Last issued',
         'is_active' => 'Active',
+        'auto_actions' => 'After save',
+        'auto_actions_hint' => 'Seed the first invoice immediately so the cycle starts right away instead of on next_issue_at.',
+        'issue_first_cycle_now' => 'Issue the first invoice now',
+        'issue_first_cycle_now_helper' => 'Generates a fattura for the first cycle and advances next_issue_at by one period.',
+        'auto_populate' => [
+            'issued' => 'First invoice issued: :number',
+            'issue_failed' => 'Could not issue the first invoice — the schedule was still saved.',
+        ],
     ],
 
     'frequency' => [

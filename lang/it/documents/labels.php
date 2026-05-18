@@ -137,6 +137,14 @@ return [
         'next_issue_at' => 'Prossima emissione',
         'last_issued_at' => 'Ultima emissione',
         'is_active' => 'Attiva',
+        'auto_actions' => 'Dopo il salvataggio',
+        'auto_actions_hint' => 'Emetti subito la prima fattura per far partire il ciclo immediatamente, invece di aspettare la prossima emissione.',
+        'issue_first_cycle_now' => 'Emetti subito la prima fattura',
+        'issue_first_cycle_now_helper' => 'Genera una fattura per il primo ciclo e sposta avanti la prossima emissione di un periodo.',
+        'auto_populate' => [
+            'issued' => 'Prima fattura emessa: :number',
+            'issue_failed' => 'Impossibile emettere la prima fattura — la pianificazione è stata comunque salvata.',
+        ],
     ],
 
     'frequency' => [

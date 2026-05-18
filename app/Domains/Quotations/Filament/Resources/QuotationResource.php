@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Quotations\Filament\Resources;
 
+use App\Domains\Catalog\Services\Public\CatalogService;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Services\Public\DocumentsService;
+use App\Domains\Quotations\Enums\LineCadence;
 use App\Domains\Quotations\Enums\QuotationStatus;
 use App\Domains\Quotations\Filament\Resources\QuotationResource\Pages;
 use App\Domains\Quotations\Models\Quotation;
 use App\Domains\Quotations\Services\Public\QuotationsService;
+use App\Shared\Filament\ContactPicker;
+use App\Shared\Filament\MoneyInput;
 use DomainException;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,6 +22,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class QuotationResource extends Resource
 {
@@ -32,7 +37,7 @@ class QuotationResource extends Resource
         return ['name'];
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         // Inline correlated subquery to avoid N+1 on the client name column.
         return parent::getEloquentQuery()
@@ -76,7 +81,7 @@ class QuotationResource extends Resource
                         ->label(__('quotations/labels.fields.name'))
                         ->required()
                         ->columnSpan(3),
-                    \App\Shared\Filament\ContactPicker::make('client_contact_id')
+                    ContactPicker::make('client_contact_id')
                         ->label(__('quotations/labels.fields.client'))
                         ->required(),
                     Forms\Components\DatePicker::make('issued_at')
@@ -98,21 +103,21 @@ class QuotationResource extends Resource
                             Forms\Components\Select::make('service_id')
                                 ->label(__('catalog/labels.line_picker.label'))
                                 ->helperText(__('catalog/labels.line_picker.hint'))
-                                ->options(fn () => app(\App\Domains\Catalog\Services\Public\CatalogService::class)->activeOptions())
+                                ->options(fn () => app(CatalogService::class)->activeOptions())
                                 ->searchable()
                                 ->live()
                                 ->afterStateUpdated(function ($state, Forms\Set $set): void {
                                     if (blank($state)) {
                                         return;
                                     }
-                                    $defaults = app(\App\Domains\Catalog\Services\Public\CatalogService::class)
+                                    $defaults = app(CatalogService::class)
                                         ->lineDefaults((int) $state);
                                     if ($defaults === null) {
                                         return;
                                     }
                                     $set('description', $defaults['description']);
                                     if ($defaults['unit_price_cents'] !== null) {
-                                        $set('unit_price_cents', \App\Shared\Filament\MoneyInput::centsToMajor($defaults['unit_price_cents']));
+                                        $set('unit_price_cents', MoneyInput::centsToMajor($defaults['unit_price_cents']));
                                     }
                                     $set('vat_rate', $defaults['vat_rate']);
                                     if ($defaults['cadence'] !== null) {
@@ -127,7 +132,7 @@ class QuotationResource extends Resource
                             Forms\Components\TextInput::make('qty')
                                 ->label(__('quotations/labels.fields.line_qty'))
                                 ->numeric()->default(1)->required(),
-                            \App\Shared\Filament\MoneyInput::make('unit_price_cents')
+                            MoneyInput::make('unit_price_cents')
                                 ->label(__('quotations/labels.fields.line_unit_price'))
                                 ->required(),
                             Forms\Components\TextInput::make('vat_rate')
@@ -135,8 +140,8 @@ class QuotationResource extends Resource
                                 ->numeric()->default(22)->required(),
                             Forms\Components\Select::make('cadence')
                                 ->label(__('quotations/labels.fields.line_cadence'))
-                                ->options(\App\Domains\Quotations\Enums\LineCadence::options())
-                                ->default(\App\Domains\Quotations\Enums\LineCadence::UnaTantum->value)
+                                ->options(LineCadence::options())
+                                ->default(LineCadence::UnaTantum->value)
                                 ->required(),
                         ])
                         ->columns(6)
@@ -148,6 +153,29 @@ class QuotationResource extends Resource
                 ->schema([
                     Forms\Components\Textarea::make('notes')
                         ->rows(3),
+                ]),
+
+            // Cross-domain auto-spawn (create only): two opt-ins that
+            // remove the most common post-create clicks. Default ON for
+            // PDF (you almost always want it), default OFF for "mark
+            // sent" because most quotations get a final edit before
+            // being shared. No emails are sent — "sent" here is just a
+            // status flag the operator controls explicitly.
+            Forms\Components\Section::make(__('quotations/labels.sections.auto_actions'))
+                ->description(__('quotations/labels.sections.auto_actions_hint'))
+                ->columns(2)
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('auto_render_pdf')
+                        ->label(__('quotations/labels.fields.auto_render_pdf'))
+                        ->helperText(__('quotations/labels.fields.auto_render_pdf_helper'))
+                        ->default(true)
+                        ->dehydrated(false),
+                    Forms\Components\Toggle::make('mark_as_sent')
+                        ->label(__('quotations/labels.fields.mark_as_sent'))
+                        ->helperText(__('quotations/labels.fields.mark_as_sent_helper'))
+                        ->default(false)
+                        ->dehydrated(false),
                 ]),
         ]);
     }
