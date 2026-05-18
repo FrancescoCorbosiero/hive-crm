@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\Finance\Enums\FinancialEntryType;
+use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Domains\Websites\Events\WebsiteCreated;
 use App\Domains\Websites\Filament\Resources\WebsiteResource\Pages\CreateWebsite;
@@ -105,6 +107,50 @@ it('skips when the registrar value is invalid (defensive)', function () {
     ]);
 
     expect(DomainName::count())->toBe(0);
+});
+
+it('also creates a Finance LOSS entry for the new domain when cost data is in the intent', function () {
+    $website = Website::factory()->create(['url' => 'https://costcapture.io']);
+
+    WebsiteCreated::dispatch($website->id, null, [
+        'registrar' => Registrar::Aruba->value,
+        'cost_amount_cents' => 1_500,
+        'cost_currency' => 'EUR',
+        'cost_paid_at' => '2026-05-01',
+        'cost_method' => 'bank_transfer',
+    ]);
+
+    $domain = DomainName::query()->where('name', 'costcapture.io')->firstOrFail();
+
+    expect(FinancialEntry::count())->toBe(1);
+    $entry = FinancialEntry::first();
+    expect($entry->type)->toBe(FinancialEntryType::Loss);
+    expect($entry->amount_cents)->toBe(1_500);
+    expect($entry->category)->toBe('domains');
+    expect($entry->external_ref)->toBe('domain_registration:'.$domain->id);
+});
+
+it('does not create a LOSS entry when re-linking an existing domain (no duplicate cost)', function () {
+    $orphan = DomainName::query()->create([
+        'name' => 'preexisting.com',
+        'registrar' => Registrar::Other->value,
+        'status' => 'active',
+        'renewal_period_months' => 12,
+        'auto_renew' => true,
+        'currency' => 'EUR',
+    ]);
+
+    $website = Website::factory()->create(['url' => 'https://preexisting.com']);
+
+    WebsiteCreated::dispatch($website->id, null, [
+        'registrar' => Registrar::Aruba->value,
+        'cost_amount_cents' => 2_000,
+    ]);
+
+    expect(DomainName::count())->toBe(1);
+    expect($orphan->fresh()->website_id)->toBe($website->id);
+    // No new LOSS — the domain wasn't actually registered here.
+    expect(FinancialEntry::count())->toBe(0);
 });
 
 it('wires the create form through both Finance and DomainNames listeners', function () {

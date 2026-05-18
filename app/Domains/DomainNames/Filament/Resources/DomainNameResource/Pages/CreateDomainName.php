@@ -78,9 +78,18 @@ class CreateDomainName extends CreateRecord
 
         $websiteIntent = null;
         if (! empty($raw['create_website_enabled']) && ! empty($raw['new_website_url'])) {
+            $websiteCostCents = MoneyInput::majorToCents($raw['new_website_cost_cents'] ?? null);
             $websiteIntent = [
                 'url' => (string) $raw['new_website_url'],
                 'name' => trim((string) ($raw['new_website_name'] ?? '')) ?: $domain->host(),
+                'cost_amount_cents' => $websiteCostCents !== null && $websiteCostCents > 0
+                    ? $websiteCostCents
+                    : null,
+                'cost_currency' => config('app.currency', 'EUR'),
+                'cost_paid_at' => $raw['new_website_paid_at'] ?? null,
+                'cost_method' => isset($raw['new_website_method']) && $raw['new_website_method'] !== ''
+                    ? (string) $raw['new_website_method']
+                    : null,
             ];
         }
 

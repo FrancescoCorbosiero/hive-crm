@@ -214,6 +214,23 @@ class WebsiteResource extends Resource
                         ->maxValue(120)
                         ->dehydrated(false)
                         ->visible(fn (Get $get) => (bool) $get('register_domain_enabled')),
+                    MoneyInput::make('domain_cost_cents')
+                        ->label(__('websites/labels.domain.cost_amount'))
+                        ->helperText(__('websites/labels.domain.cost_helper'))
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_domain_enabled')),
+                    Forms\Components\DatePicker::make('domain_paid_at')
+                        ->label(__('websites/labels.domain.cost_paid_at'))
+                        ->displayFormat('d/m/Y')
+                        ->default(now())
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_domain_enabled')),
+                    Forms\Components\Select::make('domain_method')
+                        ->label(__('websites/labels.domain.cost_method'))
+                        ->options(PaymentMethod::options())
+                        ->default(PaymentMethod::BankTransfer->value)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_domain_enabled')),
                 ]),
         ]);
     }

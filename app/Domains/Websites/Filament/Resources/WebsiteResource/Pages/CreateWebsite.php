@@ -72,11 +72,20 @@ class CreateWebsite extends CreateRecord
 
         $domainIntent = null;
         if (! empty($raw['register_domain_enabled']) && ! empty($raw['domain_registrar'])) {
+            $domainCostCents = MoneyInput::majorToCents($raw['domain_cost_cents'] ?? null);
             $domainIntent = [
                 'registrar' => (string) $raw['domain_registrar'],
                 'registered_at' => $raw['domain_registered_at'] ?? null,
                 'renewal_period_months' => isset($raw['domain_renewal_period_months'])
                     ? (int) $raw['domain_renewal_period_months']
+                    : null,
+                'cost_amount_cents' => $domainCostCents !== null && $domainCostCents > 0
+                    ? $domainCostCents
+                    : null,
+                'cost_currency' => config('app.currency', 'EUR'),
+                'cost_paid_at' => $raw['domain_paid_at'] ?? null,
+                'cost_method' => isset($raw['domain_method']) && $raw['domain_method'] !== ''
+                    ? (string) $raw['domain_method']
                     : null,
             ];
         }

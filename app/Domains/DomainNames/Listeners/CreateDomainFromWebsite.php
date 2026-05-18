@@ -6,6 +6,7 @@ namespace App\Domains\DomainNames\Listeners;
 
 use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
+use App\Domains\DomainNames\Events\DomainRegistered;
 use App\Domains\DomainNames\Models\DomainName;
 use App\Domains\Websites\Events\WebsiteCreated;
 use App\Domains\Websites\Models\Website;
@@ -64,7 +65,7 @@ class CreateDomainFromWebsite
             ? Carbon::parse($intent['registered_at'])->toDateString()
             : ($website->subscription_started_at?->toDateString() ?? now()->toDateString());
 
-        DomainName::query()->create([
+        $domain = DomainName::query()->create([
             'name' => $name,
             'registrar' => $registrarValue,
             'status' => DomainStatus::Active->value,
@@ -78,6 +79,24 @@ class CreateDomainFromWebsite
             'website_id' => $website->id,
             'owner_user_id' => $website->owner_user_id,
         ]);
+
+        // Cost capture: if the operator entered registration cost on the
+        // Website create form, fan out a paymentIntent-only
+        // DomainRegistered so Finance's existing idempotent listener
+        // creates the LOSS entry (external_ref keyed on domain id).
+        // Passing null for websiteIntent prevents the reverse listener
+        // from looping back through CreateWebsiteFromDomainRegistration.
+        $costCents = (int) ($intent['cost_amount_cents'] ?? 0);
+        if ($costCents > 0) {
+            DomainRegistered::dispatch($domain->id, [
+                'amount_cents' => $costCents,
+                'currency' => (string) ($intent['cost_currency'] ?? config('app.currency', 'EUR')),
+                'paid_at' => $intent['cost_paid_at'] ?? null,
+                'method' => isset($intent['cost_method']) && $intent['cost_method'] !== ''
+                    ? (string) $intent['cost_method']
+                    : null,
+            ], null);
+        }
     }
 
     /**

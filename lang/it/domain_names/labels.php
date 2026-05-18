@@ -37,6 +37,10 @@ return [
         'create_website_helper' => 'Saltato automaticamente se esiste già un sito con questo dominio.',
         'new_website_url' => 'URL del sito',
         'new_website_name' => 'Nome del sito',
+        'new_website_cost' => 'Costo setup sito',
+        'new_website_cost_helper' => 'Lascia vuoto per non registrare il costo. Altrimenti crea una voce di uscita in Finance, idempotente per sito.',
+        'new_website_paid_at' => 'Sito pagato il',
+        'new_website_method' => 'Metodo di pagamento sito',
     ],
 
     'auto_populate' => [

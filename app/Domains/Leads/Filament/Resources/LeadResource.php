@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Leads\Filament\Resources;
 
+use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\Documents\Filament\Resources\FatturaResource;
 use App\Domains\Leads\Enums\BudgetTier;
 use App\Domains\Leads\Enums\BusinessCategory;
@@ -335,23 +336,56 @@ class LeadResource extends Resource
                     ->url()
                     ->visible(fn (Forms\Get $get) => (bool) $get('create_website'))
                     ->required(fn (Forms\Get $get) => (bool) $get('create_website')),
+                MoneyInput::make('website_cost_cents')
+                    ->label(__('leads/labels.convert.website_cost'))
+                    ->helperText(__('leads/labels.convert.website_cost_helper'))
+                    ->visible(fn (Forms\Get $get) => (bool) $get('create_website')),
+                Forms\Components\DatePicker::make('website_paid_at')
+                    ->label(__('leads/labels.convert.website_paid_at'))
+                    ->displayFormat('d/m/Y')
+                    ->default(now())
+                    ->visible(fn (Forms\Get $get) => (bool) $get('create_website')),
+                Forms\Components\Select::make('website_method')
+                    ->label(__('leads/labels.convert.website_method'))
+                    ->options(PaymentMethod::options())
+                    ->default(PaymentMethod::BankTransfer->value)
+                    ->visible(fn (Forms\Get $get) => (bool) $get('create_website')),
                 Forms\Components\Toggle::make('create_quotation')
                     ->label(__('leads/labels.convert.create_quotation'))
                     ->helperText(__('leads/labels.convert.create_quotation_helper'))
                     ->default(true),
             ])
             ->action(function (Lead $lead, array $data) {
-                $websiteAttributes = ($data['create_website'] ?? false)
-                    ? [
+                $websiteAttributes = null;
+                $websitePaymentIntent = null;
+                if ($data['create_website'] ?? false) {
+                    $websiteAttributes = [
                         'name' => $data['website_name'],
                         'url' => $data['website_url'],
-                    ]
-                    : null;
+                    ];
+
+                    $cents = MoneyInput::majorToCents($data['website_cost_cents'] ?? null);
+                    if ($cents !== null && $cents > 0) {
+                        $websitePaymentIntent = [
+                            'amount_cents' => $cents,
+                            'currency' => config('app.currency', 'EUR'),
+                            'paid_at' => $data['website_paid_at'] ?? null,
+                            'method' => isset($data['website_method']) && $data['website_method'] !== ''
+                                ? (string) $data['website_method']
+                                : null,
+                        ];
+                    }
+                }
 
                 $quotationAttributes = ($data['create_quotation'] ?? false) ? [] : null;
 
                 try {
-                    app(LeadsService::class)->convert($lead->id, $websiteAttributes, $quotationAttributes);
+                    app(LeadsService::class)->convert(
+                        $lead->id,
+                        $websiteAttributes,
+                        $quotationAttributes,
+                        $websitePaymentIntent,
+                    );
                 } catch (DomainException $e) {
                     Notification::make()
                         ->danger()
