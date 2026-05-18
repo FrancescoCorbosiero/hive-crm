@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Websites\Filament\Resources;
 
 use App\Domains\Documents\Enums\PaymentMethod;
+use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Domains\Websites\Filament\Resources\WebsiteResource\Pages;
 use App\Domains\Websites\Filament\Resources\WebsiteResource\RelationManagers\DomainNamesRelationManager;
@@ -173,6 +174,46 @@ class WebsiteResource extends Resource
                         ->default(PaymentMethod::BankTransfer->value)
                         ->dehydrated(false)
                         ->visible(fn (Get $get) => (bool) $get('register_cost_enabled')),
+                ]),
+
+            // Cross-domain auto-spawn (create only): also register the
+            // matching DomainName pointing back at this Website via the
+            // scalar website_id FK. Symmetric counterpart of the Domain
+            // → Website spawn on DomainNameResource. Idempotent in the
+            // listener: an existing row with the same host is reused.
+            Forms\Components\Section::make(__('websites/labels.section.register_domain'))
+                ->description(__('websites/labels.section.register_domain_hint'))
+                ->columns(3)
+                ->visibleOn('create')
+                ->schema([
+                    Forms\Components\Toggle::make('register_domain_enabled')
+                        ->label(__('websites/labels.domain.toggle'))
+                        ->helperText(__('websites/labels.domain.toggle_helper'))
+                        ->default(false)
+                        ->live()
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('domain_registrar')
+                        ->label(__('websites/labels.domain.registrar'))
+                        ->options(Registrar::options())
+                        ->searchable()
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_domain_enabled'))
+                        ->required(fn (Get $get) => (bool) $get('register_domain_enabled')),
+                    Forms\Components\DatePicker::make('domain_registered_at')
+                        ->label(__('websites/labels.domain.registered_at'))
+                        ->displayFormat('d/m/Y')
+                        ->default(now())
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_domain_enabled')),
+                    Forms\Components\TextInput::make('domain_renewal_period_months')
+                        ->label(__('websites/labels.domain.renewal_period_months'))
+                        ->numeric()
+                        ->default(12)
+                        ->minValue(1)
+                        ->maxValue(120)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get) => (bool) $get('register_domain_enabled')),
                 ]),
         ]);
     }

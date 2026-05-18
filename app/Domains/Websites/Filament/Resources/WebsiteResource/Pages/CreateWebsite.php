@@ -52,8 +52,19 @@ class CreateWebsite extends CreateRecord
             }
         }
 
-        if ($paymentIntent !== null) {
-            WebsiteCreated::dispatch($website->id, $paymentIntent);
+        $domainIntent = null;
+        if (! empty($raw['register_domain_enabled']) && ! empty($raw['domain_registrar'])) {
+            $domainIntent = [
+                'registrar' => (string) $raw['domain_registrar'],
+                'registered_at' => $raw['domain_registered_at'] ?? null,
+                'renewal_period_months' => isset($raw['domain_renewal_period_months'])
+                    ? (int) $raw['domain_renewal_period_months']
+                    : null,
+            ];
+        }
+
+        if ($paymentIntent !== null || $domainIntent !== null) {
+            WebsiteCreated::dispatch($website->id, $paymentIntent, $domainIntent);
         }
     }
 }

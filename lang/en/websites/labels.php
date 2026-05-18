@@ -24,6 +24,8 @@ return [
         'tech' => 'Tech stack',
         'register_cost' => 'Register setup cost',
         'register_cost_hint' => 'Log the setup or first-cycle hosting cost as an expense. Tagged so it can\'t be logged twice for the same website.',
+        'register_domain' => 'Register the matching domain',
+        'register_domain_hint' => 'Also create a DomainName row pointing at this Website. Skipped automatically if a domain with this host already exists.',
     ],
 
     'cost' => [
@@ -31,6 +33,14 @@ return [
         'amount' => 'Cost amount',
         'paid_at' => 'Paid on',
         'method' => 'Payment method',
+    ],
+
+    'domain' => [
+        'toggle' => 'Also register the matching domain',
+        'toggle_helper' => 'Derives the host from the Website URL above.',
+        'registrar' => 'Registrar',
+        'registered_at' => 'Registered on',
+        'renewal_period_months' => 'Renewal period (months)',
     ],
 
     'auto_populate' => [

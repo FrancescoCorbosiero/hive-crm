@@ -10,11 +10,12 @@ use Illuminate\Foundation\Events\Dispatchable;
  * Dispatched when a Website is created from the Filament create form
  * and the operator opted into one or more cross-domain auto-spawns.
  *
- * The payment intent payload is optional — the Finance listener
- * short-circuits when it's null, and is idempotent via
- * external_ref = "website_setup:{websiteId}" so duplicate dispatch
- * (or a re-creation collision in a future migration script) cannot
- * produce two LOSS entries.
+ * Each intent payload is optional and independently idempotent in
+ * its listener:
+ *   - Finance:   external_ref = "website_setup:{websiteId}"
+ *   - DomainNames: unique `name` constraint on domain_names + the
+ *     scalar website_id back-link, so re-dispatch either no-ops or
+ *     just re-links an existing matching domain.
  *
  * Symmetric to DomainNames\Events\DomainRegistered — same shape,
  * same listener pattern, same idempotency discipline.
@@ -31,9 +32,16 @@ final class WebsiteCreated
      *     method?: ?string,
      *     description?: ?string,
      * }|null  $paymentIntent
+     * @param  array{
+     *     registrar: string,
+     *     registered_at?: \DateTimeInterface|string|null,
+     *     renewal_period_months?: ?int,
+     *     name_override?: ?string,
+     * }|null  $domainIntent
      */
     public function __construct(
         public readonly int $websiteId,
         public readonly ?array $paymentIntent = null,
+        public readonly ?array $domainIntent = null,
     ) {}
 }

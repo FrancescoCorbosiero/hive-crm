@@ -24,6 +24,8 @@ return [
         'tech' => 'Tecnologie',
         'register_cost' => 'Registra costo iniziale',
         'register_cost_hint' => 'Annota il costo di setup o del primo ciclo di hosting come uscita. Etichettato in modo che non possa essere registrato due volte per lo stesso sito.',
+        'register_domain' => 'Registra il dominio corrispondente',
+        'register_domain_hint' => 'Crea anche un record Dominio collegato a questo Sito. Saltato automaticamente se esiste già un dominio con questo host.',
     ],
 
     'cost' => [
@@ -31,6 +33,14 @@ return [
         'amount' => 'Importo',
         'paid_at' => 'Pagato il',
         'method' => 'Metodo di pagamento',
+    ],
+
+    'domain' => [
+        'toggle' => 'Registra anche il dominio corrispondente',
+        'toggle_helper' => 'Deriva l\'host dall\'URL del sito sopra.',
+        'registrar' => 'Provider',
+        'registered_at' => 'Registrato il',
+        'renewal_period_months' => 'Periodo di rinnovo (mesi)',
     ],
 
     'auto_populate' => [
