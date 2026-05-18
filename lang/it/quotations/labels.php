@@ -32,6 +32,11 @@ return [
         'line_unit_price' => 'Prezzo unitario',
         'line_vat_rate' => 'Aliquota IVA %',
         'line_cadence' => 'Cadenza',
+
+        'auto_render_pdf' => 'Genera PDF',
+        'auto_render_pdf_helper' => 'Genera e archivia il PDF del preventivo appena viene salvato.',
+        'mark_as_sent' => 'Segna come inviato',
+        'mark_as_sent_helper' => 'Cambia lo stato da Bozza a Inviato. NON invia alcuna email — è solo un\'etichetta di stato.',
     ],
 
     'cadence' => [
@@ -55,13 +60,6 @@ return [
         'reject' => 'Rifiuta',
         'render_pdf' => 'Genera PDF',
         'download_pdf' => 'Scarica PDF',
-    ],
-
-    'fields' => [
-        'auto_render_pdf' => 'Genera PDF',
-        'auto_render_pdf_helper' => 'Genera e archivia il PDF del preventivo appena viene salvato.',
-        'mark_as_sent' => 'Segna come inviato',
-        'mark_as_sent_helper' => 'Cambia lo stato da Bozza a Inviato. NON invia alcuna email — è solo un\'etichetta di stato.',
     ],
 
     'auto_populate' => [

@@ -32,6 +32,11 @@ return [
         'line_unit_price' => 'Unit price',
         'line_vat_rate' => 'VAT rate %',
         'line_cadence' => 'Cadence',
+
+        'auto_render_pdf' => 'Render PDF',
+        'auto_render_pdf_helper' => 'Generate and store the quotation PDF as soon as it is saved.',
+        'mark_as_sent' => 'Mark as sent',
+        'mark_as_sent_helper' => 'Flip the status from Draft to Sent. Does NOT send any email — purely a status flag.',
     ],
 
     'cadence' => [
@@ -55,13 +60,6 @@ return [
         'reject' => 'Reject',
         'render_pdf' => 'Render PDF',
         'download_pdf' => 'Download PDF',
-    ],
-
-    'fields' => [
-        'auto_render_pdf' => 'Render PDF',
-        'auto_render_pdf_helper' => 'Generate and store the quotation PDF as soon as it is saved.',
-        'mark_as_sent' => 'Mark as sent',
-        'mark_as_sent_helper' => 'Flip the status from Draft to Sent. Does NOT send any email — purely a status flag.',
     ],
 
     'auto_populate' => [
