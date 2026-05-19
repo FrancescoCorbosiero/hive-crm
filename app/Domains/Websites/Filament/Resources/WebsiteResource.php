@@ -130,6 +130,11 @@ class WebsiteResource extends Resource
                         ->default(12)
                         ->minValue(1)
                         ->maxValue(60),
+
+                    MoneyInput::make('renewal_cost_cents')
+                        ->label(__('websites/labels.renewal_cost'))
+                        ->helperText(__('websites/labels.renewal_cost_helper'))
+                        ->columnSpanFull(),
                 ]),
 
             Forms\Components\Section::make(__('websites/labels.section.tech'))

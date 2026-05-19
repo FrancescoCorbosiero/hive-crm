@@ -9,6 +9,7 @@ use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\DomainNames\Models\DomainName;
 use App\Domains\Finance\Filament\Pages\CashFlowProjectionPage;
+use App\Domains\Websites\Models\Website;
 use App\Models\User;
 use Carbon\Carbon;
 use Livewire\Livewire;
@@ -149,6 +150,41 @@ it('skips inactive recurring invoices and domains without renewal_cost', functio
 
     expect($data['has_data'])->toBeFalse();
     expect(count($data['entries']))->toBe(0);
+});
+
+it('projects website hosting renewals at the configured next_renewal_at and cycle', function () {
+    Carbon::setTestNow('2026-05-01');
+
+    Website::factory()->create([
+        'url' => 'https://hostedhere.com',
+        'next_renewal_at' => '2026-09-15',
+        'renewal_period_months' => 6,
+        'renewal_cost_cents' => 3_000, // €30 per 6-month cycle
+    ]);
+
+    $page = Livewire::test(CashFlowProjectionPage::class);
+    $data = $page->instance()->getViewData();
+
+    // 12-month window May 2026 → April 2027.
+    // Cycles fall: 2026-09-15, 2027-03-15. Both inside window = 2 entries.
+    expect(count($data['entries']))->toBe(2);
+    expect(collect($data['entries'])->pluck('type')->unique()->all())->toBe(['loss']);
+    expect(collect($data['entries'])->sum('amount_cents'))->toBe(2 * 3_000);
+});
+
+it('skips websites without renewal_cost_cents', function () {
+    Carbon::setTestNow('2026-05-01');
+
+    Website::factory()->create([
+        'next_renewal_at' => '2026-08-15',
+        'renewal_period_months' => 12,
+        'renewal_cost_cents' => null,
+    ]);
+
+    $page = Livewire::test(CashFlowProjectionPage::class);
+    $data = $page->instance()->getViewData();
+
+    expect($data['has_data'])->toBeFalse();
 });
 
 it('catches overdue cycles in the current month so the operator notices', function () {

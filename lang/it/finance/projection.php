@@ -39,9 +39,11 @@ return [
     'sources' => [
         'recurring_fattura' => 'Fattura ricorrente',
         'domain' => 'Rinnovo dominio',
+        'website' => 'Rinnovo sito',
     ],
 
     'entries' => [
         'domain_renewal' => 'Rinnovo — :name',
+        'website_renewal' => 'Hosting — :name',
     ],
 ];

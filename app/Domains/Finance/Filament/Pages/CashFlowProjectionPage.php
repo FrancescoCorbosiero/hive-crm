@@ -6,6 +6,7 @@ namespace App\Domains\Finance\Filament\Pages;
 
 use App\Domains\Documents\Models\RecurringFattura;
 use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\Websites\Models\Website;
 use App\Shared\ValueObjects\Money;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -25,10 +26,9 @@ use Filament\Pages\Page;
  *   - Projected loss comes from active DomainName entries with a
  *     renewal_cost_cents and an expires_at — each renewal cycle is a
  *     LOSS at the expiry date.
- *
- * Website renewals are NOT projected today: the Website model has no
- * renewal_cost column. Adding one (and a setup-cost mirror) is the
- * follow-up if you want hosting losses in this view.
+ *   - Active Website entries with a renewal_cost_cents and a
+ *     next_renewal_at contribute hosting losses on the same cycle
+ *     pattern (renewal_period_months apart).
  *
  * No rows are created. The Italian fattura is a tax artefact whose
  * sequential numbering is allocated at issuance time — pre-creating
@@ -170,6 +170,42 @@ class CashFlowProjectionPage extends Page implements HasForms
                         'amount_cents' => $cost,
                         'amount' => (new Money($cost, $domain->currency ?: $currency))->format($locale),
                         'source' => __('finance/projection.sources.domain'),
+                    ];
+                }
+                $cursor = $cursor->copy()->addMonths($periodMonths);
+            }
+        }
+
+        // Projected loss from active Website renewals — symmetric to
+        // the DomainName branch above. Websites carry a single
+        // `renewal_cost_cents` and reuse the app-default currency.
+        $websiteQuery = Website::query()
+            ->active()
+            ->whereNotNull('next_renewal_at')
+            ->whereNotNull('renewal_cost_cents');
+
+        foreach ($websiteQuery->get() as $website) {
+            $cost = (int) $website->renewal_cost_cents;
+            if ($cost <= 0) {
+                continue;
+            }
+
+            $periodMonths = max(1, (int) $website->renewal_period_months);
+            $cursor = $website->next_renewal_at->copy()->startOfDay();
+
+            while ($cursor->lte($end)) {
+                $monthKey = $cursor->format('Y-m');
+                if (isset($monthly[$monthKey])) {
+                    $monthly[$monthKey]['loss_cents'] += $cost;
+                    $entries[] = [
+                        'type' => 'loss',
+                        'date' => $cursor->toDateString(),
+                        'description' => __('finance/projection.entries.website_renewal', [
+                            'name' => $website->getTranslation('name', $locale) ?: $website->url,
+                        ]),
+                        'amount_cents' => $cost,
+                        'amount' => (new Money($cost, $currency))->format($locale),
+                        'source' => __('finance/projection.sources.website'),
                     ];
                 }
                 $cursor = $cursor->copy()->addMonths($periodMonths);
