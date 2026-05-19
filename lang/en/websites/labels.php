@@ -13,6 +13,8 @@ return [
     'subscription_started_at' => 'Subscription start',
     'next_renewal_at' => 'Next renewal',
     'renewal_period_months' => 'Renewal period (months)',
+    'renewal_cost' => 'Renewal cost (per cycle)',
+    'renewal_cost_helper' => 'Recurring cost per cycle. Drives the Cash Flow Projection page. Leave blank if hosting is bundled into something else.',
     'days_until_renewal' => 'Days until renewal',
     'trello_board_url' => 'Trello board URL',
     'trello_board_url_short' => 'Trello',

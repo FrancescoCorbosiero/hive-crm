@@ -13,6 +13,8 @@ return [
     'subscription_started_at' => 'Inizio abbonamento',
     'next_renewal_at' => 'Prossimo rinnovo',
     'renewal_period_months' => 'Periodo di rinnovo (mesi)',
+    'renewal_cost' => 'Costo di rinnovo (per ciclo)',
+    'renewal_cost_helper' => 'Costo ricorrente per ciclo. Alimenta la pagina Proiezione Cash Flow. Lascia vuoto se l\'hosting è incluso in altro.',
     'days_until_renewal' => 'Giorni al rinnovo',
     'trello_board_url' => 'URL board Trello',
     'trello_board_url_short' => 'Trello',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Websites\Models;
 
+use App\Domains\DomainNames\Models\DomainName;
 use App\Domains\Websites\Database\Factories\WebsiteFactory;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Shared\Concerns\BelongsToOwner;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
 
 class Website extends Model
@@ -35,6 +37,7 @@ class Website extends Model
         'subscription_started_at',
         'next_renewal_at',
         'renewal_period_months',
+        'renewal_cost_cents',
         'is_up',
         'last_status_code',
         'last_pinged_at',
@@ -49,6 +52,7 @@ class Website extends Model
             'subscription_started_at' => 'date',
             'next_renewal_at' => 'date',
             'renewal_period_months' => 'integer',
+            'renewal_cost_cents' => 'integer',
             'is_up' => 'boolean',
             'last_status_code' => 'integer',
             'last_pinged_at' => 'datetime',
@@ -89,8 +93,8 @@ class Website extends Model
     // hard belongsTo dependency) — reading is fine, writing stays with
     // the DomainNames domain. Mirrors the Contact model's pattern.
 
-    public function domainNames(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function domainNames(): HasMany
     {
-        return $this->hasMany(\App\Domains\DomainNames\Models\DomainName::class, 'website_id');
+        return $this->hasMany(DomainName::class, 'website_id');
     }
 }
