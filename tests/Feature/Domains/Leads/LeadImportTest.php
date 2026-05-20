@@ -26,3 +26,7 @@ it('defaults status to new when blank', function () {
     expect(leadCol('status')->castState(null, []))->toBe(LeadStatus::New->value);
     expect(leadCol('status')->castState('qualified', []))->toBe(LeadStatus::Qualified->value);
 });
+
+it('exposes a social_url import column', function () {
+    expect(leadCol('social_url'))->not->toBeNull();
+});

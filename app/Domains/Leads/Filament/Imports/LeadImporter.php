@@ -24,6 +24,10 @@ class LeadImporter extends Importer
                 ->rules(['required', 'string']),
             ImportColumn::make('email')->rules(['nullable', 'email']),
             ImportColumn::make('phone'),
+            // Lenient string (not url) on purpose: migration data often
+            // carries bare handles like "@studiomario" — we don't want a
+            // malformed URL to reject an otherwise-good lead row.
+            ImportColumn::make('social_url')->rules(['nullable', 'string']),
             ImportColumn::make('source')
                 ->castStateUsing(fn (?string $state) => $state
                     ? (LeadSource::tryFrom(strtolower(trim($state)))?->value ?? LeadSource::Other->value)
@@ -46,7 +50,7 @@ class LeadImporter extends Importer
             return Lead::query()->firstOrNew(['email' => $this->data['email']]);
         }
 
-        return new Lead();
+        return new Lead;
     }
 
     public static function getCompletedNotificationBody(Import $import): string
