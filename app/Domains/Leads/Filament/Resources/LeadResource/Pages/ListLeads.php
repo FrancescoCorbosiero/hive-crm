@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domains\Leads\Filament\Resources\LeadResource\Pages;
 
+use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Filament\Exports\LeadExporter;
 use App\Domains\Leads\Filament\Imports\LeadImporter;
 use App\Domains\Leads\Filament\Resources\LeadResource;
+use App\Shared\Filament\Concerns\HasStatusTabs;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListLeads extends ListRecords
 {
+    use HasStatusTabs;
+
     protected static string $resource = LeadResource::class;
 
     protected function getHeaderActions(): array
@@ -21,5 +25,10 @@ class ListLeads extends ListRecords
             Actions\ExportAction::make()->exporter(LeadExporter::class),
             Actions\CreateAction::make(),
         ];
+    }
+
+    protected function statusEnum(): string
+    {
+        return LeadStatus::class;
     }
 }
