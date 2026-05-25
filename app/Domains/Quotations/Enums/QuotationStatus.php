@@ -33,6 +33,11 @@ enum QuotationStatus: string
         return in_array($this, [self::Accepted, self::Rejected, self::Expired], true);
     }
 
+    public function isOpen(): bool
+    {
+        return ! $this->isFinal();
+    }
+
     public static function options(): array
     {
         $out = [];
