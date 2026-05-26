@@ -41,6 +41,9 @@ return [
         'webhook_secret' => env('CALCOM_WEBHOOK_SECRET'),
         // Standard Cal.com header for HMAC-SHA256 signatures.
         'webhook_signature_header' => env('CALCOM_WEBHOOK_SIGNATURE_HEADER', 'X-Cal-Signature-256'),
+        // Public booking page URL — used to embed/open the booking flow
+        // from the UI. Unrelated to the API; safe to expose to the browser.
+        'public_link' => env('PUBLIC_CALCOM_LINK'),
     ],
 
 ];

@@ -69,6 +69,10 @@ return [
         'failed' => 'Could not create fattura.',
     ],
 
+    'book_call' => [
+        'action' => 'Book a call',
+    ],
+
     'widgets' => [
         'pipeline' => 'Leads pipeline',
         'pipeline_value' => 'Pipeline value by stage',

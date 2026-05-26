@@ -69,6 +69,10 @@ return [
         'failed' => 'Impossibile creare la fattura.',
     ],
 
+    'book_call' => [
+        'action' => 'Prenota una call',
+    ],
+
     'widgets' => [
         'pipeline' => 'Pipeline opportunità',
         'pipeline_value' => 'Valore pipeline per fase',
