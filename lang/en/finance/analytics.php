@@ -5,6 +5,13 @@ return [
     'fields' => [
         'from' => 'From',
         'until' => 'Until',
+        'include_non_taxable' => 'Include external income',
+    ],
+    'helpers' => [
+        'include_non_taxable' => 'When on, donations, grants and other non-taxable entries are added to the totals.',
+    ],
+    'banners' => [
+        'non_taxable_included' => 'External (non-taxable) entries are included in the figures below.',
     ],
     'sections' => [
         'totals' => 'Period totals',

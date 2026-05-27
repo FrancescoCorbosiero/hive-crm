@@ -10,6 +10,15 @@
         </div>
     </form>
 
+    @if ($data['include_non_taxable'])
+        <div class="rounded-lg border border-warning-300 bg-warning-50 px-4 py-3 text-sm text-warning-900 dark:border-warning-700 dark:bg-warning-950/30 dark:text-warning-200">
+            <div class="flex items-center gap-2">
+                <x-filament::icon icon="heroicon-o-information-circle" class="h-5 w-5" />
+                <span>{{ __('finance/analytics.banners.non_taxable_included') }}</span>
+            </div>
+        </div>
+    @endif
+
     {{-- Period totals --}}
     <x-filament::section :heading="__('finance/analytics.sections.totals')">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

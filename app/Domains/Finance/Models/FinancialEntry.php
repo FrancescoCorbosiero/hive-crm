@@ -37,6 +37,7 @@ class FinancialEntry extends Model
         'occurred_at',
         'description',
         'category',
+        'is_taxable',
         'source_type',
         'source_id',
         'contact_id',
@@ -51,6 +52,7 @@ class FinancialEntry extends Model
             'type' => FinancialEntryType::class,
             'occurred_at' => 'date',
             'amount_cents' => 'integer',
+            'is_taxable' => 'boolean',
         ];
     }
 
@@ -105,5 +107,15 @@ class FinancialEntry extends Model
             $start->copy()->startOfDay(),
             $end->copy()->endOfDay(),
         ]);
+    }
+
+    /**
+     * Restrict to taxable rows (the default analytics view). Pass
+     * $includeNonTaxable = true to leave the column unfiltered — used
+     * by the explicit "include external" toggles in the UI.
+     */
+    public function scopeTaxable(Builder $query, bool $includeNonTaxable = false): Builder
+    {
+        return $includeNonTaxable ? $query : $query->where('is_taxable', true);
     }
 }

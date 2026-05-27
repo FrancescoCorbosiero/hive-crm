@@ -47,7 +47,7 @@ class FinancialEntryResource extends Resource
     private static function categoryOptions(): array
     {
         return collect(['website_subscription', 'one_time_project', 'consulting',
-            'hosting', 'domains', 'software', 'tools', 'travel', 'taxes', 'other'])
+            'hosting', 'domains', 'software', 'tools', 'travel', 'taxes', 'external', 'other'])
             ->mapWithKeys(fn (string $key) => [$key => __('finance/entries.categories.'.$key)])
             ->all();
     }
@@ -82,7 +82,20 @@ class FinancialEntryResource extends Resource
                     Forms\Components\Select::make('category')
                         ->label(__('finance/entries.fields.category'))
                         ->options(self::categoryOptions())
-                        ->searchable(),
+                        ->searchable()
+                        ->live(),
+
+                    Forms\Components\Toggle::make('is_taxable')
+                        ->label(__('finance/entries.fields.is_taxable'))
+                        ->helperText(__('finance/entries.helpers.is_taxable'))
+                        ->default(true)
+                        ->inline(false)
+                        ->columnSpan(2)
+                        ->afterStateHydrated(function (Forms\Components\Toggle $component, $state): void {
+                            if ($state === null) {
+                                $component->state(true);
+                            }
+                        }),
                 ]),
 
             Forms\Components\Section::make(__('finance/entries.sections.attribution'))
@@ -138,6 +151,18 @@ class FinancialEntryResource extends Resource
                     ->formatStateUsing(fn (?string $state) => $state ? __('finance/entries.categories.'.$state) : '—')
                     ->toggleable(),
 
+                Tables\Columns\IconColumn::make('is_taxable')
+                    ->label(__('finance/entries.fields.is_taxable_short'))
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-banknotes')
+                    ->trueColor('success')
+                    ->falseColor('warning')
+                    ->tooltip(fn (FinancialEntry $entry): string => $entry->is_taxable
+                        ? __('finance/entries.tooltips.taxable')
+                        : __('finance/entries.tooltips.non_taxable'))
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('amount_cents')
                     ->label(__('finance/entries.fields.amount'))
                     ->getStateUsing(fn (FinancialEntry $entry) => $entry->money->format(app()->getLocale()))
@@ -152,6 +177,12 @@ class FinancialEntryResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->label(__('finance/entries.fields.type'))
                     ->options(FinancialEntryType::options()),
+
+                Tables\Filters\TernaryFilter::make('is_taxable')
+                    ->label(__('finance/entries.fields.is_taxable'))
+                    ->placeholder(__('finance/entries.filters.taxable_any'))
+                    ->trueLabel(__('finance/entries.filters.taxable_only'))
+                    ->falseLabel(__('finance/entries.filters.non_taxable_only')),
 
                 Tables\Filters\SelectFilter::make('category')
                     ->label(__('finance/entries.fields.category'))
@@ -174,6 +205,7 @@ class FinancialEntryResource extends Resource
                     ->label(__('finance/entries.actions.generate_fattura'))
                     ->icon('heroicon-o-document-text')
                     ->visible(fn (FinancialEntry $entry) => $entry->type === FinancialEntryType::Income
+                        && $entry->is_taxable
                         && $entry->source_type !== FinancialEntrySource::Fattura->value)
                     ->requiresConfirmation()
                     ->action(function (FinancialEntry $entry): void {

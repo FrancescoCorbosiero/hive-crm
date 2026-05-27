@@ -15,10 +15,27 @@ return [
         'occurred_at' => 'Date',
         'description' => 'Description',
         'category' => 'Category',
+        'is_taxable' => 'Taxable business income',
+        'is_taxable_short' => 'Taxable',
         'source_type' => 'Source',
         'source_id' => 'Reference',
         'contact' => 'Contact',
         'notes' => 'Notes',
+    ],
+
+    'helpers' => [
+        'is_taxable' => 'Leave on for money earned by the business. Turn off for external incomes (donations, grants, personal contributions) — they will be excluded from analytics and projections unless explicitly included.',
+    ],
+
+    'tooltips' => [
+        'taxable' => 'Taxable business income',
+        'non_taxable' => 'External income — excluded from analytics by default',
+    ],
+
+    'filters' => [
+        'taxable_any' => 'All entries',
+        'taxable_only' => 'Taxable only',
+        'non_taxable_only' => 'External only',
     ],
 
     'sections' => [
@@ -45,6 +62,7 @@ return [
         'tools' => 'Tools',
         'travel' => 'Travel',
         'taxes' => 'Taxes',
+        'external' => 'External (donation / grant)',
         'other' => 'Other',
     ],
 

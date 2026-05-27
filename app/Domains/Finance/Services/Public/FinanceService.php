@@ -93,6 +93,7 @@ class FinanceService
             'occurred_at' => $attributes['occurred_at'],
             'description' => $attributes['description'],
             'category' => $attributes['category'] ?? null,
+            'is_taxable' => $attributes['is_taxable'] ?? true,
             'source_type' => $attributes['source_type'] ?? null,
             'source_id' => $attributes['source_id'] ?? null,
             'contact_id' => $attributes['contact_id'] ?? null,
@@ -161,6 +162,10 @@ class FinanceService
             throw new \DomainException('Only INCOME entries can generate a Fattura.');
         }
 
+        if (! $entry->is_taxable) {
+            throw new \DomainException('Non-taxable (external) entries cannot generate a Fattura.');
+        }
+
         $clientContactId = $overrides['client_contact_id'] ?? $entry->contact_id;
         if (! $clientContactId) {
             throw new \DomainException('FinancialEntry has no contact_id and none was provided; cannot generate a Fattura.');
@@ -198,8 +203,13 @@ class FinanceService
     }
 
     // ── Aggregates ─────────────────────────────────────────────────────
+    //
+    // All aggregation methods default to taxable-only (i.e. they exclude
+    // non-taxable "external" entries like donations or grants). Pass
+    // $includeNonTaxable = true to opt those rows back in — used by the
+    // explicit toggle on the Finance Analytics page.
 
-    public function monthlyIncomeForWebsite(int $websiteId, CarbonInterface $month): Money
+    public function monthlyIncomeForWebsite(int $websiteId, CarbonInterface $month, bool $includeNonTaxable = false): Money
     {
         $start = Carbon::instance($month)->copy()->startOfMonth();
         $end = $start->copy()->endOfMonth();
@@ -207,12 +217,13 @@ class FinanceService
         return $this->sum(
             FinancialEntry::query()
                 ->incomes()
+                ->taxable($includeNonTaxable)
                 ->forSource(FinancialEntrySource::Website, $websiteId)
                 ->occurredBetween($start, $end),
         );
     }
 
-    public function ytdIncomeForWebsite(int $websiteId, ?CarbonInterface $asOf = null): Money
+    public function ytdIncomeForWebsite(int $websiteId, ?CarbonInterface $asOf = null, bool $includeNonTaxable = false): Money
     {
         $asOf = $asOf ? Carbon::instance($asOf) : now();
         $start = $asOf->copy()->startOfYear();
@@ -220,12 +231,13 @@ class FinanceService
         return $this->sum(
             FinancialEntry::query()
                 ->incomes()
+                ->taxable($includeNonTaxable)
                 ->forSource(FinancialEntrySource::Website, $websiteId)
                 ->occurredBetween($start, $asOf),
         );
     }
 
-    public function ytdTotal(FinancialEntryType $type, ?CarbonInterface $asOf = null): Money
+    public function ytdTotal(FinancialEntryType $type, ?CarbonInterface $asOf = null, bool $includeNonTaxable = false): Money
     {
         $asOf = $asOf ? Carbon::instance($asOf) : now();
         $start = $asOf->copy()->startOfYear();
@@ -233,6 +245,7 @@ class FinanceService
         return $this->sum(
             FinancialEntry::query()
                 ->ofType($type)
+                ->taxable($includeNonTaxable)
                 ->occurredBetween($start, $asOf),
         );
     }
@@ -243,7 +256,7 @@ class FinanceService
      *
      * @return Collection<string, Money>
      */
-    public function monthlyIncomeSeries(int $months = 12, ?CarbonInterface $endingAt = null): Collection
+    public function monthlyIncomeSeries(int $months = 12, ?CarbonInterface $endingAt = null, bool $includeNonTaxable = false): Collection
     {
         $end = $endingAt ? Carbon::instance($endingAt) : now();
         $cursor = $end->copy()->startOfMonth()->subMonths($months - 1);
@@ -256,6 +269,7 @@ class FinanceService
             $total = $this->sum(
                 FinancialEntry::query()
                     ->incomes()
+                    ->taxable($includeNonTaxable)
                     ->occurredBetween($monthStart, $monthEnd),
             );
 
@@ -273,10 +287,11 @@ class FinanceService
      *
      * @return Collection<string, Money>
      */
-    public function breakdownByCategory(FinancialEntryType $type, CarbonInterface $start, CarbonInterface $end): Collection
+    public function breakdownByCategory(FinancialEntryType $type, CarbonInterface $start, CarbonInterface $end, bool $includeNonTaxable = false): Collection
     {
         $rows = FinancialEntry::query()
             ->ofType($type)
+            ->taxable($includeNonTaxable)
             ->occurredBetween(Carbon::instance($start), Carbon::instance($end))
             ->selectRaw('COALESCE(category, ?) AS category, SUM(amount_cents) AS total_cents', ['(other)'])
             ->groupBy('category')
@@ -298,10 +313,11 @@ class FinanceService
      *
      * @return Collection<int, Money>
      */
-    public function incomeByWebsite(CarbonInterface $start, CarbonInterface $end): Collection
+    public function incomeByWebsite(CarbonInterface $start, CarbonInterface $end, bool $includeNonTaxable = false): Collection
     {
         $rows = FinancialEntry::query()
             ->incomes()
+            ->taxable($includeNonTaxable)
             ->where('source_type', FinancialEntrySource::Website->value)
             ->whereNotNull('source_id')
             ->occurredBetween(Carbon::instance($start), Carbon::instance($end))
