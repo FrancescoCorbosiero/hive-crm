@@ -12,65 +12,67 @@
      bg-fuchsia-50  bg-fuchsia-500/10 text-fuchsia-600  ring-fuchsia-200  hover:border-fuchsia-300  group-hover:text-fuchsia-700  dark:bg-fuchsia-500/10  dark:text-fuchsia-300  dark:ring-fuchsia-500/20  dark:hover:border-fuchsia-400/40 --}}
 
 <x-filament-widgets::widget>
-    <x-filament::section
-        :heading="$this->getHeading()"
-        :description="$this->getDescription()"
-        icon="heroicon-o-bolt"
-        icon-color="warning"
-    >
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <section class="space-y-3">
+        {{-- Editorial section heading — accent bar + bold label, no card chrome --}}
+        <div class="flex items-end justify-between gap-4 px-1">
+            <div class="flex items-center gap-3">
+                <span class="hive-accent-bar h-6"></span>
+                <div>
+                    <h3 class="text-sm font-bold uppercase tracking-[0.14em] text-gray-950 dark:text-white">
+                        {{ $this->getHeading() }}
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ $this->getDescription() }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
             @foreach ($this->tiles as $tile)
                 <a
                     href="{{ $tile['url'] }}"
                     wire:navigate
                     @class([
-                        'group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-gray-200 bg-white p-4',
+                        'group relative flex flex-col justify-between gap-3 overflow-hidden rounded-lg border border-gray-200 bg-white p-3',
                         'transition-all duration-150 ease-out',
                         'hover:-translate-y-0.5 hover:shadow-md',
                         'dark:border-white/10 dark:bg-white/[0.025]',
-                        // Per-tile hover accent (border + label color shift on hover)
                         'hover:border-' . $tile['accent'] . '-300',
                         'dark:hover:border-' . $tile['accent'] . '-400/40',
                     ])
                 >
-                    {{-- Decorative gradient corner --}}
+                    {{-- Top accent stripe, fades in on hover --}}
                     <div @class([
-                        'pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100',
-                        'bg-' . $tile['accent'] . '-500/10',
+                        'absolute inset-x-0 top-0 h-[2px] opacity-0 transition-opacity duration-200 group-hover:opacity-100',
+                        'bg-' . $tile['accent'] . '-500',
                     ])></div>
 
-                    <div class="flex items-start justify-between gap-2">
-                        <span @class([
-                            'flex h-10 w-10 items-center justify-center rounded-lg ring-1',
-                            'bg-' . $tile['accent'] . '-50',
-                            'text-' . $tile['accent'] . '-600',
-                            'ring-' . $tile['accent'] . '-200',
-                            'dark:bg-' . $tile['accent'] . '-500/10',
-                            'dark:text-' . $tile['accent'] . '-300',
-                            'dark:ring-' . $tile['accent'] . '-500/20',
-                        ])>
-                            <x-filament::icon :icon="$tile['icon']" class="h-5 w-5" />
-                        </span>
-
-                        <x-filament::icon
-                            icon="heroicon-m-arrow-up-right"
-                            class="h-4 w-4 text-gray-300 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-300"
-                        />
-                    </div>
+                    <span @class([
+                        'flex h-9 w-9 items-center justify-center rounded-md ring-1',
+                        'bg-' . $tile['accent'] . '-50',
+                        'text-' . $tile['accent'] . '-600',
+                        'ring-' . $tile['accent'] . '-200',
+                        'dark:bg-' . $tile['accent'] . '-500/10',
+                        'dark:text-' . $tile['accent'] . '-300',
+                        'dark:ring-' . $tile['accent'] . '-500/20',
+                    ])>
+                        <x-filament::icon :icon="$tile['icon']" class="h-4 w-4" />
+                    </span>
 
                     <div class="space-y-0.5">
                         <div @class([
-                            'text-sm font-semibold text-gray-950 transition-colors dark:text-white',
+                            'text-[13px] font-semibold leading-tight text-gray-950 transition-colors dark:text-white',
                             'group-hover:text-' . $tile['accent'] . '-700',
                         ])>
                             {{ $tile['label'] }}
                         </div>
-                        <p class="line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                        <p class="line-clamp-2 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
                             {{ $tile['description'] }}
                         </p>
                     </div>
                 </a>
             @endforeach
         </div>
-    </x-filament::section>
+    </section>
 </x-filament-widgets::widget>
