@@ -56,7 +56,7 @@ trait HasStatusTabs
             $tabs['open'] = Tab::make()
                 ->label(__('shared/tabs.open'))
                 ->badge(fn () => $base()->whereIn($column, $openValues)->count())
-                ->modifyQueryUsing(fn (Builder $q) => $q->whereIn($column, $openValues));
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn($column, $openValues));
         }
 
         foreach ($enum::cases() as $case) {
@@ -64,7 +64,7 @@ trait HasStatusTabs
             $tabs[$value] = Tab::make()
                 ->label($case->label())
                 ->badge(fn () => $base()->where($column, $value)->count())
-                ->modifyQueryUsing(fn (Builder $q) => $q->where($column, $value));
+                ->modifyQueryUsing(fn (Builder $query) => $query->where($column, $value));
         }
 
         return $tabs;
