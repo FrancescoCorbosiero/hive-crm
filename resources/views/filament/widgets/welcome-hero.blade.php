@@ -1,35 +1,47 @@
 <x-filament-widgets::widget>
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-6 text-white shadow-lg dark:from-amber-600 dark:via-orange-700 dark:to-rose-700 sm:p-8">
-        {{-- Decorative blobs --}}
-        <div class="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
-        <div class="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="hive-dot-grid relative overflow-hidden rounded-xl bg-slate-900 text-white shadow-xl ring-1 ring-white/5 dark:bg-slate-950">
+        {{-- Diagonal accent shape — subtle, geometric, no blurry blob.      --}}
+        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rotate-12 bg-gradient-to-br from-amber-500/20 via-amber-500/5 to-transparent"></div>
 
-        <div class="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div class="space-y-2">
-                <p class="text-sm font-medium uppercase tracking-wider text-white/80">
-                    {{ $this->todayLabel }}
-                </p>
-                <h2 class="text-2xl font-bold leading-tight sm:text-3xl">
-                    {{ $this->greeting }}@if ($this->userName), <span class="text-white">{{ $this->userName }}</span>@endif
+        {{-- Top accent rule — single 2px amber line bleeding to transparent. --}}
+        <div class="hive-accent-rule absolute inset-x-0 top-0"></div>
+
+        <div class="relative grid gap-8 p-6 sm:p-10 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:gap-12">
+
+            {{-- ── Left column: brand mark + date + headline + tagline ───── --}}
+            <div class="space-y-5">
+                <div class="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.18em] text-white/60">
+                    <span class="hive-monogram inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber-500 text-base text-slate-950">H</span>
+                    <span class="h-px flex-1 bg-white/15 sm:max-w-[3rem]"></span>
+                    <span>{{ $this->todayLabel }}</span>
+                </div>
+
+                <h2 class="hive-display-num text-3xl font-bold leading-[1.05] tracking-tight sm:text-4xl lg:text-5xl">
+                    {{ $this->greeting }}@if ($this->userName)<span class="text-amber-400">,</span>
+                        <span class="block sm:inline">{{ $this->userName }}</span>
+                    @endif
                 </h2>
-                <p class="max-w-xl text-sm text-white/90 sm:text-base">
+
+                <p class="max-w-xl text-sm leading-relaxed text-white/65 sm:text-base">
                     {{ __('dashboard.hero.tagline') }}
                 </p>
             </div>
 
-            <div class="flex flex-wrap gap-3 lg:justify-end">
+            {{-- ── Right column: 2×2 grid of counters with mono numerals ── --}}
+            <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/10">
                 @foreach ($this->counters as $counter)
-                    <div class="flex min-w-[7.5rem] items-center gap-3 rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm ring-1 ring-white/20 transition hover:bg-white/25">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                            <x-filament::icon :icon="$counter['icon']" class="h-5 w-5 text-white" />
-                        </span>
-                        <div class="leading-tight">
-                            <div class="text-xl font-bold tabular-nums">{{ $counter['value'] }}</div>
-                            <div class="text-[11px] uppercase tracking-wide text-white/80">{{ $counter['label'] }}</div>
+                    <div class="group relative flex flex-col gap-1 bg-slate-900 p-4 transition-colors hover:bg-slate-800/80 dark:bg-slate-950 dark:hover:bg-slate-900/80">
+                        <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+                            <x-filament::icon :icon="$counter['icon']" class="h-3.5 w-3.5 text-amber-400" />
+                            <span>{{ $counter['label'] }}</span>
                         </div>
+                        <dd class="hive-display-num text-3xl font-bold text-white sm:text-4xl">
+                            {{ $counter['value'] }}
+                        </dd>
                     </div>
                 @endforeach
-            </div>
+            </dl>
+
         </div>
     </div>
 </x-filament-widgets::widget>

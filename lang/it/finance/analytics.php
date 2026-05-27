@@ -5,6 +5,13 @@ return [
     'fields' => [
         'from' => 'Dal',
         'until' => 'Al',
+        'include_non_taxable' => 'Includi entrate esterne',
+    ],
+    'helpers' => [
+        'include_non_taxable' => 'Se attivo, donazioni, contributi e altre voci non imponibili vengono sommate nei totali.',
+    ],
+    'banners' => [
+        'non_taxable_included' => 'Le voci esterne (non imponibili) sono incluse nei valori sotto.',
     ],
     'sections' => [
         'totals' => 'Totali del periodo',

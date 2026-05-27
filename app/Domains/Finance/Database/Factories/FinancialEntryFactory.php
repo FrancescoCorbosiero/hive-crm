@@ -30,12 +30,21 @@ class FinancialEntryFactory extends Factory
             'occurred_at' => $faker->dateTimeBetween('-1 year', 'now'),
             'description' => $isIncome ? 'Fattura cliente' : 'Spesa generica',
             'category' => $isIncome ? 'consulting' : 'tools',
+            'is_taxable' => true,
             'source_type' => null,
             'source_id' => null,
             'contact_id' => null,
             'notes' => null,
             'owner_user_id' => null,
         ];
+    }
+
+    public function nonTaxable(): self
+    {
+        return $this->state(fn () => [
+            'is_taxable' => false,
+            'category' => 'external',
+        ]);
     }
 
     public function income(int $cents = 10_000): self

@@ -15,10 +15,27 @@ return [
         'occurred_at' => 'Data',
         'description' => 'Descrizione',
         'category' => 'Categoria',
+        'is_taxable' => 'Reddito imponibile',
+        'is_taxable_short' => 'Imponibile',
         'source_type' => 'Fonte',
         'source_id' => 'Riferimento',
         'contact' => 'Contatto',
         'notes' => 'Note',
+    ],
+
+    'helpers' => [
+        'is_taxable' => 'Lascia attivo per denaro guadagnato dall\'attività. Disattivalo per entrate esterne (donazioni, contributi, apporti personali) — non saranno incluse nelle analisi né nelle proiezioni se non esplicitamente richieste.',
+    ],
+
+    'tooltips' => [
+        'taxable' => 'Reddito imponibile dell\'attività',
+        'non_taxable' => 'Entrata esterna — esclusa dalle analisi per default',
+    ],
+
+    'filters' => [
+        'taxable_any' => 'Tutte le voci',
+        'taxable_only' => 'Solo imponibili',
+        'non_taxable_only' => 'Solo esterne',
     ],
 
     'sections' => [
@@ -45,6 +62,7 @@ return [
         'tools' => 'Strumenti',
         'travel' => 'Trasferte',
         'taxes' => 'Tasse',
+        'external' => 'Esterna (donazione / contributo)',
         'other' => 'Altro',
     ],
 

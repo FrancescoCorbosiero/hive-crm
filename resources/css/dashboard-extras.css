@@ -1,13 +1,87 @@
 /*
  * Dashboard extras — emits ONLY the utility classes used by the
- * custom dashboard widgets (welcome hero + quick-actions tile grid)
- * that aren't part of Filament's vendored precompiled palette.
+ * custom dashboard widgets that aren't part of Filament's vendored
+ * precompiled palette, plus a small set of project-specific
+ * primitives (dot grid, accent rule, brand monogram).
  *
  * No @tailwind base / @tailwind components: those would conflict
  * with Filament's own reset. We piggy-back on Filament's reset and
  * only inject the additional utilities Tailwind's JIT picks up from
- * scanning resources/views/**.blade.php (incl. the safelist comment
- * at the top of quick-actions.blade.php).
+ * scanning resources/views/**.blade.php (incl. the safelist comments
+ * in the affected widget templates).
  */
 
 @tailwind utilities;
+
+@layer utilities {
+    /* ── Sharp surfaces ────────────────────────────────────────────── */
+    /* A dark editorial backdrop with a faint dot-grid pattern. Used
+     * by the welcome hero and by any KPI card that wants the same
+     * "captive" feel. The grid is generated inline as an SVG so we
+     * don't ship a separate asset.                                     */
+    .hive-dot-grid {
+        background-image:
+            radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+        background-size: 18px 18px;
+        background-position: 0 0;
+    }
+
+    /* Variant for light backgrounds. */
+    .hive-dot-grid-on-light {
+        background-image:
+            radial-gradient(rgba(15, 23, 42, 0.07) 1px, transparent 1px);
+        background-size: 18px 18px;
+        background-position: 0 0;
+    }
+
+    /* A 1px accent line used as a visual "rule" in editorial layouts. */
+    .hive-accent-rule {
+        height: 2px;
+        background: linear-gradient(90deg, rgb(245, 158, 11) 0%, rgba(245, 158, 11, 0) 100%);
+    }
+
+    /* Vertical accent bar — useful as a section marker. */
+    .hive-accent-bar {
+        width: 3px;
+        background: rgb(245, 158, 11);
+        border-radius: 2px;
+    }
+
+    /* Display numerals — pulls the system "sans" stack but tightens
+     * letter-spacing and forces tabular figures so finance values
+     * align across rows without jumping. Used for KPI values.        */
+    .hive-display-num {
+        font-feature-settings: "tnum" 1, "lnum" 1, "ss01" 1;
+        font-variant-numeric: tabular-nums lining-nums;
+        letter-spacing: -0.025em;
+    }
+
+    /* Brand monogram — a sharply-cornered "H" rendered with CSS. The
+     * widget templates render this as an inline element so it can sit
+     * inside a flex container without a separate SVG round-trip.    */
+    .hive-monogram {
+        font-weight: 800;
+        letter-spacing: -0.06em;
+        line-height: 1;
+        font-feature-settings: "ss01" 1;
+    }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Tailwind JIT safelist — utilities the templates reference via runtime
+ * string concatenation (so the scanner can't see them in source). All
+ * slate / zinc shades the hero uses, plus the four KPI accent palettes.
+ * ──────────────────────────────────────────────────────────────────── */
+/*!
+    bg-slate-900 bg-slate-950 bg-zinc-900 bg-zinc-950
+    bg-emerald-500 bg-rose-500 bg-amber-500 bg-sky-500
+    text-emerald-600 text-rose-600 text-amber-600 text-sky-600
+    text-emerald-700 text-rose-700 text-amber-700 text-sky-700
+    dark:text-emerald-300 dark:text-rose-300 dark:text-amber-300 dark:text-sky-300
+    bg-emerald-50 bg-rose-50 bg-amber-50 bg-sky-50
+    dark:bg-emerald-500/10 dark:bg-rose-500/10 dark:bg-amber-500/10 dark:bg-sky-500/10
+    ring-emerald-200 ring-rose-200 ring-amber-200 ring-sky-200
+    dark:ring-emerald-500/20 dark:ring-rose-500/20 dark:ring-amber-500/20 dark:ring-sky-500/20
+    from-emerald-500 from-rose-500 from-amber-500 from-sky-500
+    to-emerald-500/0 to-rose-500/0 to-amber-500/0 to-sky-500/0
+*/

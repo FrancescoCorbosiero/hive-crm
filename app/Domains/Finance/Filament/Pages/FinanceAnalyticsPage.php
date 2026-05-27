@@ -44,6 +44,7 @@ class FinanceAnalyticsPage extends Page implements HasForms
         $this->form->fill([
             'from' => now()->startOfYear()->toDateString(),
             'until' => now()->toDateString(),
+            'include_non_taxable' => false,
         ]);
     }
 
@@ -60,6 +61,11 @@ class FinanceAnalyticsPage extends Page implements HasForms
                     ->displayFormat('d/m/Y')
                     ->required()
                     ->after('from'),
+                Forms\Components\Toggle::make('include_non_taxable')
+                    ->label(__('finance/analytics.fields.include_non_taxable'))
+                    ->helperText(__('finance/analytics.helpers.include_non_taxable'))
+                    ->inline(false)
+                    ->columnSpan(2),
             ])
             ->columns(2)
             ->statePath('data');
@@ -74,16 +80,22 @@ class FinanceAnalyticsPage extends Page implements HasForms
         return [$from, $until];
     }
 
+    public function includeNonTaxable(): bool
+    {
+        return (bool) ($this->form->getState()['include_non_taxable'] ?? false);
+    }
+
     public function getViewData(): array
     {
         [$from, $until] = $this->range();
+        $includeNonTaxable = $this->includeNonTaxable();
         $finance = app(FinanceService::class);
         $websites = app(WebsitesService::class);
         $locale = app()->getLocale();
 
-        $income = $finance->breakdownByCategory(FinancialEntryType::Income, $from, $until);
-        $loss = $finance->breakdownByCategory(FinancialEntryType::Loss, $from, $until);
-        $byWebsite = $finance->incomeByWebsite($from, $until);
+        $income = $finance->breakdownByCategory(FinancialEntryType::Income, $from, $until, $includeNonTaxable);
+        $loss = $finance->breakdownByCategory(FinancialEntryType::Loss, $from, $until, $includeNonTaxable);
+        $byWebsite = $finance->incomeByWebsite($from, $until, $includeNonTaxable);
 
         $totalIncome = $income->sum(fn ($m) => $m->cents);
         $totalLoss = $loss->sum(fn ($m) => $m->cents);
@@ -104,6 +116,7 @@ class FinanceAnalyticsPage extends Page implements HasForms
         return [
             'from' => $from->toDateString(),
             'until' => $until->toDateString(),
+            'include_non_taxable' => $includeNonTaxable,
             'income' => $income->map(fn ($m, $cat) => [
                 'category' => __('finance/entries.categories.'.$cat, [], $locale) === 'finance/entries.categories.'.$cat
                     ? $cat
