@@ -5,6 +5,7 @@ return [
     'subtitle' => 'Dati che alimentano i template (PDF, XML FatturaPA) e identificano la tua attività.',
     'saved' => 'Anagrafica salvata',
     'save' => 'Salva',
+    'save_hint' => 'Modifiche applicate a fatture, preventivi e XML futuri.',
 
     'tabs' => [
         'anagrafica' => 'Anagrafica',

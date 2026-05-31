@@ -70,18 +70,21 @@
 /* ──────────────────────────────────────────────────────────────────────
  * Tailwind JIT safelist — utilities the templates reference via runtime
  * string concatenation (so the scanner can't see them in source). All
- * slate / zinc shades the hero uses, plus the four KPI accent palettes.
+ * slate / zinc shades the hero uses, plus the KPI / tile accent palettes
+ * shared by the dashboard widgets AND the editorial pages (cash-flow,
+ * analytics, demo-data, etc.) that pick an accent at runtime.
  * ──────────────────────────────────────────────────────────────────── */
 /*!
     bg-slate-900 bg-slate-950 bg-zinc-900 bg-zinc-950
-    bg-emerald-500 bg-rose-500 bg-amber-500 bg-sky-500
-    text-emerald-600 text-rose-600 text-amber-600 text-sky-600
-    text-emerald-700 text-rose-700 text-amber-700 text-sky-700
-    dark:text-emerald-300 dark:text-rose-300 dark:text-amber-300 dark:text-sky-300
-    bg-emerald-50 bg-rose-50 bg-amber-50 bg-sky-50
-    dark:bg-emerald-500/10 dark:bg-rose-500/10 dark:bg-amber-500/10 dark:bg-sky-500/10
-    ring-emerald-200 ring-rose-200 ring-amber-200 ring-sky-200
-    dark:ring-emerald-500/20 dark:ring-rose-500/20 dark:ring-amber-500/20 dark:ring-sky-500/20
+    bg-emerald-500 bg-rose-500 bg-amber-500 bg-sky-500 bg-violet-500 bg-indigo-500 bg-cyan-500 bg-fuchsia-500
+    text-emerald-600 text-rose-600 text-amber-600 text-sky-600 text-violet-600 text-indigo-600 text-cyan-600 text-fuchsia-600
+    text-emerald-700 text-rose-700 text-amber-700 text-sky-700 text-violet-700 text-indigo-700 text-cyan-700 text-fuchsia-700
+    dark:text-emerald-300 dark:text-rose-300 dark:text-amber-300 dark:text-sky-300 dark:text-violet-300 dark:text-indigo-300 dark:text-cyan-300 dark:text-fuchsia-300
+    bg-emerald-50 bg-rose-50 bg-amber-50 bg-sky-50 bg-violet-50 bg-indigo-50 bg-cyan-50 bg-fuchsia-50
+    dark:bg-emerald-500/10 dark:bg-rose-500/10 dark:bg-amber-500/10 dark:bg-sky-500/10 dark:bg-violet-500/10 dark:bg-indigo-500/10 dark:bg-cyan-500/10 dark:bg-fuchsia-500/10
+    ring-emerald-200 ring-rose-200 ring-amber-200 ring-sky-200 ring-violet-200 ring-indigo-200 ring-cyan-200 ring-fuchsia-200
+    dark:ring-emerald-500/20 dark:ring-rose-500/20 dark:ring-amber-500/20 dark:ring-sky-500/20 dark:ring-violet-500/20 dark:ring-indigo-500/20 dark:ring-cyan-500/20 dark:ring-fuchsia-500/20
     from-emerald-500 from-rose-500 from-amber-500 from-sky-500
     to-emerald-500/0 to-rose-500/0 to-amber-500/0 to-sky-500/0
+    border-amber-200 dark:border-amber-500/30 bg-amber-50/40
 */
