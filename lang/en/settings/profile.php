@@ -5,6 +5,7 @@ return [
     'subtitle' => 'Data that feeds PDF / XML templates and identifies your business.',
     'saved' => 'Profile saved',
     'save' => 'Save',
+    'save_hint' => 'Changes apply to future invoices, quotations and XML exports.',
 
     'tabs' => [
         'anagrafica' => 'Registry',
