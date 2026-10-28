@@ -6,6 +6,7 @@ namespace App\Domains\Documents\Models;
 
 use App\Domains\Documents\Database\Factories\PaymentFactory;
 use App\Domains\Documents\Enums\PaymentMethod;
+use App\Domains\Documents\Events\PaymentDeleted;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,13 @@ class Payment extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('payment');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleted(function (Payment $payment): void {
+            PaymentDeleted::dispatch($payment->id, (int) $payment->fattura_id);
+        });
     }
 
     protected $table = 'payments';

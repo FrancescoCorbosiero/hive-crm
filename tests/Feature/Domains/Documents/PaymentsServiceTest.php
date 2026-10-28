@@ -121,3 +121,30 @@ it('returns the outstanding amount as a Money instance', function () {
     expect($outstanding->cents)->toBe(70_000);
     expect($outstanding->currency)->toBe('EUR');
 });
+
+it('flags a partially paid fattura Overdue once its due date has passed (Overdue beats PartiallyPaid)', function () {
+    $fattura = Fattura::factory()->totalling(100_000)->create([
+        'client_contact_id' => Contact::factory()->create()->id,
+        'due_date' => now()->subDays(3),
+    ]);
+
+    app(PaymentsService::class)->record($fattura->id, ['amount_cents' => 30_000]);
+
+    $fresh = $fattura->fresh();
+    expect($fresh->payment_status)->toBe(PaymentStatus::Overdue);
+    expect($fresh->outstanding()->cents)->toBe(70_000);
+});
+
+it('does not treat a fattura as Overdue on its due date, only the day after', function () {
+    $fattura = Fattura::factory()->totalling(100_000)->create([
+        'client_contact_id' => Contact::factory()->create()->id,
+        'due_date' => now()->startOfDay(),
+    ]);
+
+    app(PaymentsService::class)->recomputeFromPayments($fattura);
+    expect($fattura->fresh()->payment_status)->toBe(PaymentStatus::Unpaid);
+
+    $this->travel(1)->days();
+    app(PaymentsService::class)->recomputeFromPayments($fattura->fresh());
+    expect($fattura->fresh()->payment_status)->toBe(PaymentStatus::Overdue);
+});

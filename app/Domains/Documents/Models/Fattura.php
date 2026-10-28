@@ -6,9 +6,11 @@ namespace App\Domains\Documents\Models;
 
 use App\Domains\Documents\Database\Factories\FatturaFactory;
 use App\Domains\Documents\Enums\PaymentStatus;
+use App\Domains\Documents\Events\FatturaDeleted;
 use App\Shared\Billing\DerivesTotalsFromLines;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +35,17 @@ class Fattura extends Model
             if ($fattura->exists && $fattura->isDirty(['total_cents', 'due_date'])) {
                 $fattura->payment_status = $fattura->derivePaymentStatus();
             }
+        });
+
+        // Delete payments through Eloquent rather than relying on the FK
+        // cascade, so each one fires PaymentDeleted and Finance can
+        // retract the income it mirrored.
+        static::deleting(function (Fattura $fattura): void {
+            $fattura->payments()->get()->each->delete();
+        });
+
+        static::deleted(function (Fattura $fattura): void {
+            FatturaDeleted::dispatch($fattura->id);
         });
     }
 
@@ -84,9 +97,12 @@ class Fattura extends Model
 
     /**
      * Payment status implied by the cached paid amount, the total and the
-     * due date. Cancelled is sticky — a voided fattura never revives.
+     * due date. Precedence: Cancelled > Paid > Overdue > PartiallyPaid >
+     * Unpaid — a partially paid invoice past its due date is late money,
+     * so it is Overdue. Cancelled is sticky — a voided fattura never
+     * revives.
      */
-    public function derivePaymentStatus(): PaymentStatus
+    public function derivePaymentStatus(?CarbonInterface $today = null): PaymentStatus
     {
         $paid = (int) $this->paid_amount_cents;
         $total = (int) $this->total_cents;
@@ -94,10 +110,20 @@ class Fattura extends Model
         return match (true) {
             $this->payment_status === PaymentStatus::Cancelled => PaymentStatus::Cancelled,
             $total > 0 && $paid >= $total => PaymentStatus::Paid,
+            $this->isPastDue($today) => PaymentStatus::Overdue,
             $paid > 0 => PaymentStatus::PartiallyPaid,
-            $this->due_date !== null && $this->due_date->isPast() => PaymentStatus::Overdue,
             default => PaymentStatus::Unpaid,
         };
+    }
+
+    /**
+     * Past due from the day AFTER due_date — an invoice due today is not
+     * late yet (same rule as the fatture:recompute-overdue sweep).
+     */
+    public function isPastDue(?CarbonInterface $today = null): bool
+    {
+        return $this->due_date !== null
+            && $this->due_date->lt(($today ?? now())->copy()->startOfDay());
     }
 
     public function paidAmount(): Money

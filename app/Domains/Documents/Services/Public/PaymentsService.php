@@ -25,6 +25,10 @@ class PaymentsService
      * Dispatches PaymentRecorded (always) and FatturaPaid (only on the
      * unpaid|partially_paid|overdue → paid transition).
      *
+     * Pass `financial_entry_id` when the cash is already in the Finance
+     * ledger (a fattura generated from an existing income entry): the
+     * payment settles against that entry and Finance books nothing new.
+     *
      * @param  array{
      *     paid_at?: \DateTimeInterface|string|null,
      *     amount_cents: int,
@@ -32,6 +36,7 @@ class PaymentsService
      *     method?: string,
      *     reference?: ?string,
      *     notes?: ?string,
+     *     financial_entry_id?: ?int,
      *     owner_user_id?: ?int,
      *  }  $attributes
      */
@@ -51,6 +56,7 @@ class PaymentsService
                 'method' => $attributes['method'] ?? PaymentMethod::BankTransfer->value,
                 'reference' => $attributes['reference'] ?? null,
                 'notes' => $attributes['notes'] ?? null,
+                'financial_entry_id' => $attributes['financial_entry_id'] ?? null,
                 'owner_user_id' => $attributes['owner_user_id'] ?? $fattura->owner_user_id,
             ]);
 

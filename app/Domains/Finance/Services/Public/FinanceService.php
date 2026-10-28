@@ -6,6 +6,7 @@ namespace App\Domains\Finance\Services\Public;
 
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Services\Public\FatturaService;
+use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Domains\Finance\DTOs\FinancialEntryDTO;
 use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
@@ -15,6 +16,7 @@ use App\Shared\ValueObjects\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Public surface of the Finance domain.
@@ -124,6 +126,26 @@ class FinanceService
     }
 
     /**
+     * Delete the entry tagged with this external reference, if any.
+     */
+    public function deleteByExternalRef(string $externalRef): void
+    {
+        FinancialEntry::query()->where('external_ref', $externalRef)->delete();
+    }
+
+    /**
+     * Clear the source attribution of every entry pointing at the given
+     * source — used when that source (e.g. a fattura) is deleted, so no
+     * entry keeps a dangling reference. Returns the number of entries.
+     */
+    public function detachSource(FinancialEntrySource $source, int $sourceId): int
+    {
+        return FinancialEntry::query()
+            ->forSource($source, $sourceId)
+            ->update(['source_type' => null, 'source_id' => null]);
+    }
+
+    /**
      * @return Collection<int, FinancialEntryDTO>
      */
     public function recent(int $limit = 10): Collection
@@ -144,6 +166,11 @@ class FinanceService
      * The entry is the source of truth for the amount/date/contact;
      * a single-line Fattura is created from those values and the
      * entry is linked back to the new Fattura via source_type/id.
+     *
+     * An INCOME entry is cash already received, so the new Fattura is
+     * settled at once by a payment linked to this entry — it shows as
+     * Paid, and Finance does not mirror that payment into a second
+     * income entry (which would count the same cash twice).
      *
      * Only INCOME entries can produce a Fattura — losses don't map
      * onto an outgoing invoice. Returns the created Fattura.
@@ -178,27 +205,36 @@ class FinanceService
         $vatRate = (float) ($overrides['vat_rate'] ?? 0);
         $unitPriceCents = LineItems::netFromGross((int) $entry->amount_cents, $vatRate);
 
-        $fattura = app(FatturaService::class)->create([
-            'client_contact_id' => (int) $clientContactId,
-            'issued_at' => $overrides['issued_at'] ?? $entry->occurred_at,
-            'currency' => $entry->currency ?: config('app.currency', 'EUR'),
-            'owner_user_id' => $entry->owner_user_id,
-            'lines' => [[
-                'description' => $overrides['line_description'] ?? $entry->description,
-                'qty' => 1,
-                'unit_price_cents' => $unitPriceCents,
-                'vat_rate' => $vatRate,
-            ]],
-        ]);
+        return DB::transaction(function () use ($entry, $overrides, $clientContactId, $unitPriceCents, $vatRate) {
+            $fattura = app(FatturaService::class)->create([
+                'client_contact_id' => (int) $clientContactId,
+                'issued_at' => $overrides['issued_at'] ?? $entry->occurred_at,
+                'currency' => $entry->currency ?: config('app.currency', 'EUR'),
+                'owner_user_id' => $entry->owner_user_id,
+                'lines' => [[
+                    'description' => $overrides['line_description'] ?? $entry->description,
+                    'qty' => 1,
+                    'unit_price_cents' => $unitPriceCents,
+                    'vat_rate' => $vatRate,
+                ]],
+            ]);
 
-        // Point the entry at the freshly-created Fattura so analytics
-        // can see the linkage and we don't double-issue.
-        $entry->update([
-            'source_type' => FinancialEntrySource::Fattura->value,
-            'source_id' => $fattura->id,
-        ]);
+            // Point the entry at the freshly-created Fattura so analytics
+            // can see the linkage and we don't double-issue.
+            $entry->update([
+                'source_type' => FinancialEntrySource::Fattura->value,
+                'source_id' => $fattura->id,
+            ]);
 
-        return $fattura;
+            app(PaymentsService::class)->record($fattura->id, [
+                'amount_cents' => $fattura->total_cents,
+                'paid_at' => $entry->occurred_at,
+                'financial_entry_id' => $entry->id,
+                'owner_user_id' => $entry->owner_user_id,
+            ]);
+
+            return $fattura->fresh();
+        });
     }
 
     // ── Aggregates ─────────────────────────────────────────────────────

@@ -12,14 +12,14 @@ use App\Domains\Finance\Services\Public\FinanceService;
  * When a payment is recorded in the Documents domain, mirror it as an
  * Income FinancialEntry so the ledger reflects cash actually received.
  *
- * Payment is the source of truth here; the resulting financial_entry id
- * is stored on the payment row so it can be cleaned up if the payment
- * is deleted.
+ * Payment is the source of truth here. The entry carries
+ * external_ref = "payment:{paymentId}" — a DB-unique idempotency key and
+ * the handle RetractIncomeForDeletedPayment uses when the payment goes
+ * away — and its id is stored back on the payment row.
  *
- * Note: the reverse direction (FinancialEntry → Fattura, on demand)
- * lives on FinanceService::generateFattura(). This listener handles
- * the legacy direction only — fatture that pre-date the entry-first
- * workflow.
+ * A payment that arrives already linked to an entry (a fattura generated
+ * from an existing income entry, see FinanceService::generateFattura)
+ * is settled against that entry: nothing new is booked.
  */
 class RecordIncomeFromPayment
 {
@@ -32,9 +32,10 @@ class RecordIncomeFromPayment
             return;
         }
 
-        // Already mirrored — keeps the listener idempotent under
-        // duplicate event delivery.
-        if ($payment->financial_entry_id !== null) {
+        // Already mirrored (or settled against an existing entry) —
+        // keeps the listener idempotent under duplicate event delivery.
+        $externalRef = self::externalRef($payment->id);
+        if ($payment->financial_entry_id !== null || $this->finance->findIdByExternalRef($externalRef) !== null) {
             return;
         }
 
@@ -52,9 +53,15 @@ class RecordIncomeFromPayment
             'source_type' => 'fattura',
             'source_id' => $fattura->id,
             'contact_id' => $fattura->client_contact_id,
+            'external_ref' => $externalRef,
             'owner_user_id' => $payment->owner_user_id,
         ]);
 
         $payment->update(['financial_entry_id' => $entryId]);
+    }
+
+    public static function externalRef(int $paymentId): string
+    {
+        return 'payment:'.$paymentId;
     }
 }

@@ -1,7 +1,9 @@
 <?php
 
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Models\Fattura;
+use App\Domains\Documents\Models\Payment;
 use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
@@ -84,4 +86,21 @@ it('records an INCOME entry and a LOSS entry through the service', function () {
 
     expect(FinancialEntry::find($incomeId)->type)->toBe(FinancialEntryType::Income);
     expect(FinancialEntry::find($lossId)->type)->toBe(FinancialEntryType::Loss);
+});
+
+it('settles the generated fattura against the entry instead of booking the income twice', function () {
+    $contact = Contact::factory()->create();
+    $entry = FinancialEntry::factory()->income(12_200)->create(['contact_id' => $contact->id]);
+
+    $generated = app(FinanceService::class)->generateFattura($entry->id, ['vat_rate' => 22]);
+
+    $fattura = Fattura::query()->findOrFail($generated->id);
+    expect($fattura->payment_status)->toBe(PaymentStatus::Paid);
+    expect($fattura->paid_amount_cents)->toBe(12_200);
+
+    $payment = Payment::query()->where('fattura_id', $fattura->id)->sole();
+    expect($payment->financial_entry_id)->toBe($entry->id);
+
+    // The cash was already in the ledger as $entry — no mirror entry.
+    expect(FinancialEntry::count())->toBe(1);
 });
