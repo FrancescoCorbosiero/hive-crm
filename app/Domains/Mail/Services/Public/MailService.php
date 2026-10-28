@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Mail\Services\Public;
 
+use App\Domains\Contacts\DTOs\ContactDTO;
 use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Mail\Enums\CampaignStatus;
 use App\Domains\Mail\Enums\RecipientStatus;
@@ -38,21 +39,17 @@ class MailService
             }
 
             $now = now();
-            $rows = [];
-            foreach (array_unique($contactIds) as $cid) {
-                $contact = $this->contacts->find($cid);
-                if (! $contact || ! $contact->isMailable()) {
-                    continue;
-                }
-
-                $rows[] = [
+            $rows = $this->contacts->findMany(array_values(array_unique($contactIds)))
+                ->filter(fn (ContactDTO $contact) => $contact->isMailable())
+                ->map(fn (ContactDTO $contact) => [
                     'campaign_id' => $campaign->id,
-                    'contact_id' => $cid,
+                    'contact_id' => $contact->id,
                     'status' => RecipientStatus::Pending->value,
                     'created_at' => $now,
                     'updated_at' => $now,
-                ];
-            }
+                ])
+                ->values()
+                ->all();
 
             if ($rows) {
                 // Honour the unique (campaign_id, contact_id) constraint.

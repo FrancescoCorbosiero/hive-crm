@@ -19,6 +19,10 @@ use Illuminate\Queue\SerializesModels;
  * contact that is do_not_email or has no email, and pushes a
  * SendCampaignRecipientJob for each remaining recipient.
  *
+ * The campaign stays Sending while those jobs run; the last recipient
+ * to be processed flips it to Sent (Campaign::completeIfDrained), so
+ * the status and sent_at reflect actual delivery, not the enqueueing.
+ *
  * Idempotent: re-running on a half-dispatched campaign only enqueues
  * the recipients still marked Pending.
  */
@@ -44,8 +48,10 @@ class DispatchCampaignJob implements ShouldQueue
         ]);
 
         $campaign->recipients()->pending()->chunkById(100, function ($recipients) use ($contacts) {
+            $byId = $contacts->findMany($recipients->pluck('contact_id')->all())->keyBy('id');
+
             foreach ($recipients as $recipient) {
-                $contact = $contacts->find($recipient->contact_id);
+                $contact = $byId->get($recipient->contact_id);
 
                 if (! $contact || ! $contact->isMailable()) {
                     $recipient->update(['status' => RecipientStatus::Skipped->value]);
@@ -57,9 +63,8 @@ class DispatchCampaignJob implements ShouldQueue
             }
         });
 
-        $campaign->update([
-            'status' => CampaignStatus::Sent->value,
-            'sent_at' => now(),
-        ]);
+        // Nothing left to send (all skipped, or a sync queue already
+        // processed everything): complete now.
+        $campaign->completeIfDrained();
     }
 }

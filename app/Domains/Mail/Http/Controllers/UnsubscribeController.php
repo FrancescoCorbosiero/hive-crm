@@ -13,12 +13,15 @@ use Illuminate\Http\Request;
 class UnsubscribeController extends Controller
 {
     /**
-     * Public, unauthenticated. Idempotent: hitting the same valid token
-     * twice is a no-op. Invalid / expired / tampered tokens render the
-     * same generic "invalid link" page so nothing leaks.
+     * Public, unauthenticated. Invalid / expired / tampered tokens render
+     * the same generic "invalid link" page so nothing leaks.
      *
-     * Supports GET (browser click) and POST (RFC 8058 List-Unsubscribe-
-     * Post one-click flow).
+     * GET (the link in the email body) only renders a confirmation page:
+     * mail security scanners fetch every link in a message on delivery,
+     * and unsubscribing on GET silently opts real customers out — the
+     * very problem RFC 8058 exists to solve. The unsubscribe happens on
+     * POST: the confirmation button, or the one-click List-Unsubscribe-
+     * Post request mail clients send. Idempotent.
      */
     public function __invoke(Request $request, string $token, ContactsService $contacts): View
     {
@@ -26,6 +29,10 @@ class UnsubscribeController extends Controller
 
         if ($contactId === null) {
             return view('mail.unsubscribe-invalid');
+        }
+
+        if (! $request->isMethod('POST')) {
+            return view('mail.unsubscribe-confirm', ['action' => $request->url()]);
         }
 
         $contacts->flagDoNotEmail($contactId, 'unsubscribe-link');

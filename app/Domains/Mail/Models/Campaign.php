@@ -61,6 +61,23 @@ class Campaign extends Model
         return $this->hasMany(CampaignRecipient::class);
     }
 
+    /**
+     * A Sending campaign becomes Sent once no recipient is left Pending
+     * (each one was sent, skipped or failed). The conditional update
+     * makes concurrent workers finishing together flip it exactly once.
+     */
+    public function completeIfDrained(): void
+    {
+        if ($this->recipients()->pending()->exists()) {
+            return;
+        }
+
+        static::query()
+            ->whereKey($this->getKey())
+            ->where('status', CampaignStatus::Sending->value)
+            ->update(['status' => CampaignStatus::Sent->value, 'sent_at' => now()]);
+    }
+
     public function scopeInFlight(Builder $query): Builder
     {
         return $query->whereIn('status', [

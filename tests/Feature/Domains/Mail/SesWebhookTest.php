@@ -167,3 +167,22 @@ it('rejects a webhook whose SNS signature fails verification', function () {
         'CONTENT_TYPE' => 'application/json',
     ], $body)->assertStatus(403);
 });
+
+it('ignores a redelivered SNS notification (SNS is at-least-once)', function () {
+    $contact = Contact::factory()->create(['email' => 'twice@example.com']);
+    $campaign = Campaign::factory()->create();
+    CampaignRecipient::factory()
+        ->withMessageId('ses-msg-dup')
+        ->create(['campaign_id' => $campaign->id, 'contact_id' => $contact->id]);
+
+    $body = json_encode(snsNotification([
+        'notificationType' => 'Delivery',
+        'mail' => ['messageId' => 'ses-msg-dup'],
+    ]));
+    $post = fn () => $this->call('POST', '/webhooks/ses', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
+
+    $post()->assertStatus(204);
+    $post()->assertOk();
+
+    expect($campaign->fresh()->delivered_count)->toBe(1);
+});
