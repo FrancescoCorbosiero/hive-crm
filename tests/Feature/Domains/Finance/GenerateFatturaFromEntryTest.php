@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\DTOs\FatturaPayloadDTO;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\Payment;
@@ -19,11 +20,13 @@ it('generates a Fattura from an INCOME entry with no VAT', function () {
 
     $fattura = app(FinanceService::class)->generateFattura($entry->id);
 
-    expect($fattura)->toBeInstanceOf(Fattura::class);
-    expect($fattura->total_cents)->toBe(50_000);
-    expect($fattura->subtotal_cents)->toBe(50_000);
-    expect($fattura->vat_cents)->toBe(0);
-    expect($fattura->client_contact_id)->toBe($contact->id);
+    // Documents' published payload, not its model.
+    expect($fattura)->toBeInstanceOf(FatturaPayloadDTO::class);
+    expect($fattura->total->cents)->toBe(50_000);
+    expect($fattura->subtotal->cents)->toBe(50_000);
+    expect($fattura->vat->cents)->toBe(0);
+    expect($fattura->client?->id)->toBe($contact->id);
+    expect($fattura->paymentStatus)->toBe(PaymentStatus::Paid->value);
 
     // The entry is now linked to the Fattura so analytics can see it.
     $entry->refresh();
@@ -41,9 +44,9 @@ it('back-derives unit_price_cents so the Fattura total matches the entry amount 
 
     $fattura = app(FinanceService::class)->generateFattura($entry->id, ['vat_rate' => 22]);
 
-    expect($fattura->subtotal_cents)->toBe(10000);
-    expect($fattura->vat_cents)->toBe(2200);
-    expect($fattura->total_cents)->toBe(12200);
+    expect($fattura->subtotal->cents)->toBe(10000);
+    expect($fattura->vat->cents)->toBe(2200);
+    expect($fattura->total->cents)->toBe(12200);
 });
 
 it('refuses to generate a Fattura from a LOSS entry', function () {
@@ -66,7 +69,7 @@ it('requires either entry.contact_id or an override to generate a Fattura', func
     $fattura = app(FinanceService::class)->generateFattura($entry->id, [
         'client_contact_id' => $contact->id,
     ]);
-    expect($fattura->client_contact_id)->toBe($contact->id);
+    expect($fattura->client?->id)->toBe($contact->id);
 });
 
 it('records an INCOME entry and a LOSS entry through the service', function () {

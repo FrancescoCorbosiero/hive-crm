@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Domains\Contacts\Enums\ContactRole;
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Contacts\Filament\Resources\ContactResource;
 use App\Domains\Documents\Filament\Resources\FatturaResource;
 use App\Domains\Documents\Models\Fattura;
@@ -25,7 +26,6 @@ use App\Filament\Widgets\OpenQuotationsWidget;
 use App\Filament\Widgets\QuickActionsWidget;
 use App\Filament\Widgets\TopLeadsWidget;
 use App\Filament\Widgets\WelcomeHeroWidget;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Websites\Services\Public;
 
 use App\Domains\Websites\DTOs\WebsiteDTO;
+use App\Domains\Websites\Events\WebsiteCreated;
 use App\Domains\Websites\Models\Website;
 use Illuminate\Support\Collection;
 
@@ -29,8 +30,12 @@ class WebsitesService
      *     renewal_period_months?: int,
      *     owner_user_id?: ?int,
      *  }  $attributes
+     * @param  array<string,mixed>|null  $paymentIntent  setup cost to book (see WebsiteCreated)
+     * @param  array<string,mixed>|null  $domainIntent  domain to register alongside (see WebsiteCreated)
+     *
+     * Dispatches WebsiteCreated with the intents, when there are any.
      */
-    public function create(array $attributes): WebsiteDTO
+    public function create(array $attributes, ?array $paymentIntent = null, ?array $domainIntent = null): WebsiteDTO
     {
         $attributes = array_merge([
             'status' => 'active',
@@ -48,6 +53,10 @@ class WebsitesService
         }
 
         $website = Website::query()->create($attributes);
+
+        if ($paymentIntent !== null || $domainIntent !== null) {
+            WebsiteCreated::dispatch($website->id, $paymentIntent, $domainIntent);
+        }
 
         return WebsiteDTO::fromModel($website);
     }

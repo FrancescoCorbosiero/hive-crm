@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Documents\Filament\Resources;
 
 use App\Domains\Catalog\Services\Public\CatalogService;
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\Documents\Enums\PaymentStatus;
@@ -15,7 +16,6 @@ use App\Domains\Documents\Services\Internal\FatturaPaExporter;
 use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Documents\Services\Public\PaymentsService;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\HistoryRelationManager;
 use App\Shared\Filament\MoneyInput;
 use Filament\Forms;

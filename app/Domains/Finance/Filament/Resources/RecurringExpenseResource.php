@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domains\Finance\Filament\Resources;
 
 use App\Domains\Contacts\Enums\ContactRole;
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Domains\Finance\Filament\Resources\RecurringExpenseResource\Pages;
 use App\Domains\Finance\Models\RecurringExpense;
 use App\Domains\Finance\Services\Public\FinanceService;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use Carbon\Carbon;
 use Filament\Forms;

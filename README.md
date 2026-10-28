@@ -6,10 +6,11 @@ a Contabo VPS, single-user for v1, multi-tenant ready.
 
 ## Domains
 
-Seven isolated domains under `app/Domains/`. Each owns its migrations,
+Thirteen domains under `app/Domains/`. Each owns its migrations,
 Filament resources, public service surface (DTOs only across boundaries),
 and event listeners. The conventions are spelled out in
-[`docs/architecture.md`](docs/architecture.md).
+[`docs/architecture.md`](docs/architecture.md) and enforced by
+`tests/Arch`.
 
 | Domain      | Surface                                                      |
 | ----------- | ------------------------------------------------------------ |
@@ -19,7 +20,13 @@ and event listeners. The conventions are spelled out in
 | Leads       | Sales pipeline (new / contacted / qualified / proposal / won / lost) with single-action transactional Convert-to-Customer. |
 | Calendar    | [Cal.com](https://cal.com) bookings via signed webhook + hourly fallback REST sync. Today widget reads from local store only. |
 | Mail        | Campaigns + per-recipient queued sending via SES, SNS-signed bounce/complaint webhooks, signed unsubscribe. |
-| Documents   | Uploads + Italian fatture with race-safe sequential numbering, dompdf rendering, Contabo Object Storage. |
+| Documents   | Uploads + Italian fatture with race-safe sequential numbering, payments, recurring schedules, FatturaPA XML import/export, dompdf rendering, Contabo Object Storage. |
+| Quotations  | Preventivi with their own numbering, validity dates and one-click conversion into a fattura. |
+| Catalog     | Sellable services (price, VAT, cadence) used as templates for quotation and fattura lines. |
+| DomainNames | Domain registrations with registrar, expiry, renewal cost and an idempotent "log renewal" ledger action. |
+| Repositories | Code repositories linked to their website and owner contact. |
+| Scheduling  | Database-driven Laravel scheduler for a whitelist of commands, editable from the UI, with last-run outcomes. |
+| Settings    | The owner's business profile — the Cedente Prestatore identity FatturaPA export and import rely on. |
 
 ## Tech stack
 
@@ -81,10 +88,11 @@ Caddy issues a real Let's Encrypt cert on first request to `APP_DOMAIN`.
 
 ## Architecture
 
-The codebase is split into isolated domains under `app/Domains/{Name}/`. Hard
-rules (no cross-domain Eloquent imports, communication via Events / public
-service DTOs returning, scalar-FK + public-service-lookup pattern instead of
-cross-boundary `belongsTo`) live in [`docs/architecture.md`](docs/architecture.md).
+The codebase is split into domains under `app/Domains/{Name}/`. Each
+publishes a small language (public services, DTOs, events, enums); the
+write side may only use other domains through it, while Filament screens
+may compose across domains for display. The full rules live in
+[`docs/architecture.md`](docs/architecture.md); `tests/Arch` enforces them.
 
 Each domain registers itself via two classes:
 

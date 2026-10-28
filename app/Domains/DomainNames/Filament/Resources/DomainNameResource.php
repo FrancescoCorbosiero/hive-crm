@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\DomainNames\Filament\Resources;
 
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\DomainNames\Enums\DomainStatus;
@@ -13,7 +14,6 @@ use App\Domains\DomainNames\Models\DomainName;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Websites\Models\Website;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use Carbon\Carbon;
 use Filament\Forms;

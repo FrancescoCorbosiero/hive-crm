@@ -1,9 +1,9 @@
 # Architecture
 
-The codebase is organized around isolated **domains**. The point of this
-document is to make it cheap to add the seventh domain six months from now
-without bleeding state across the other six. Read this once before adding
-anything new.
+The codebase is organized around isolated **domains** (thirteen today).
+The point of this document is to make it cheap to add the next one without
+bleeding state across the others. Read this once before adding anything
+new.
 
 ## Why isolated domains
 
@@ -37,6 +37,7 @@ app/
         ├── Jobs/
         ├── Http/
         │   └── Controllers/ ← only if domain exposes routes/webhooks
+        ├── CashFlow/        ← CashFlowSchedule implementations (optional)
         ├── Database/
         │   ├── Migrations/
         │   ├── Factories/
@@ -48,23 +49,74 @@ app/
 Translations live under `lang/{it,en}/{domain}/*.php`. Filament resource
 labels read them via `__('contacts/labels.name')` etc.
 
-## The hard rules
+## The rules
 
-1. A domain MAY depend on `App\Shared\*` and Laravel core — nothing else.
-2. A domain MAY NOT import another domain's `Models`, internal `Services`,
-   `Database\*`, `Filament\*`, or `Enums`.
-3. Cross-domain communication is one of:
-   - **Domain Events** (fire-and-forget; queue when work is non-trivial)
-   - **Public Service classes** under `Services/Public/` returning DTOs
-4. No Eloquent relationships across domain boundaries. Use scalar foreign
-   keys plus `XxxService::find($id)` returning a DTO.
-5. **Exception, deliberately granted:** `Contact` IDs are referenced as
-   scalar FKs from any domain, but no `belongsTo(Contact::class)` outside
-   `App\Domains\Contacts`. Always go through `ContactsService::find($id)`.
+Every domain has a **published language** — the only parts of it other
+domains may touch:
 
-If a feature seems to need a cross-domain Eloquent join, it usually means
-the work belongs in a public-service method that does the heavy query
-internally and returns a DTO/collection.
+| Published          | What it is                                               |
+| ------------------ | -------------------------------------------------------- |
+| `Services/Public/` | commands and queries; they return DTOs, ids or `Money`   |
+| `DTOs/`            | `final readonly` snapshots                               |
+| `Events/`          | facts that happened, carrying ids and scalars — no models |
+| `Enums/`           | value types (statuses, frequencies, …)                   |
+
+(The `create()` methods still return the new model, because Filament's
+create pages need one; callers in other domains use only its `id`.)
+
+Everything else — `Models/`, `Services/Internal/`, `Database/`,
+`Filament/` — is internal to its domain. On top of that:
+
+1. **The write side is strict.** Services, listeners, jobs, controllers,
+   commands and cash-flow schedules use another domain only through its
+   published language. To change another domain's data, call its public
+   service (`PaymentsService::linkFinancialEntry()`) or react to its
+   event — never `$theirModel->update()`.
+2. **The read side composes.** Filament resources, pages and widgets may
+   read other domains' models to display them (a table column, a
+   dashboard widget, the Contact 360 relation managers) and may embed
+   other domains' Filament components (`Contacts\Filament\Components\ContactPicker`).
+   Writes from the UI still go through the owning domain's public
+   service.
+3. **Model relations stay inside the domain**, with two deliberate
+   exceptions that exist to feed relation managers: `Contact` (Contact
+   360) and `Website` (its domain names). Anywhere else, reference
+   another domain by scalar FK and resolve it through its public
+   service (`ContactsService::find($id)`).
+4. **`App\Shared` depends on no domain.** It is the kernel every domain
+   may use: `Money`, line-item maths (`Shared\Billing`), the cash-flow
+   contract (`Shared\CashFlow`), Filament concerns.
+5. **Events are announced by their owner.** To have another domain
+   announce something, call its service — e.g.
+   `WebsitesService::create($attributes, paymentIntent: …)` dispatches
+   `WebsiteCreated`.
+6. Seeders and factories are fixtures and may compose across domains.
+
+`tests/Arch/BoundariesTest.php` enforces these rules (plus "no `env()` at
+runtime" and "DTOs are final") as part of the normal test run.
+
+If a feature seems to need a cross-domain Eloquent join on the write
+side, the work usually belongs in a public-service method that does the
+heavy query internally and returns a DTO/collection.
+
+## Extension points
+
+Some features need every domain's data without one domain reaching into
+the others. Those are contracts in `App\Shared` that each domain
+implements and registers by container tag.
+
+**`Shared\CashFlow\CashFlowSchedule`** — money a domain expects to move:
+recurring invoices, unpaid invoices, renewals, recurring expenses.
+Implement `pending($until)` with the *same* step rule your domain applies
+when the occurrence actually happens (e.g. `RecurringFattura::issueDateAfter()`),
+then tag it in your service provider:
+
+```php
+$this->app->tag([HostingRenewalsSchedule::class], CashFlowSchedule::TAG);
+```
+
+Finance's `CashFlowProjectionService` sums whatever is registered;
+nothing else needs to change.
 
 ## Adding a new domain — step by step
 
@@ -220,7 +272,9 @@ final class ContactFlaggedDoNotEmail
 
 ### 10. Tests
 
-Mirror the structure under `tests/Feature/Domains/{Name}/`:
+The architecture suite (`tests/Arch`) discovers new domains by folder,
+so the boundary rules apply to yours from its first commit. Mirror the
+rest under `tests/Feature/Domains/{Name}/`:
 
 - `XxxModelTest` — factory states, scopes, role/flag helpers
 - `XxxServiceTest` — public-service contract, event dispatching
@@ -255,6 +309,9 @@ domain code itself will need to change.
   domain. In return: a panel that knows what's mounted by reading a
   single list, not by walking the filesystem.
 
+## When a rule fights you
+
 If a constraint here genuinely fights you on a real feature, push back
-in the PR rather than silently bending it. Architecture is an investment,
-not a religion.
+in the PR rather than silently bending it — and if the rule changes,
+change `tests/Arch/BoundariesTest.php` in the same PR, so the doc and
+the check never disagree. Architecture is an investment, not a religion.

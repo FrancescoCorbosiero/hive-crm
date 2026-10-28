@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Quotations\Filament\Resources;
 
 use App\Domains\Catalog\Services\Public\CatalogService;
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Quotations\Enums\LineCadence;
@@ -12,7 +13,6 @@ use App\Domains\Quotations\Enums\QuotationStatus;
 use App\Domains\Quotations\Filament\Resources\QuotationResource\Pages;
 use App\Domains\Quotations\Models\Quotation;
 use App\Domains\Quotations\Services\Public\QuotationsService;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use DomainException;
 use Filament\Forms;

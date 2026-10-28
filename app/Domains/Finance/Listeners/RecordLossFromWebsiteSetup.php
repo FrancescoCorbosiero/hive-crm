@@ -7,7 +7,7 @@ namespace App\Domains\Finance\Listeners;
 use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Websites\Events\WebsiteCreated;
-use App\Domains\Websites\Models\Website;
+use App\Domains\Websites\Services\Public\WebsitesService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -25,7 +25,10 @@ use Illuminate\Support\Carbon;
  */
 class RecordLossFromWebsiteSetup
 {
-    public function __construct(private readonly FinanceService $finance) {}
+    public function __construct(
+        private readonly FinanceService $finance,
+        private readonly WebsitesService $websites,
+    ) {}
 
     public function handle(WebsiteCreated $event): void
     {
@@ -33,7 +36,7 @@ class RecordLossFromWebsiteSetup
             return;
         }
 
-        $website = Website::query()->find($event->websiteId);
+        $website = $this->websites->find($event->websiteId);
         if (! $website) {
             return;
         }
@@ -52,11 +55,11 @@ class RecordLossFromWebsiteSetup
 
         $occurredAt = isset($intent['paid_at']) && $intent['paid_at'] !== null
             ? Carbon::parse($intent['paid_at'])->toDateString()
-            : ($website->subscription_started_at?->toDateString() ?? now()->toDateString());
+            : ($website->subscriptionStartedAt?->toDateString() ?? now()->toDateString());
 
         $description = (string) ($intent['description']
             ?? __('websites/labels.auto_populate.setup_description', [
-                'name' => $website->getTranslation('name', app()->getLocale()) ?: $website->url,
+                'name' => $website->nameForLocale(app()->getLocale()) ?: $website->url,
             ]));
 
         $this->finance->recordLoss([
@@ -67,9 +70,9 @@ class RecordLossFromWebsiteSetup
             'category' => 'hosting',
             'source_type' => FinancialEntrySource::Website->value,
             'source_id' => $website->id,
-            'contact_id' => $website->owner_contact_id,
+            'contact_id' => $website->ownerContactId,
             'external_ref' => $externalRef,
-            'owner_user_id' => $website->owner_user_id,
+            'owner_user_id' => $website->ownerUserId,
             'notes' => isset($intent['method']) && $intent['method'] !== null
                 ? __('websites/labels.auto_populate.payment_method_note', ['method' => $intent['method']])
                 : null,

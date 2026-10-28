@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Resources;
 
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Filament\Resources\FinancialEntryResource\Pages;
 use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Finance\Services\Public\FinanceService;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -218,7 +218,7 @@ class FinancialEntryResource extends Resource
 
                             Notification::make()
                                 ->success()
-                                ->title(__('finance/entries.actions.generate_fattura_success', ['number' => $fattura->displayNumber()]))
+                                ->title(__('finance/entries.actions.generate_fattura_success', ['number' => $fattura->displayNumber]))
                                 ->send();
                         } catch (\Throwable $e) {
                             Notification::make()

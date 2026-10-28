@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\Services\Public;
 
+use App\Domains\Documents\DTOs\PaymentDTO;
 use App\Domains\Documents\Enums\PaymentMethod;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Events\FatturaPaid;
@@ -88,6 +89,21 @@ class PaymentsService
                 $this->recomputeFromPayments($fattura);
             }
         });
+    }
+
+    public function find(int $id): ?PaymentDTO
+    {
+        $payment = Payment::query()->with('fattura')->find($id);
+
+        return $payment ? PaymentDTO::fromModel($payment) : null;
+    }
+
+    /**
+     * Record which ledger entry mirrors this payment (set by Finance).
+     */
+    public function linkFinancialEntry(int $paymentId, int $financialEntryId): void
+    {
+        Payment::query()->whereKey($paymentId)->update(['financial_entry_id' => $financialEntryId]);
     }
 
     public function outstandingAmount(int $fatturaId): Money

@@ -23,6 +23,7 @@ final readonly class WebsiteDTO
         public ?Carbon $subscriptionStartedAt,
         public ?Carbon $nextRenewalAt,
         public int $renewalPeriodMonths,
+        public ?int $ownerUserId = null,
     ) {}
 
     public static function fromModel(Website $website): self
@@ -37,6 +38,7 @@ final readonly class WebsiteDTO
             subscriptionStartedAt: $website->subscription_started_at,
             nextRenewalAt: $website->next_renewal_at,
             renewalPeriodMonths: $website->renewal_period_months,
+            ownerUserId: $website->owner_user_id,
         );
     }
 

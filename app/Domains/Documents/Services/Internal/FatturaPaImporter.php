@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Domains\Documents\Services\Internal;
 
 use App\Domains\Contacts\Enums\ContactRole;
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
-use App\Domains\Finance\Enums\FinancialEntryType;
-use App\Domains\Finance\Models\FinancialEntry;
+use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Settings\Services\Public\BusinessProfileService;
 use App\Shared\Billing\LineItems;
 use DomainException;
@@ -38,6 +37,11 @@ use SimpleXMLElement;
  */
 class FatturaPaImporter
 {
+    public function __construct(
+        private readonly ContactsService $contacts,
+        private readonly FinanceService $finance,
+    ) {}
+
     /**
      * Result shape per XML processed:
      *   ['status' => 'imported'|'skipped'|'failed',
@@ -433,16 +437,14 @@ class FatturaPaImporter
                 $parsed['number'],
             );
 
-            $existing = FinancialEntry::query()
-                ->where('external_ref', $externalRef)
-                ->first();
+            $existingId = $this->finance->findIdByExternalRef($externalRef);
 
-            if ($existing) {
+            if ($existingId !== null) {
                 return [
                     'status' => 'skipped',
                     'direction' => 'inbound',
                     'filename' => $filename,
-                    'financial_entry_id' => $existing->id,
+                    'financial_entry_id' => $existingId,
                     'external_ref' => $externalRef,
                     'reason' => 'already_exists',
                 ];
@@ -453,8 +455,7 @@ class FatturaPaImporter
                 ?? $parsed['cedente']['ragione_sociale']
                 ?? 'Fornitore';
 
-            $entry = FinancialEntry::query()->create([
-                'type' => FinancialEntryType::Loss->value,
+            $entryId = $this->finance->recordLoss([
                 'amount_cents' => $parsed['total_cents'],
                 'currency' => $parsed['currency'],
                 'occurred_at' => $parsed['issued_at'],
@@ -474,7 +475,7 @@ class FatturaPaImporter
                 'status' => 'imported',
                 'direction' => 'inbound',
                 'filename' => $filename,
-                'financial_entry_id' => $entry->id,
+                'financial_entry_id' => $entryId,
                 'external_ref' => $externalRef,
                 'reason' => null,
             ];
@@ -506,32 +507,20 @@ class FatturaPaImporter
         $piva = $party['partita_iva'];
         $cf = $party['codice_fiscale'];
 
-        if ($piva) {
-            $existing = Contact::query()->where('vat_number', $piva)->first();
-            if ($existing) {
-                return $existing->id;
-            }
-        }
-        if ($cf) {
-            $existing = Contact::query()->where('tax_code', $cf)->first();
-            if ($existing) {
-                return $existing->id;
-            }
+        $existingId = $this->contacts->findIdByFiscalIdentity($piva, $cf);
+        if ($existingId !== null) {
+            return $existingId;
         }
 
-        $name = $party['denominazione'] ?: ($party['ragione_sociale'] ?: 'Sconosciuto');
-
-        $contact = Contact::query()->create([
-            'name' => $name,
+        return $this->contacts->create([
+            'name' => $party['denominazione'] ?: ($party['ragione_sociale'] ?: 'Sconosciuto'),
             'ragione_sociale' => $party['ragione_sociale'],
             'vat_number' => $piva,
             'tax_code' => $cf,
             'address' => $party['address'],
             'roles' => [$defaultRole->value],
             'do_not_email' => false,
-        ]);
-
-        return $contact->id;
+        ])->id;
     }
 
     /**

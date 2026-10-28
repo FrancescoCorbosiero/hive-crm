@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Repositories\Filament\Resources;
 
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Repositories\Enums\RepositoryProvider;
 use App\Domains\Repositories\Filament\Resources\RepositoryResource\Pages;
 use App\Domains\Repositories\Models\Repository;
 use App\Domains\Websites\Models\Website;
-use App\Shared\Filament\ContactPicker;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Finance\Listeners;
 
 use App\Domains\DomainNames\Events\DomainRegistered;
-use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\DomainNames\Services\Public\DomainNamesService;
 use App\Domains\Finance\Services\Public\FinanceService;
 use Illuminate\Support\Carbon;
 
@@ -23,7 +23,10 @@ use Illuminate\Support\Carbon;
  */
 class RecordLossFromDomainRegistration
 {
-    public function __construct(private readonly FinanceService $finance) {}
+    public function __construct(
+        private readonly FinanceService $finance,
+        private readonly DomainNamesService $domains,
+    ) {}
 
     public function handle(DomainRegistered $event): void
     {
@@ -31,7 +34,7 @@ class RecordLossFromDomainRegistration
             return;
         }
 
-        $domain = DomainName::query()->find($event->domainId);
+        $domain = $this->domains->find($event->domainId);
         if (! $domain) {
             return;
         }
@@ -50,20 +53,20 @@ class RecordLossFromDomainRegistration
 
         $occurredAt = isset($intent['paid_at']) && $intent['paid_at'] !== null
             ? Carbon::parse($intent['paid_at'])->toDateString()
-            : ($domain->registered_at?->toDateString() ?? now()->toDateString());
+            : ($domain->registeredAt?->toDateString() ?? now()->toDateString());
 
         $this->finance->recordLoss([
             'amount_cents' => $amountCents,
-            'currency' => $intent['currency'] ?? $domain->currency ?? config('app.currency', 'EUR'),
+            'currency' => $intent['currency'] ?? $domain->currency,
             'occurred_at' => $occurredAt,
             'description' => __('domain_names/labels.auto_populate.registration_description', [
                 'name' => $domain->name,
                 'registrar' => $domain->registrar->label(),
             ]),
             'category' => 'domains',
-            'contact_id' => $domain->owner_contact_id,
+            'contact_id' => $domain->ownerContactId,
             'external_ref' => $externalRef,
-            'owner_user_id' => $domain->owner_user_id,
+            'owner_user_id' => $domain->ownerUserId,
             'notes' => isset($intent['method']) && $intent['method'] !== null
                 ? __('domain_names/labels.auto_populate.payment_method_note', ['method' => $intent['method']])
                 : null,

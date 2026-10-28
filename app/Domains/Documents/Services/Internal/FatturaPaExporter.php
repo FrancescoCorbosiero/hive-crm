@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\Services\Internal;
 
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Settings\Services\Public\BusinessProfileService;
 use DomainException;
@@ -30,6 +30,8 @@ use Illuminate\Support\Str;
  */
 class FatturaPaExporter
 {
+    public function __construct(private readonly ContactsService $contacts) {}
+
     /**
      * @return array{filename: string, xml: string}
      */
@@ -100,10 +102,11 @@ class FatturaPaExporter
      */
     private function resolveCessionario(int $contactId): array
     {
-        $contact = Contact::query()->findOrFail($contactId);
+        $contact = $this->contacts->find($contactId)
+            ?? throw new DomainException(sprintf('Contact #%d not found; cannot generate a FatturaPA XML.', $contactId));
 
-        $piva = trim((string) $contact->vat_number);
-        $cf = strtoupper(trim((string) $contact->tax_code));
+        $piva = trim((string) $contact->vatNumber);
+        $cf = strtoupper(trim((string) $contact->taxCode));
 
         if ($piva === '' && $cf === '') {
             throw new DomainException(sprintf(
@@ -125,14 +128,14 @@ class FatturaPaExporter
 
         // SDI code (7 chars) → CodiceDestinatario. Otherwise the
         // SdI default '0000000' + PEC routing.
-        $sdi = trim((string) $contact->sdi_code);
-        $pec = trim((string) $contact->pec_email);
+        $sdi = trim((string) $contact->sdiCode);
+        $pec = trim((string) $contact->pecEmail);
         $codiceDestinatario = ($sdi !== '' && strlen($sdi) === 7) ? strtoupper($sdi) : '0000000';
 
         return [
             'codice_fiscale' => $cf ?: null,
             'partita_iva' => $piva ?: null,
-            'denominazione' => $contact->ragione_sociale ?: $contact->name,
+            'denominazione' => $contact->ragioneSociale ?: $contact->name,
             'sede' => $address,
             'codice_destinatario' => $codiceDestinatario,
             'pec_destinatario' => $pec ?: null,

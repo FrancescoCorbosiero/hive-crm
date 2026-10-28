@@ -31,6 +31,7 @@ class ContactsService
      *     name: string,
      *     email?: ?string,
      *     phone?: ?string,
+     *     ragione_sociale?: ?string,
      *     vat_number?: ?string,
      *     tax_code?: ?string,
      *     address?: ?array<string,mixed>,
@@ -109,6 +110,25 @@ class ContactsService
         return Contact::query()
             ->whereIn(DB::raw('LOWER(email)'), $emails)
             ->pluck('id');
+    }
+
+    /**
+     * The contact a fiscal identity belongs to: Partita IVA first, then
+     * Codice Fiscale.
+     */
+    public function findIdByFiscalIdentity(?string $vatNumber, ?string $taxCode): ?int
+    {
+        foreach (['vat_number' => $vatNumber, 'tax_code' => $taxCode] as $column => $value) {
+            if ($value !== null && $value !== '') {
+                $id = Contact::query()->where($column, $value)->value('id');
+
+                if ($id !== null) {
+                    return (int) $id;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

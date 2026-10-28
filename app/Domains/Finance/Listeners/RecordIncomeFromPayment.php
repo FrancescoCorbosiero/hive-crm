@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\Finance\Listeners;
 
 use App\Domains\Documents\Events\PaymentRecorded;
-use App\Domains\Documents\Models\Payment;
+use App\Domains\Documents\Services\Public\PaymentsService;
+use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Services\Public\FinanceService;
 
 /**
@@ -23,41 +24,39 @@ use App\Domains\Finance\Services\Public\FinanceService;
  */
 class RecordIncomeFromPayment
 {
-    public function __construct(private readonly FinanceService $finance) {}
+    public function __construct(
+        private readonly FinanceService $finance,
+        private readonly PaymentsService $payments,
+    ) {}
 
     public function handle(PaymentRecorded $event): void
     {
-        $payment = Payment::query()->find($event->paymentId);
-        if (! $payment) {
+        $payment = $this->payments->find($event->paymentId);
+        if (! $payment || $payment->fatturaNumber === null) {
             return;
         }
 
         // Already mirrored (or settled against an existing entry) —
         // keeps the listener idempotent under duplicate event delivery.
         $externalRef = self::externalRef($payment->id);
-        if ($payment->financial_entry_id !== null || $this->finance->findIdByExternalRef($externalRef) !== null) {
-            return;
-        }
-
-        $fattura = $payment->fattura;
-        if (! $fattura) {
+        if ($payment->financialEntryId !== null || $this->finance->findIdByExternalRef($externalRef) !== null) {
             return;
         }
 
         $entryId = $this->finance->recordIncome([
-            'amount_cents' => $payment->amount_cents,
-            'currency' => $payment->currency,
-            'occurred_at' => $payment->paid_at,
-            'description' => 'Pagamento '.$fattura->displayNumber(),
+            'amount_cents' => $payment->amount->cents,
+            'currency' => $payment->amount->currency,
+            'occurred_at' => $payment->paidAt,
+            'description' => 'Pagamento '.$payment->fatturaNumber,
             'category' => 'website_subscription',
-            'source_type' => 'fattura',
-            'source_id' => $fattura->id,
-            'contact_id' => $fattura->client_contact_id,
+            'source_type' => FinancialEntrySource::Fattura->value,
+            'source_id' => $payment->fatturaId,
+            'contact_id' => $payment->clientContactId,
             'external_ref' => $externalRef,
-            'owner_user_id' => $payment->owner_user_id,
+            'owner_user_id' => $payment->ownerUserId,
         ]);
 
-        $payment->update(['financial_entry_id' => $entryId]);
+        $this->payments->linkFinancialEntry($payment->id, $entryId);
     }
 
     public static function externalRef(int $paymentId): string

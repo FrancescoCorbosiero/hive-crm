@@ -8,8 +8,9 @@ use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\DomainNames\Events\DomainRegistered;
 use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\Websites\DTOs\WebsiteDTO;
 use App\Domains\Websites\Events\WebsiteCreated;
-use App\Domains\Websites\Models\Website;
+use App\Domains\Websites\Services\Public\WebsitesService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -30,13 +31,15 @@ use Illuminate\Support\Carbon;
  */
 class CreateDomainFromWebsite
 {
+    public function __construct(private readonly WebsitesService $websites) {}
+
     public function handle(WebsiteCreated $event): void
     {
         if ($event->domainIntent === null) {
             return;
         }
 
-        $website = Website::query()->find($event->websiteId);
+        $website = $this->websites->find($event->websiteId);
         if (! $website) {
             return;
         }
@@ -63,7 +66,7 @@ class CreateDomainFromWebsite
 
         $registeredAt = isset($intent['registered_at']) && $intent['registered_at'] !== null
             ? Carbon::parse($intent['registered_at'])->toDateString()
-            : ($website->subscription_started_at?->toDateString() ?? now()->toDateString());
+            : ($website->subscriptionStartedAt?->toDateString() ?? now()->toDateString());
 
         $domain = DomainName::query()->create([
             'name' => $name,
@@ -71,13 +74,13 @@ class CreateDomainFromWebsite
             'status' => DomainStatus::Active->value,
             'registered_at' => $registeredAt,
             'renewal_period_months' => (int) ($intent['renewal_period_months']
-                ?? $website->renewal_period_months
+                ?? $website->renewalPeriodMonths
                 ?? 12),
             'auto_renew' => true,
             'currency' => config('app.currency', 'EUR'),
-            'owner_contact_id' => $website->owner_contact_id,
+            'owner_contact_id' => $website->ownerContactId,
             'website_id' => $website->id,
-            'owner_user_id' => $website->owner_user_id,
+            'owner_user_id' => $website->ownerUserId,
         ]);
 
         // Cost capture: if the operator entered registration cost on the
@@ -104,7 +107,7 @@ class CreateDomainFromWebsite
      * registrable form (scheme / "www." / path stripped, lowercased).
      * Mirrors DomainName::host() so the auto-link matches cleanly.
      */
-    private function resolveName(array $intent, Website $website): string
+    private function resolveName(array $intent, WebsiteDTO $website): string
     {
         $raw = trim((string) ($intent['name_override'] ?? $website->url));
         if ($raw === '') {

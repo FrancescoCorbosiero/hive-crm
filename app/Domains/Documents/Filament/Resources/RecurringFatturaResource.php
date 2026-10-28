@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\Filament\Resources;
 
+use App\Domains\Contacts\Filament\Components\ContactPicker;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Domains\Documents\Filament\Resources\RecurringFatturaResource\Pages;
 use App\Domains\Documents\Models\RecurringFattura;
 use App\Domains\Documents\Services\Public\RecurringFatturaService;
-use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;

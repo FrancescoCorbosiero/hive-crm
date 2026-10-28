@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Services\Public;
 
-use App\Domains\Documents\Models\Fattura;
+use App\Domains\Documents\DTOs\FatturaPayloadDTO;
 use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Domains\Finance\DTOs\FinancialEntryDTO;
@@ -173,7 +173,8 @@ class FinanceService
      * income entry (which would count the same cash twice).
      *
      * Only INCOME entries can produce a Fattura — losses don't map
-     * onto an outgoing invoice. Returns the created Fattura.
+     * onto an outgoing invoice. Returns a snapshot of the new, settled
+     * Fattura (Documents' published payload, not its model).
      *
      * @param  array{
      *     vat_rate?: int|float,
@@ -182,7 +183,7 @@ class FinanceService
      *     client_contact_id?: ?int,
      *  }  $overrides
      */
-    public function generateFattura(int $entryId, array $overrides = []): Fattura
+    public function generateFattura(int $entryId, array $overrides = []): FatturaPayloadDTO
     {
         $entry = FinancialEntry::query()->findOrFail($entryId);
 
@@ -206,7 +207,7 @@ class FinanceService
         $unitPriceCents = LineItems::netFromGross((int) $entry->amount_cents, $vatRate);
 
         return DB::transaction(function () use ($entry, $overrides, $clientContactId, $unitPriceCents, $vatRate) {
-            $fattura = app(FatturaService::class)->create([
+            $fatturaId = app(FatturaService::class)->create([
                 'client_contact_id' => (int) $clientContactId,
                 'issued_at' => $overrides['issued_at'] ?? $entry->occurred_at,
                 'currency' => $entry->currency ?: config('app.currency', 'EUR'),
@@ -217,23 +218,25 @@ class FinanceService
                     'unit_price_cents' => $unitPriceCents,
                     'vat_rate' => $vatRate,
                 ]],
-            ]);
+            ])->id;
 
             // Point the entry at the freshly-created Fattura so analytics
             // can see the linkage and we don't double-issue.
             $entry->update([
                 'source_type' => FinancialEntrySource::Fattura->value,
-                'source_id' => $fattura->id,
+                'source_id' => $fatturaId,
             ]);
 
-            app(PaymentsService::class)->record($fattura->id, [
-                'amount_cents' => $fattura->total_cents,
+            $fattura = app(FatturaService::class)->payload($fatturaId);
+
+            app(PaymentsService::class)->record($fatturaId, [
+                'amount_cents' => $fattura->total->cents,
                 'paid_at' => $entry->occurred_at,
                 'financial_entry_id' => $entry->id,
                 'owner_user_id' => $entry->owner_user_id,
             ]);
 
-            return $fattura->fresh();
+            return app(FatturaService::class)->payload($fatturaId);
         });
     }
 

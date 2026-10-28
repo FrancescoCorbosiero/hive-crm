@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Shared\Filament;
+namespace App\Domains\Contacts\Filament\Components;
 
 use App\Domains\Contacts\Enums\ContactRole;
-use App\Domains\Contacts\Events\ContactCreated;
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\Services\Public\ContactsService;
 use Filament\Forms;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Select;
@@ -27,6 +27,10 @@ use Filament\Forms\Components\Select;
  * Search is case-insensitive across `name` and `email` and runs
  * against the contacts table via LOWER(...) LIKE so it works on
  * both Postgres (prod) and SQLite (tests).
+ *
+ * Lives in the Contacts domain (not Shared): it reads the contacts
+ * table, and other domains' forms compose it like any Filament
+ * component.
  */
 class ContactPicker
 {
@@ -60,21 +64,15 @@ class ContactPicker
             })
             ->getOptionLabelUsing(fn ($value) => Contact::query()->whereKey($value)->value('name'))
             ->createOptionForm(self::createOptionForm())
-            ->createOptionUsing(function (array $data) use ($defaultRoleValues): int {
-                $contact = Contact::query()->create([
-                    'name' => $data['name'],
-                    'email' => $data['email'] ?: null,
-                    'phone' => $data['phone'] ?: null,
-                    'ragione_sociale' => $data['ragione_sociale'] ?: null,
-                    'vat_number' => $data['vat_number'] ?: null,
-                    'roles' => $defaultRoleValues,
-                    'do_not_email' => false,
-                ]);
-
-                ContactCreated::dispatch($contact->id);
-
-                return $contact->id;
-            });
+            ->createOptionUsing(fn (array $data): int => app(ContactsService::class)->create([
+                'name' => $data['name'],
+                'email' => $data['email'] ?: null,
+                'phone' => $data['phone'] ?: null,
+                'ragione_sociale' => $data['ragione_sociale'] ?: null,
+                'vat_number' => $data['vat_number'] ?: null,
+                'roles' => $defaultRoleValues,
+                'do_not_email' => false,
+            ])->id);
     }
 
     /**

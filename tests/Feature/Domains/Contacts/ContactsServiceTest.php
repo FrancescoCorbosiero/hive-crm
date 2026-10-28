@@ -78,3 +78,14 @@ it('reports a DTO as not-mailable when the contact has no email', function () {
 
     expect($dto->isMailable())->toBeFalse();
 });
+
+it('finds a contact by fiscal identity, Partita IVA first', function () {
+    $byVat = Contact::factory()->create(['vat_number' => '01234567890', 'tax_code' => null]);
+    $byTaxCode = Contact::factory()->create(['vat_number' => null, 'tax_code' => 'RSSMRA80A01H501U']);
+    $service = app(ContactsService::class);
+
+    expect($service->findIdByFiscalIdentity('01234567890', 'RSSMRA80A01H501U'))->toBe($byVat->id);
+    expect($service->findIdByFiscalIdentity('99999999999', 'RSSMRA80A01H501U'))->toBe($byTaxCode->id);
+    expect($service->findIdByFiscalIdentity('', null))->toBeNull();
+    expect($service->findIdByFiscalIdentity(null, 'XXXXXX00X00X000X'))->toBeNull();
+});

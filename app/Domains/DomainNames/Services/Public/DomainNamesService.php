@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\DomainNames\Services\Public;
 
+use App\Domains\DomainNames\DTOs\DomainNameDTO;
 use App\Domains\DomainNames\Models\DomainName;
 use App\Domains\Websites\Services\Public\WebsitesService;
 use Illuminate\Support\Collection;
@@ -12,9 +13,22 @@ class DomainNamesService
 {
     public function __construct(private readonly WebsitesService $websites) {}
 
-    public function find(int $id): ?DomainName
+    public function find(int $id): ?DomainNameDTO
     {
-        return DomainName::query()->find($id);
+        $domain = DomainName::query()->find($id);
+
+        return $domain ? DomainNameDTO::fromModel($domain) : null;
+    }
+
+    /**
+     * Point a domain at the website it serves, if it isn't linked yet.
+     */
+    public function linkWebsite(int $domainId, int $websiteId): void
+    {
+        DomainName::query()
+            ->whereKey($domainId)
+            ->whereNull('website_id')
+            ->update(['website_id' => $websiteId]);
     }
 
     /**
