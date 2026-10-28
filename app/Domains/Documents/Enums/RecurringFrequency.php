@@ -19,13 +19,17 @@ enum RecurringFrequency: string
 
     /**
      * Advance a date by one period of this frequency.
+     *
+     * Never overflows into the following month: Jan 31 + 1 month is
+     * Feb 28, not Mar 3 — which would skip February's cycle entirely
+     * and leave the schedule on the 3rd from then on.
      */
     public function advance(CarbonInterface $from): CarbonInterface
     {
         return match ($this) {
-            self::Monthly => $from->copy()->addMonth(),
-            self::Quarterly => $from->copy()->addMonths(3),
-            self::Yearly => $from->copy()->addYear(),
+            self::Monthly => $from->copy()->addMonthsNoOverflow(1),
+            self::Quarterly => $from->copy()->addMonthsNoOverflow(3),
+            self::Yearly => $from->copy()->addYearsNoOverflow(1),
         };
     }
 

@@ -415,9 +415,8 @@ class DomainNameResource extends Resource
                     'owner_user_id' => $domain->owner_user_id,
                 ]);
 
-                $months = max(1, (int) $domain->renewal_period_months);
                 $domain->update([
-                    'expires_at' => Carbon::parse($renewedCycle)->addMonths($months)->toDateString(),
+                    'expires_at' => $domain->renewedExpiry(Carbon::parse($renewedCycle))->toDateString(),
                     'status' => DomainStatus::Active->value,
                 ]);
 

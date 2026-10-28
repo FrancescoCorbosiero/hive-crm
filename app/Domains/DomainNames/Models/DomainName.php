@@ -9,6 +9,8 @@ use App\Domains\DomainNames\Enums\Registrar;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -54,6 +56,14 @@ class DomainName extends Model
         }
 
         return new Money((int) $this->renewal_cost_cents, $this->currency ?: config('app.currency', 'EUR'));
+    }
+
+    /**
+     * Expiry date after renewing the cycle that expires on $expiry.
+     */
+    public function renewedExpiry(CarbonInterface $expiry): CarbonImmutable
+    {
+        return CarbonImmutable::instance($expiry)->addMonthsNoOverflow(max(1, (int) $this->renewal_period_months));
     }
 
     public function daysUntilExpiry(?Carbon $now = null): ?int

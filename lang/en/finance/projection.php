@@ -3,8 +3,9 @@
 return [
     'page_title' => 'Cash flow projection',
     'recompute' => 'Recompute',
-    'derived_hint' => 'Derived from active recurring invoices and domain renewal schedules. No rows are created.',
-    'empty' => 'Nothing projected in this window. Add a recurring invoice or set renewal_cost on a domain to see entries here.',
+    'derived_hint' => 'Derived from recurring invoices, unpaid invoices, recurring expenses and domain / hosting renewals. Overdue items count in the current month. No rows are created.',
+    'empty' => 'Nothing projected in this window. Add a recurring invoice or expense, or set a renewal cost on a domain or website, to see entries here.',
+    'overdue' => 'overdue',
 
     'fields' => [
         'window' => 'Projection window',
@@ -38,12 +39,9 @@ return [
 
     'sources' => [
         'recurring_fattura' => 'Recurring invoice',
+        'invoice' => 'Unpaid invoice',
+        'recurring_expense' => 'Recurring expense',
         'domain' => 'Domain renewal',
         'website' => 'Website renewal',
-    ],
-
-    'entries' => [
-        'domain_renewal' => 'Renewal — :name',
-        'website_renewal' => 'Hosting — :name',
     ],
 ];

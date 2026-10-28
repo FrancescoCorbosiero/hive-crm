@@ -8,7 +8,6 @@ use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\RecurringFattura;
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 class RecurringFatturaService
@@ -65,7 +64,7 @@ class RecurringFatturaService
 
             $rec->update([
                 'last_issued_at' => Carbon::now(),
-                'next_issue_at' => $this->advanceFrom($rec, $rec->next_issue_at),
+                'next_issue_at' => $rec->issueDateAfter($rec->next_issue_at),
             ]);
 
             return $fattura;
@@ -114,7 +113,7 @@ class RecurringFatturaService
 
                 $generated++;
                 $lastIssued = $cursor->copy();
-                $cursor = $this->advanceFrom($rec, $cursor);
+                $cursor = $rec->issueDateAfter($cursor);
             }
 
             if ($lastIssued !== null) {
@@ -133,25 +132,6 @@ class RecurringFatturaService
     public function resume(int $id): void
     {
         RecurringFattura::query()->where('id', $id)->update(['is_active' => true]);
-    }
-
-    /**
-     * Advance a date by one period of the schedule's frequency.
-     * For monthly schedules with a day_of_month set, lands on that
-     * day of the *target* month, clamped to the month's length so
-     * Jan 31 + 1mo → Feb 28 rather than overflowing into March via
-     * Carbon's default addMonth() behaviour.
-     */
-    private function advanceFrom(RecurringFattura $rec, CarbonInterface $from): Carbon
-    {
-        if ($rec->frequency === RecurringFrequency::Monthly && $rec->day_of_month) {
-            $base = Carbon::instance($from)->copy()->startOfMonth()->addMonth();
-            $clamped = min($rec->day_of_month, $base->daysInMonth);
-
-            return $base->day($clamped);
-        }
-
-        return Carbon::instance($rec->frequency->advance($from));
     }
 
     /**

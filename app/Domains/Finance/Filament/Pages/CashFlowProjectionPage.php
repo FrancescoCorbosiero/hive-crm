@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Pages;
 
-use App\Domains\Documents\Models\RecurringFattura;
-use App\Domains\DomainNames\Models\DomainName;
-use App\Domains\Websites\Models\Website;
-use App\Shared\ValueObjects\Money;
-use Carbon\Carbon;
-use Carbon\CarbonInterface;
+use App\Domains\Finance\DTOs\ProjectedMonth;
+use App\Domains\Finance\Services\Public\CashFlowProjectionService;
+use App\Shared\CashFlow\ScheduledFlow;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -17,24 +14,11 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 
 /**
- * Cash flow projection — derives expected income / loss for the next
- * N months from existing schedule entities, WITHOUT writing any rows.
- *
- *   - Projected income comes from active RecurringFattura schedules
- *     (per-cycle total of lines × qty × price + VAT, repeated every
- *     advance() of the frequency).
- *   - Projected loss comes from active DomainName entries with a
- *     renewal_cost_cents and an expires_at — each renewal cycle is a
- *     LOSS at the expiry date.
- *   - Active Website entries with a renewal_cost_cents and a
- *     next_renewal_at contribute hosting losses on the same cycle
- *     pattern (renewal_period_months apart).
- *
- * No rows are created. The Italian fattura is a tax artefact whose
- * sequential numbering is allocated at issuance time — pre-creating
- * fatture would break that contract. This page is the "what's
- * coming" view; the existing per-event "register"/"log renewal"
- * actions remain the source of truth for what actually happened.
+ * Cash flow projection — what money is expected to move over the next
+ * N months, per CashFlowProjectionService (recurring invoices, unpaid
+ * invoices, renewals, recurring expenses). Nothing is written: this is
+ * the "what's coming" view, and each domain's own issue / log actions
+ * stay the source of truth for what actually happened.
  */
 class CashFlowProjectionPage extends Page implements HasForms
 {
@@ -93,183 +77,44 @@ class CashFlowProjectionPage extends Page implements HasForms
     public function getViewData(): array
     {
         $months = (int) ($this->form->getState()['months'] ?? 12);
-        $start = now()->copy()->startOfMonth();
-        // Window has exactly $months buckets: $start month through
-        // ($start + $months - 1). Anything past that drops off.
-        $end = $start->copy()->addMonths($months - 1)->endOfMonth();
+        $projection = app(CashFlowProjectionService::class)->project(now(), $months);
         $locale = app()->getLocale();
-        $currency = (string) config('app.currency', 'EUR');
 
-        // Initialise empty buckets per month so the chart has a row for
-        // every month even when nothing's projected in it.
-        $monthly = [];
-        for ($i = 0; $i < $months; $i++) {
-            $cursor = $start->copy()->addMonths($i);
-            $monthly[$cursor->format('Y-m')] = [
-                'key' => $cursor->format('Y-m'),
-                'label' => $cursor->translatedFormat('MMM YYYY'),
-                'income_cents' => 0,
-                'loss_cents' => 0,
-            ];
-        }
-
-        $entries = [];
-
-        // Projected income from active RecurringFattura schedules.
-        foreach (RecurringFattura::query()->where('is_active', true)->get() as $rec) {
-            $cycleCents = $rec->cycleTotal()->cents;
-            if ($cycleCents <= 0) {
-                continue;
-            }
-
-            $cursor = $rec->next_issue_at?->copy()?->startOfDay() ?? now()->copy()->startOfDay();
-
-            // Iterate until we're past the projection window. We don't
-            // skip "in the past" cycles — an operator who's behind on
-            // issuing wants to see them flagged in month-1.
-            while ($cursor->lte($end)) {
-                $monthKey = $cursor->format('Y-m');
-                if (isset($monthly[$monthKey])) {
-                    $monthly[$monthKey]['income_cents'] += $cycleCents;
-                    $entries[] = [
-                        'type' => 'income',
-                        'date' => $cursor->toDateString(),
-                        'description' => $rec->name,
-                        'amount_cents' => $cycleCents,
-                        'amount' => (new Money($cycleCents, $rec->currency ?: $currency))->format($locale),
-                        'source' => __('finance/projection.sources.recurring_fattura'),
-                    ];
-                }
-                $cursor = Carbon::instance($rec->frequency->advance($cursor));
-            }
-        }
-
-        // Projected loss from active DomainName renewals.
-        $domainQuery = DomainName::query()
-            ->where('status', 'active')
-            ->whereNotNull('expires_at')
-            ->whereNotNull('renewal_cost_cents');
-
-        foreach ($domainQuery->get() as $domain) {
-            $cost = (int) $domain->renewal_cost_cents;
-            if ($cost <= 0) {
-                continue;
-            }
-
-            $periodMonths = max(1, (int) $domain->renewal_period_months);
-            $cursor = $domain->expires_at->copy()->startOfDay();
-
-            while ($cursor->lte($end)) {
-                $monthKey = $cursor->format('Y-m');
-                if (isset($monthly[$monthKey])) {
-                    $monthly[$monthKey]['loss_cents'] += $cost;
-                    $entries[] = [
-                        'type' => 'loss',
-                        'date' => $cursor->toDateString(),
-                        'description' => __('finance/projection.entries.domain_renewal', ['name' => $domain->name]),
-                        'amount_cents' => $cost,
-                        'amount' => (new Money($cost, $domain->currency ?: $currency))->format($locale),
-                        'source' => __('finance/projection.sources.domain'),
-                    ];
-                }
-                $cursor = $cursor->copy()->addMonths($periodMonths);
-            }
-        }
-
-        // Projected loss from active Website renewals — symmetric to
-        // the DomainName branch above. Websites carry a single
-        // `renewal_cost_cents` and reuse the app-default currency.
-        $websiteQuery = Website::query()
-            ->active()
-            ->whereNotNull('next_renewal_at')
-            ->whereNotNull('renewal_cost_cents');
-
-        foreach ($websiteQuery->get() as $website) {
-            $cost = (int) $website->renewal_cost_cents;
-            if ($cost <= 0) {
-                continue;
-            }
-
-            $periodMonths = max(1, (int) $website->renewal_period_months);
-            $cursor = $website->next_renewal_at->copy()->startOfDay();
-
-            while ($cursor->lte($end)) {
-                $monthKey = $cursor->format('Y-m');
-                if (isset($monthly[$monthKey])) {
-                    $monthly[$monthKey]['loss_cents'] += $cost;
-                    $entries[] = [
-                        'type' => 'loss',
-                        'date' => $cursor->toDateString(),
-                        'description' => __('finance/projection.entries.website_renewal', [
-                            'name' => $website->getTranslation('name', $locale) ?: $website->url,
-                        ]),
-                        'amount_cents' => $cost,
-                        'amount' => (new Money($cost, $currency))->format($locale),
-                        'source' => __('finance/projection.sources.website'),
-                    ];
-                }
-                $cursor = $cursor->copy()->addMonths($periodMonths);
-            }
-        }
-
-        // Format monthly buckets + compute totals.
-        $totalIncome = 0;
-        $totalLoss = 0;
-        $maxRowCents = 1; // avoid div-by-zero in the bar widths
-
-        foreach ($monthly as &$row) {
-            $totalIncome += $row['income_cents'];
-            $totalLoss += $row['loss_cents'];
-            $maxRowCents = max($maxRowCents, $row['income_cents'], $row['loss_cents']);
-        }
-        unset($row);
-
-        // Second pass: render display strings + bar percentages.
-        $monthlyOut = [];
-        foreach ($monthly as $row) {
-            $net = $row['income_cents'] - $row['loss_cents'];
-            $monthlyOut[] = [
-                'key' => $row['key'],
-                'label' => $row['label'],
-                'income' => (new Money($row['income_cents'], $currency))->format($locale),
-                'loss' => (new Money($row['loss_cents'], $currency))->format($locale),
-                'net' => (new Money($net, $currency))->format($locale),
-                'net_negative' => $net < 0,
-                'income_pct' => (int) round(($row['income_cents'] / $maxRowCents) * 100),
-                'loss_pct' => (int) round(($row['loss_cents'] / $maxRowCents) * 100),
-            ];
-        }
-
-        // Sort entries chronologically.
-        usort($entries, fn ($a, $b) => strcmp($a['date'], $b['date']));
-
-        $net = $totalIncome - $totalLoss;
+        // Bars are scaled against the busiest month of the window.
+        $peak = max(1, ...array_map(
+            fn (ProjectedMonth $month) => max($month->income->cents, $month->loss->cents),
+            $projection->months,
+        ));
 
         return [
             'window_months' => $months,
-            'monthly' => $monthlyOut,
-            'entries' => $entries,
+            'monthly' => array_map(fn (ProjectedMonth $month) => [
+                'key' => $month->key(),
+                'label' => $month->start->locale($locale)->isoFormat('MMM YYYY'),
+                'income' => $month->income->format($locale),
+                'loss' => $month->loss->format($locale),
+                'net' => $month->net()->format($locale),
+                'net_negative' => $month->net()->isNegative(),
+                'income_pct' => (int) round($month->income->cents / $peak * 100),
+                'loss_pct' => (int) round($month->loss->cents / $peak * 100),
+            ], $projection->months),
+            'entries' => array_map(fn (ScheduledFlow $flow) => [
+                'type' => $flow->isIncome ? 'income' : 'loss',
+                'date' => $flow->date->toDateString(),
+                'date_label' => $flow->date->locale($locale)->isoFormat('D MMM YYYY'),
+                'overdue' => $projection->isOverdue($flow),
+                'description' => $flow->description,
+                'amount_cents' => $flow->amount->cents,
+                'amount' => $flow->amount->format($locale),
+                'source' => __('finance/projection.sources.'.$flow->source),
+            ], $projection->flows),
             'totals' => [
-                'income' => (new Money($totalIncome, $currency))->format($locale),
-                'loss' => (new Money($totalLoss, $currency))->format($locale),
-                'net' => (new Money($net, $currency))->format($locale),
-                'net_negative' => $net < 0,
+                'income' => $projection->income->format($locale),
+                'loss' => $projection->loss->format($locale),
+                'net' => $projection->net()->format($locale),
+                'net_negative' => $projection->net()->isNegative(),
             ],
-            'has_data' => $totalIncome > 0 || $totalLoss > 0,
+            'has_data' => ! $projection->isEmpty(),
         ];
-    }
-
-    /**
-     * For tests: lets callers project from a fixed reference date so
-     * assertions don't drift with the system clock.
-     */
-    public function projectionFrom(CarbonInterface $reference, int $months): array
-    {
-        Carbon::setTestNow($reference);
-        $this->form->fill(['months' => $months]);
-        $data = $this->getViewData();
-        Carbon::setTestNow();
-
-        return $data;
     }
 }

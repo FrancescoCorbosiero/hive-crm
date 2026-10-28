@@ -3,8 +3,9 @@
 return [
     'page_title' => 'Proiezione cash flow',
     'recompute' => 'Ricalcola',
-    'derived_hint' => 'Derivato dalle fatture ricorrenti attive e dai rinnovi dei domini. Nessun record viene creato.',
-    'empty' => 'Nessuna proiezione nella finestra selezionata. Aggiungi una fattura ricorrente o imposta il costo di rinnovo su un dominio per vedere le voci qui.',
+    'derived_hint' => 'Derivato da fatture ricorrenti, fatture da incassare, spese ricorrenti e rinnovi di domini / hosting. Le voci scadute contano nel mese corrente. Nessun record viene creato.',
+    'empty' => 'Nessuna proiezione nella finestra selezionata. Aggiungi una fattura o una spesa ricorrente, o imposta il costo di rinnovo su un dominio o un sito, per vedere le voci qui.',
+    'overdue' => 'scaduto',
 
     'fields' => [
         'window' => 'Finestra di proiezione',
@@ -38,12 +39,9 @@ return [
 
     'sources' => [
         'recurring_fattura' => 'Fattura ricorrente',
+        'invoice' => 'Fattura da incassare',
+        'recurring_expense' => 'Spesa ricorrente',
         'domain' => 'Rinnovo dominio',
         'website' => 'Rinnovo sito',
-    ],
-
-    'entries' => [
-        'domain_renewal' => 'Rinnovo — :name',
-        'website_renewal' => 'Hosting — :name',
     ],
 ];

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Domains\Websites;
 
 use App\Domains\DomainNames\Events\DomainRegistered;
+use App\Domains\Websites\CashFlow\HostingRenewalsSchedule;
 use App\Domains\Websites\Console\Commands\CheckRenewalsCommand;
 use App\Domains\Websites\Console\Commands\PingWebsitesCommand;
 use App\Domains\Websites\Listeners\CreateWebsiteFromDomainRegistration;
 use App\Domains\Websites\Services\Internal\WebsitePinger;
 use App\Domains\Websites\Services\Public\WebsitesService;
+use App\Shared\CashFlow\CashFlowSchedule;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +24,9 @@ class WebsitesServiceProvider extends ServiceProvider
         $this->app->singleton(WebsitePinger::class, fn ($app) => new WebsitePinger(
             $app->make(HttpFactory::class),
         ));
+
+        // Hosting renewals for the Finance cash-flow projection.
+        $this->app->tag([HostingRenewalsSchedule::class], CashFlowSchedule::TAG);
     }
 
     public function boot(): void

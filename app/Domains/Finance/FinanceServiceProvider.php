@@ -8,13 +8,16 @@ use App\Domains\Documents\Events\FatturaDeleted;
 use App\Domains\Documents\Events\PaymentDeleted;
 use App\Domains\Documents\Events\PaymentRecorded;
 use App\Domains\DomainNames\Events\DomainRegistered;
+use App\Domains\Finance\CashFlow\RecurringExpensesSchedule;
 use App\Domains\Finance\Listeners\DetachEntriesFromDeletedFattura;
 use App\Domains\Finance\Listeners\RecordIncomeFromPayment;
 use App\Domains\Finance\Listeners\RecordLossFromDomainRegistration;
 use App\Domains\Finance\Listeners\RecordLossFromWebsiteSetup;
 use App\Domains\Finance\Listeners\RetractIncomeForDeletedPayment;
+use App\Domains\Finance\Services\Public\CashFlowProjectionService;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Websites\Events\WebsiteCreated;
+use App\Shared\CashFlow\CashFlowSchedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,6 +26,13 @@ class FinanceServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FinanceService::class);
+
+        // The projection sums every domain's tagged schedules; it never
+        // reads another domain's tables itself.
+        $this->app->tag([RecurringExpensesSchedule::class], CashFlowSchedule::TAG);
+        $this->app->when(CashFlowProjectionService::class)
+            ->needs('$schedules')
+            ->giveTagged(CashFlowSchedule::TAG);
     }
 
     public function boot(): void

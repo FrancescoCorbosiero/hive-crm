@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domains\DomainNames;
 
+use App\Domains\DomainNames\CashFlow\DomainRenewalsSchedule;
 use App\Domains\DomainNames\Listeners\CreateDomainFromWebsite;
 use App\Domains\DomainNames\Services\Public\DomainNamesService;
 use App\Domains\Websites\Events\WebsiteCreated;
+use App\Shared\CashFlow\CashFlowSchedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,6 +17,9 @@ class DomainNamesServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(DomainNamesService::class);
+
+        // Renewal costs for the Finance cash-flow projection.
+        $this->app->tag([DomainRenewalsSchedule::class], CashFlowSchedule::TAG);
     }
 
     public function boot(): void

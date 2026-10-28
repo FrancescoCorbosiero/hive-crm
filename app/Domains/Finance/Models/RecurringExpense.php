@@ -8,6 +8,8 @@ use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -47,6 +49,14 @@ class RecurringExpense extends Model
     public function money(): Money
     {
         return new Money((int) $this->amount_cents, $this->currency ?: config('app.currency', 'EUR'));
+    }
+
+    /**
+     * Due date of the occurrence after the one dated $date.
+     */
+    public function dueDateAfter(CarbonInterface $date): CarbonImmutable
+    {
+        return CarbonImmutable::instance($this->frequency->advance($date));
     }
 
     public function isDelayed(?Carbon $now = null): bool

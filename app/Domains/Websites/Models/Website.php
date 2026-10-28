@@ -9,6 +9,8 @@ use App\Domains\Websites\Database\Factories\WebsiteFactory;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Shared\Concerns\BelongsToOwner;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -62,6 +64,14 @@ class Website extends Model
     protected static function newFactory(): WebsiteFactory
     {
         return WebsiteFactory::new();
+    }
+
+    /**
+     * Next renewal date after the cycle that renews on $date.
+     */
+    public function renewalDateAfter(CarbonInterface $date): CarbonImmutable
+    {
+        return CarbonImmutable::instance($date)->addMonthsNoOverflow(max(1, (int) $this->renewal_period_months));
     }
 
     public function daysUntilRenewal(?Carbon $now = null): ?int

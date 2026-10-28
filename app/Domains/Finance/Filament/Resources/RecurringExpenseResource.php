@@ -175,7 +175,7 @@ class RecurringExpenseResource extends Resource
                             'owner_user_id' => $expense->owner_user_id,
                         ]);
 
-                        $next = $expense->frequency->advance(Carbon::parse($occurredAt));
+                        $next = $expense->dueDateAfter(Carbon::parse($occurredAt));
 
                         $expense->update([
                             'last_logged_at' => $occurredAt,

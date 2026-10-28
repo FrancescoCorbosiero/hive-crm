@@ -1,6 +1,6 @@
+{{-- Data comes from CashFlowProjectionPage::getViewData(), which Filament
+     passes in on every render — don't call it again from here. --}}
 <x-filament-panels::page>
-    @php($data = $this->getViewData())
-
     {{-- Filter form — kept inside Filament's default surface for the inputs,
          but the submit row picks up the editorial accent rule below it. --}}
     <form wire:submit="$refresh" class="space-y-4">
@@ -21,24 +21,24 @@
     {{-- Totals — editorial KPI strip replaces the pastel success/danger tiles. --}}
     <section class="space-y-3">
         <x-hive.section
-            :heading="__('finance/projection.sections.totals', ['n' => $data['window_months']])"
+            :heading="__('finance/projection.sections.totals', ['n' => $window_months])"
         />
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <x-hive.kpi-card
                 accent="emerald"
                 :label="__('finance/projection.totals.income')"
-                :value="$data['totals']['income']"
+                :value="$totals['income']"
             />
             <x-hive.kpi-card
                 accent="rose"
                 :label="__('finance/projection.totals.loss')"
-                :value="$data['totals']['loss']"
+                :value="$totals['loss']"
             />
             <x-hive.kpi-card
-                :accent="$data['totals']['net_negative'] ? 'rose' : 'emerald'"
+                :accent="$totals['net_negative'] ? 'rose' : 'emerald'"
                 :label="__('finance/projection.totals.net')"
-                :value="$data['totals']['net']"
+                :value="$totals['net']"
             />
         </div>
     </section>
@@ -49,9 +49,9 @@
         <x-hive.section :heading="__('finance/projection.sections.monthly')" />
 
         <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.025]">
-            @if ($data['has_data'])
+            @if ($has_data)
                 <div class="space-y-3">
-                    @foreach ($data['monthly'] as $row)
+                    @foreach ($monthly as $row)
                         <div class="grid grid-cols-12 items-center gap-3 text-sm">
                             <div class="hive-display-num col-span-2 font-semibold uppercase tracking-[0.08em] text-gray-700 dark:text-gray-200">
                                 {{ $row['label'] }}
@@ -90,7 +90,7 @@
 
     {{-- Per-entry detail list — collapsed by default; styled to match the
          editorial card chrome instead of Filament's default section card. --}}
-    @if (count($data['entries']) > 0)
+    @if (count($entries) > 0)
         <x-filament::section
             :heading="__('finance/projection.sections.entries')"
             collapsible
@@ -106,10 +106,15 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    @foreach ($data['entries'] as $entry)
+                    @foreach ($entries as $entry)
                         <tr>
                             <td class="hive-display-num py-2 text-gray-700 dark:text-gray-200">
-                                {{ \Illuminate\Support\Carbon::parse($entry['date'])->translatedFormat('d MMM YYYY') }}
+                                {{ $entry['date_label'] }}
+                                @if ($entry['overdue'])
+                                    <span class="ms-1 text-xs font-semibold uppercase tracking-[0.08em] text-rose-600 dark:text-rose-400">
+                                        {{ __('finance/projection.overdue') }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="py-2">{{ $entry['description'] }}</td>
                             <td class="py-2 text-xs uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">

@@ -61,6 +61,25 @@ it('clamps the day_of_month when advancing into a shorter month', function () {
     expect($rec->fresh()->next_issue_at->toDateString())->toBe('2026-02-28');
 });
 
+it('does not skip February for a month-end schedule without a day_of_month', function (string $frequency, string $from, string $next) {
+    // Carbon's overflowing addMonth() took Jan 31 to Mar 3: February was
+    // never billed, and the schedule sat on the 3rd from then on.
+    $rec = RecurringFattura::factory()->create([
+        'client_contact_id' => Contact::factory()->create()->id,
+        'frequency' => $frequency,
+        'next_issue_at' => Carbon::parse($from),
+        'day_of_month' => null,
+    ]);
+
+    app(RecurringFatturaService::class)->issue($rec->id);
+
+    expect($rec->fresh()->next_issue_at->toDateString())->toBe($next);
+})->with([
+    'monthly' => [RecurringFrequency::Monthly->value, '2026-01-31', '2026-02-28'],
+    'quarterly' => [RecurringFrequency::Quarterly->value, '2026-11-30', '2027-02-28'],
+    'yearly' => [RecurringFrequency::Yearly->value, '2028-02-29', '2029-02-28'],
+]);
+
 it('advances by 3 months for quarterly schedules', function () {
     $contact = Contact::factory()->create();
     $rec = RecurringFattura::factory()->create([

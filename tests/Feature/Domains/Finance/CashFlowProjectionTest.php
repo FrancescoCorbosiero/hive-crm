@@ -3,208 +3,251 @@
 declare(strict_types=1);
 
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Enums\RecurringFrequency;
+use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\RecurringFattura;
+use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
 use App\Domains\DomainNames\Models\DomainName;
+use App\Domains\Finance\DTOs\CashFlowProjection;
+use App\Domains\Finance\DTOs\ProjectedMonth;
 use App\Domains\Finance\Filament\Pages\CashFlowProjectionPage;
+use App\Domains\Finance\Models\RecurringExpense;
+use App\Domains\Finance\Services\Public\CashFlowProjectionService;
 use App\Domains\Websites\Models\Website;
 use App\Models\User;
+use App\Shared\CashFlow\CashFlowSchedule;
+use App\Shared\CashFlow\ScheduledFlow;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Livewire\Livewire;
 
 /**
- * Cash flow projection — derives expected income / loss from existing
- * schedule entities (active RecurringFattura + active DomainName with
- * renewal_cost_cents) without writing any rows.
- *
- * Tests use Carbon::setTestNow to pin "now" so projections are
- * deterministic relative to fixed schedule dates.
+ * Cash flow projection — expected income / loss per month, summed from
+ * every domain's CashFlowSchedule, without writing any rows.
  */
-beforeEach(fn () => $this->actingAs(User::factory()->create()));
-afterEach(fn () => Carbon::setTestNow());
+function projectFrom(string $today, int $months = 12): CashFlowProjection
+{
+    return app(CashFlowProjectionService::class)->project(Carbon::parse($today), $months);
+}
 
-it('projects monthly recurring invoice cycles into a 12-month window', function () {
-    Carbon::setTestNow('2026-05-01');
+/**
+ * @return list<array{string, string, int}> [date, income|loss, cents]
+ */
+function projectedFlows(CashFlowProjection $projection): array
+{
+    return array_map(
+        fn (ScheduledFlow $flow) => [$flow->date->toDateString(), $flow->isIncome ? 'income' : 'loss', $flow->amount->cents],
+        $projection->flows,
+    );
+}
 
-    $contact = Contact::factory()->create();
-    RecurringFattura::factory()->create([
-        'client_contact_id' => $contact->id,
+function projectedMonth(CashFlowProjection $projection, string $key): ProjectedMonth
+{
+    return collect($projection->months)->sole(fn (ProjectedMonth $month) => $month->key() === $key);
+}
+
+function aRecurringInvoice(array $attributes): RecurringFattura
+{
+    return RecurringFattura::factory()->create([
+        'client_contact_id' => Contact::factory()->create()->id,
         'frequency' => RecurringFrequency::Monthly->value,
-        'next_issue_at' => '2026-06-01',
+        'day_of_month' => null,
         'is_active' => true,
         'currency' => 'EUR',
-        'lines' => [[
-            'description' => 'Hosting',
-            'qty' => 1,
-            'unit_price_cents' => 10_000,
-            'vat_rate' => 22,
-        ]],
+        'lines' => [['description' => 'Service', 'qty' => 1, 'unit_price_cents' => 10_000, 'vat_rate' => 0]],
+        ...$attributes,
     ]);
+}
 
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
-
-    // Window = May 2026 → April 2027 (12 buckets).
-    // next_issue_at = 2026-06-01 → cycles land Jun, Jul, ..., Apr = 11 cycles.
-    // Per cycle = 12_200 cents (10_000 + 22% VAT). Total = 134_200 cents.
-    expect(count($data['entries']))->toBe(11);
-    expect(collect($data['entries'])->sum('amount_cents'))->toBe(11 * 12_200);
-    expect($data['totals']['net_negative'])->toBeFalse();
-});
-
-it('projects domain renewal losses at the configured expiry date and cycle', function () {
-    Carbon::setTestNow('2026-05-01');
-
-    DomainName::query()->create([
+function aDomain(array $attributes): DomainName
+{
+    return DomainName::query()->create([
         'name' => 'mysite.it',
         'registrar' => Registrar::Aruba->value,
         'status' => DomainStatus::Active->value,
-        'expires_at' => '2026-08-15',
         'renewal_period_months' => 12,
         'auto_renew' => true,
-        'renewal_cost_cents' => 1_200, // €12
+        'renewal_cost_cents' => 1_200,
         'currency' => 'EUR',
+        ...$attributes,
     ]);
+}
 
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
-
-    // 12-month window from May 2026 → April 2027.
-    // Expiry is 2026-08-15, then next cycle 2027-08-15 (out of window).
-    // So exactly one projected LOSS in Aug 2026.
-    expect(count($data['entries']))->toBe(1);
-    expect($data['entries'][0]['type'])->toBe('loss');
-    expect($data['entries'][0]['amount_cents'])->toBe(1_200);
-    expect($data['entries'][0]['date'])->toBe('2026-08-15');
-});
-
-it('combines income + loss into a net per month with the right sign', function () {
-    Carbon::setTestNow('2026-05-01');
-
-    $contact = Contact::factory()->create();
-    // Monthly income of €100 starting 2026-06
-    RecurringFattura::factory()->create([
-        'client_contact_id' => $contact->id,
+function aRecurringExpense(array $attributes): RecurringExpense
+{
+    return RecurringExpense::query()->create([
+        'name' => 'Figma',
         'frequency' => RecurringFrequency::Monthly->value,
-        'next_issue_at' => '2026-06-01',
+        'amount_cents' => 5_000,
+        'currency' => 'EUR',
+        'started_at' => '2025-01-01',
         'is_active' => true,
-        'currency' => 'EUR',
-        'lines' => [[
-            'description' => 'Service',
-            'qty' => 1,
-            'unit_price_cents' => 10_000,
-            'vat_rate' => 0,
-        ]],
+        ...$attributes,
     ]);
-    // One-off domain renewal loss of €500 in Jul 2026
-    DomainName::query()->create([
-        'name' => 'expensive.com',
-        'registrar' => Registrar::Cloudflare->value,
-        'status' => DomainStatus::Active->value,
-        'expires_at' => '2026-07-15',
-        'renewal_period_months' => 12,
-        'auto_renew' => true,
-        'renewal_cost_cents' => 50_000,
-        'currency' => 'EUR',
-    ]);
+}
 
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
+// ── Sources ──────────────────────────────────────────────────────────────
 
-    // 12 cycles × 10_000 = 120_000 income; one 50_000 loss; net = 70_000.
-    expect($data['totals']['net_negative'])->toBeFalse();
-    // Verify the July row has a negative net (10_000 income - 50_000 loss = -40_000)
-    $july = collect($data['monthly'])->firstWhere('key', '2026-07');
-    expect($july)->not->toBeNull();
-    expect($july['net_negative'])->toBeTrue();
-});
-
-it('skips inactive recurring invoices and domains without renewal_cost', function () {
-    Carbon::setTestNow('2026-05-01');
-
-    $contact = Contact::factory()->create();
-    // Inactive recurring — should not contribute
-    RecurringFattura::factory()->create([
-        'client_contact_id' => $contact->id,
-        'frequency' => RecurringFrequency::Monthly->value,
+it('projects monthly recurring invoice cycles into a 12-month window', function () {
+    aRecurringInvoice([
         'next_issue_at' => '2026-06-01',
-        'is_active' => false,
-        'lines' => [['description' => 'X', 'qty' => 1, 'unit_price_cents' => 10_000, 'vat_rate' => 0]],
-    ]);
-    // Domain without renewal_cost_cents — should not contribute
-    DomainName::query()->create([
-        'name' => 'free.com',
-        'registrar' => Registrar::Other->value,
-        'status' => DomainStatus::Active->value,
-        'expires_at' => '2026-08-15',
-        'renewal_period_months' => 12,
-        'auto_renew' => true,
-        'renewal_cost_cents' => null,
-        'currency' => 'EUR',
+        'lines' => [['description' => 'Hosting', 'qty' => 1, 'unit_price_cents' => 10_000, 'vat_rate' => 22]],
     ]);
 
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
+    $projection = projectFrom('2026-05-01');
 
-    expect($data['has_data'])->toBeFalse();
-    expect(count($data['entries']))->toBe(0);
+    // Window May 2026 → April 2027: cycles June … April, 11 × (€100 + 22% VAT).
+    expect($projection->flows)->toHaveCount(11);
+    expect($projection->income->cents)->toBe(11 * 12_200);
+    expect($projection->net()->isNegative())->toBeFalse();
 });
 
-it('projects website hosting renewals at the configured next_renewal_at and cycle', function () {
-    Carbon::setTestNow('2026-05-01');
+it('projects domain renewal losses at the expiry date and cycle', function () {
+    aDomain(['expires_at' => '2026-08-15']);
 
+    // The following cycle, 2027-08-15, falls outside the window.
+    expect(projectedFlows(projectFrom('2026-05-01')))->toBe([['2026-08-15', 'loss', 1_200]]);
+});
+
+it('projects website hosting renewals on their cycle', function () {
     Website::factory()->create([
-        'url' => 'https://hostedhere.com',
         'next_renewal_at' => '2026-09-15',
         'renewal_period_months' => 6,
-        'renewal_cost_cents' => 3_000, // €30 per 6-month cycle
+        'renewal_cost_cents' => 3_000,
     ]);
 
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
-
-    // 12-month window May 2026 → April 2027.
-    // Cycles fall: 2026-09-15, 2027-03-15. Both inside window = 2 entries.
-    expect(count($data['entries']))->toBe(2);
-    expect(collect($data['entries'])->pluck('type')->unique()->all())->toBe(['loss']);
-    expect(collect($data['entries'])->sum('amount_cents'))->toBe(2 * 3_000);
+    expect(projectedFlows(projectFrom('2026-05-01')))->toBe([
+        ['2026-09-15', 'loss', 3_000],
+        ['2027-03-15', 'loss', 3_000],
+    ]);
 });
 
-it('skips websites without renewal_cost_cents', function () {
-    Carbon::setTestNow('2026-05-01');
+it('projects recurring expenses as losses', function () {
+    // Previously ignored: the projected net was overstated by every
+    // subscription the studio itself pays for.
+    aRecurringExpense(['next_due_at' => '2026-05-20']);
 
-    Website::factory()->create([
-        'next_renewal_at' => '2026-08-15',
-        'renewal_period_months' => 12,
-        'renewal_cost_cents' => null,
+    expect(projectedFlows(projectFrom('2026-05-01', 3)))->toBe([
+        ['2026-05-20', 'loss', 5_000],
+        ['2026-06-20', 'loss', 5_000],
+        ['2026-07-20', 'loss', 5_000],
     ]);
-
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
-
-    expect($data['has_data'])->toBeFalse();
 });
 
-it('catches overdue cycles in the current month so the operator notices', function () {
-    Carbon::setTestNow('2026-05-15');
+it('expects what clients still owe on issued invoices, on the due date', function () {
+    $this->travelTo(Carbon::parse('2026-05-01'));
+    $client = Contact::factory()->create()->id;
+    $invoice = fn (int $cents, array $attributes) => Fattura::factory()->totalling($cents)->create(['client_contact_id' => $client, ...$attributes]);
 
-    $contact = Contact::factory()->create();
-    // next_issue_at is 2026-05-01 — 2 weeks overdue.
-    RecurringFattura::factory()->create([
-        'client_contact_id' => $contact->id,
-        'frequency' => RecurringFrequency::Monthly->value,
-        'next_issue_at' => '2026-05-01',
-        'is_active' => true,
-        'lines' => [['description' => 'X', 'qty' => 1, 'unit_price_cents' => 5_000, 'vat_rate' => 0]],
+    $invoice(12_200, ['issued_at' => '2026-05-01', 'due_date' => '2026-06-10']);
+    $partial = $invoice(100_000, ['issued_at' => '2026-05-01', 'due_date' => '2026-07-01']);
+    app(PaymentsService::class)->record($partial->id, ['amount_cents' => 40_000]);
+    $paid = $invoice(9_000, ['issued_at' => '2026-05-01', 'due_date' => '2026-06-01']);
+    app(PaymentsService::class)->record($paid->id, ['amount_cents' => 9_000]);
+    $invoice(7_000, ['issued_at' => '2026-05-01', 'due_date' => '2026-06-01', 'payment_status' => PaymentStatus::Cancelled->value]);
+    // No due date stated: the statutory 30-day payment term applies.
+    $invoice(3_000, ['issued_at' => '2026-05-06', 'due_date' => null]);
+
+    expect(projectedFlows(projectFrom('2026-05-01', 3)))->toBe([
+        ['2026-06-05', 'income', 3_000],
+        ['2026-06-10', 'income', 12_200],
+        ['2026-07-01', 'income', 60_000],
+    ]);
+});
+
+it('skips inactive schedules and renewals without a cost', function () {
+    aRecurringInvoice(['next_issue_at' => '2026-06-01', 'is_active' => false]);
+    aDomain(['name' => 'free.com', 'expires_at' => '2026-08-15', 'renewal_cost_cents' => null]);
+    Website::factory()->create(['next_renewal_at' => '2026-08-15', 'renewal_period_months' => 12, 'renewal_cost_cents' => null]);
+    aRecurringExpense(['next_due_at' => '2026-06-01', 'is_active' => false]);
+
+    expect(projectFrom('2026-05-01')->isEmpty())->toBeTrue();
+});
+
+// ── Months and overdue items ─────────────────────────────────────────────
+
+it('combines income and loss into a net per month with the right sign', function () {
+    aRecurringInvoice(['next_issue_at' => '2026-06-01']); // €100 a month from June
+    aDomain(['name' => 'expensive.com', 'expires_at' => '2026-07-15', 'renewal_cost_cents' => 50_000]);
+
+    $projection = projectFrom('2026-05-01');
+
+    expect($projection->net()->cents)->toBe(11 * 10_000 - 50_000);
+    expect(projectedMonth($projection, '2026-07')->net()->cents)->toBe(-40_000);
+});
+
+it('carries everything still pending from before the window into its first month', function () {
+    // On 15 May: the 10 Mar and 10 Apr cycles are not issued yet, and an
+    // invoice due 20 Apr is unpaid. Both used to drop out of the picture.
+    aRecurringInvoice(['next_issue_at' => '2026-03-10']);
+    Fattura::factory()->totalling(5_000)->create([
+        'client_contact_id' => Contact::factory()->create()->id,
+        'issued_at' => '2026-03-20',
+        'due_date' => '2026-04-20',
     ]);
 
-    $page = Livewire::test(CashFlowProjectionPage::class);
-    $data = $page->instance()->getViewData();
+    $projection = projectFrom('2026-05-15', 3);
 
-    // Should include the overdue May cycle plus 11 future cycles = 12 entries.
-    expect(count($data['entries']))->toBe(12);
-    $may = collect($data['monthly'])->firstWhere('key', '2026-05');
-    expect($may['income_cents'] ?? null)->toBeNull(); // monthly row format hides cents internally
+    expect(projectedFlows($projection))->toBe([
+        ['2026-03-10', 'income', 10_000],
+        ['2026-04-10', 'income', 10_000],
+        ['2026-04-20', 'income', 5_000],
+        ['2026-05-10', 'income', 10_000],
+        ['2026-06-10', 'income', 10_000],
+        ['2026-07-10', 'income', 10_000],
+    ]);
+    expect(projectedMonth($projection, '2026-05')->income->cents)->toBe(35_000);
+    expect(projectedMonth($projection, '2026-06')->income->cents)->toBe(10_000);
+    expect(array_map($projection->isOverdue(...), $projection->flows))
+        ->toBe([true, true, true, true, false, false]);
+});
+
+it('lands month-end schedules on the last day of short months instead of skipping them', function () {
+    // Carbon's addMonth() takes Jan 31 to Mar 3: February was never billed.
+    aRecurringInvoice(['next_issue_at' => '2026-01-31']);
+
+    expect(array_column(projectedFlows(projectFrom('2026-01-01', 3)), 0))
+        ->toBe(['2026-01-31', '2026-02-28', '2026-03-28']);
+});
+
+// ── Page ─────────────────────────────────────────────────────────────────
+
+it('labels months and dates in the reader\'s language and flags overdue items', function () {
+    $this->actingAs(User::factory()->create());
+    $this->travelTo(Carbon::parse('2026-05-15'));
+    app()->setLocale('it');
+    aRecurringExpense(['next_due_at' => '2026-05-10']);
+
+    // translatedFormat('MMM YYYY') read the ISO tokens as PHP ones:
+    // "maggiomaggio5 2026202620262026".
+    Livewire::test(CashFlowProjectionPage::class)
+        ->assertSee('mag 2026')
+        ->assertSee('10 mag 2026')
+        ->assertSee(__('finance/projection.overdue'))
+        ->assertSee(__('finance/projection.sources.recurring_expense'))
+        ->assertDontSee('20262026');
+});
+
+it('computes the projection once per render', function () {
+    $this->actingAs(User::factory()->create());
+    $spy = new class implements CashFlowSchedule
+    {
+        public int $calls = 0;
+
+        public function pending(CarbonImmutable $until): iterable
+        {
+            $this->calls++;
+
+            return [];
+        }
+    };
+    app()->instance('test.spy-schedule', $spy);
+    app()->tag(['test.spy-schedule'], CashFlowSchedule::TAG);
+
+    Livewire::test(CashFlowProjectionPage::class)->assertSee(__('finance/projection.empty'));
+
+    expect($spy->calls)->toBe(1);
 });

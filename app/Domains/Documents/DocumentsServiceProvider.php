@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents;
 
+use App\Domains\Documents\CashFlow\OutstandingInvoicesSchedule;
+use App\Domains\Documents\CashFlow\RecurringInvoicesSchedule;
 use App\Domains\Documents\Console\Commands\IssueRecurringFattureCommand;
 use App\Domains\Documents\Console\Commands\RecomputeOverdueFattureCommand;
 use App\Domains\Documents\Services\Internal\FatturaPdfRenderer;
@@ -11,6 +13,7 @@ use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Domains\Documents\Services\Public\RecurringFatturaService;
+use App\Shared\CashFlow\CashFlowSchedule;
 use Illuminate\Support\ServiceProvider;
 
 class DocumentsServiceProvider extends ServiceProvider
@@ -22,6 +25,12 @@ class DocumentsServiceProvider extends ServiceProvider
         $this->app->singleton(FatturaService::class);
         $this->app->singleton(PaymentsService::class);
         $this->app->singleton(RecurringFatturaService::class);
+
+        // Expected income for the Finance cash-flow projection.
+        $this->app->tag([
+            RecurringInvoicesSchedule::class,
+            OutstandingInvoicesSchedule::class,
+        ], CashFlowSchedule::TAG);
     }
 
     public function boot(): void

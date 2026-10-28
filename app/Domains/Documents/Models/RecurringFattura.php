@@ -9,6 +9,8 @@ use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Shared\Billing\HasLineItems;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -58,6 +60,22 @@ class RecurringFattura extends Model
     public function cycleTotal(): Money
     {
         return $this->lineItems()->total();
+    }
+
+    /**
+     * Issue date of the cycle after the one dated $date. Monthly
+     * schedules with a day_of_month land on that day of the next month,
+     * clamped to its length; everything else steps by the frequency.
+     */
+    public function issueDateAfter(CarbonInterface $date): CarbonImmutable
+    {
+        if ($this->frequency === RecurringFrequency::Monthly && $this->day_of_month) {
+            $month = CarbonImmutable::instance($date)->startOfMonth()->addMonth();
+
+            return $month->day(min($this->day_of_month, $month->daysInMonth));
+        }
+
+        return CarbonImmutable::instance($this->frequency->advance($date));
     }
 
     public function scopeDueOn(Builder $query, $date): Builder
