@@ -32,8 +32,8 @@ class FatturaService
      * (year, number) UNIQUE constraint on the fatture table is the
      * second line of defence.
      *
-     * Totals are computed from `lines` — callers don't pass them
-     * directly. This keeps the math source-of-truth in one place.
+     * Totals are derived from `lines` by the model itself
+     * (DerivesTotalsFromLines) — callers don't pass them.
      *
      * Does NOT render the PDF. Call render($id) separately so failed
      * PDF generation doesn't roll back the number allocation (the
@@ -67,9 +67,7 @@ class FatturaService
         $year = (int) ($attributes['year'] ?? $issuedAt->year);
         $currency = $attributes['currency'] ?? config('app.currency', 'EUR');
 
-        [$subtotalCents, $vatCents, $totalCents] = $this->computeTotals($attributes['lines']);
-
-        return DB::transaction(function () use ($attributes, $year, $issuedAt, $dueDate, $currency, $subtotalCents, $vatCents, $totalCents) {
+        return DB::transaction(function () use ($attributes, $year, $issuedAt, $dueDate, $currency) {
             // Lock the counter row for this year. firstOrCreate creates
             // it the first time we issue a fattura in a new fiscal year.
             $counter = FatturaCounter::query()
@@ -97,9 +95,6 @@ class FatturaService
                 'issued_at' => $issuedAt,
                 'due_date' => $dueDate,
                 'lines' => $attributes['lines'],
-                'subtotal_cents' => $subtotalCents,
-                'vat_cents' => $vatCents,
-                'total_cents' => $totalCents,
                 'currency' => $currency,
                 'payment_status' => $attributes['payment_status'] ?? PaymentStatus::Unpaid->value,
                 'owner_user_id' => $attributes['owner_user_id'] ?? null,
@@ -165,29 +160,5 @@ class FatturaService
         $client = $this->contacts->find($fattura->client_contact_id);
 
         return FatturaPayloadDTO::fromModel($fattura, $client);
-    }
-
-    /**
-     * @param  array<int, array<string,mixed>>  $lines
-     * @return array{0:int,1:int,2:int} [subtotal, vat, total] in cents
-     */
-    private function computeTotals(array $lines): array
-    {
-        $subtotal = 0;
-        $vat = 0;
-
-        foreach ($lines as $line) {
-            $qty = (float) ($line['qty'] ?? 0);
-            $unit = (int) ($line['unit_price_cents'] ?? 0);
-            $rate = (float) ($line['vat_rate'] ?? 0);
-
-            $lineSubtotal = (int) round($qty * $unit);
-            $lineVat = (int) round($lineSubtotal * $rate / 100);
-
-            $subtotal += $lineSubtotal;
-            $vat += $lineVat;
-        }
-
-        return [$subtotal, $vat, $subtotal + $vat];
     }
 }

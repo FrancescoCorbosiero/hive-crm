@@ -34,7 +34,7 @@ class QuotationsService
      * Race-safe via the counter row's lockForUpdate, mirroring the
      * Fattura pattern from Phase 6.
      *
-     * Totals computed from `lines` — caller doesn't pass them directly.
+     * Totals are derived from `lines` by the model (DerivesTotalsFromLines).
      *
      * @param  array{
      *     name: string,
@@ -57,9 +57,7 @@ class QuotationsService
         $year = (int) ($attributes['year'] ?? $issuedAt->year);
         $currency = $attributes['currency'] ?? config('app.currency', 'EUR');
 
-        [$subtotal, $vat, $total] = $this->computeTotals($attributes['lines']);
-
-        return DB::transaction(function () use ($attributes, $year, $issuedAt, $currency, $subtotal, $vat, $total) {
+        return DB::transaction(function () use ($attributes, $year, $issuedAt, $currency) {
             $counter = QuotationCounter::query()->lockForUpdate()->find($year);
             if (! $counter) {
                 QuotationCounter::query()->create(['year' => $year, 'last_number' => 0]);
@@ -80,9 +78,6 @@ class QuotationsService
                     ? Carbon::parse($attributes['valid_until'])
                     : $issuedAt->copy()->addDays(30),
                 'lines' => $attributes['lines'],
-                'subtotal_cents' => $subtotal,
-                'vat_cents' => $vat,
-                'total_cents' => $total,
                 'currency' => $currency,
                 'status' => QuotationStatus::Draft->value,
                 'notes' => $attributes['notes'] ?? null,
@@ -266,29 +261,5 @@ class QuotationsService
         $q->update(['document_id' => $document->id]);
 
         return $document->id;
-    }
-
-    /**
-     * @param  array<int, array<string,mixed>>  $lines
-     * @return array{0:int,1:int,2:int} [subtotal, vat, total] in cents
-     */
-    private function computeTotals(array $lines): array
-    {
-        $subtotal = 0;
-        $vat = 0;
-
-        foreach ($lines as $line) {
-            $qty = (float) ($line['qty'] ?? 0);
-            $unit = (int) ($line['unit_price_cents'] ?? 0);
-            $rate = (float) ($line['vat_rate'] ?? 0);
-
-            $lineSubtotal = (int) round($qty * $unit);
-            $lineVat = (int) round($lineSubtotal * $rate / 100);
-
-            $subtotal += $lineSubtotal;
-            $vat += $lineVat;
-        }
-
-        return [$subtotal, $vat, $subtotal + $vat];
     }
 }

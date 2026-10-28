@@ -12,7 +12,6 @@ use App\Domains\Finance\Models\RecurringExpense;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Domains\Websites\Filament\Resources\WebsiteResource;
 use App\Domains\Websites\Models\Website;
-use App\Shared\ValueObjects\Money;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -94,7 +93,9 @@ class ActiveSubscriptionsWidget extends Widget
                     'direction' => 'income',
                     'name' => $r->name,
                     'counterparty' => $this->resolveContactName($r->client_contact_id),
-                    'amount' => $this->formatRecurringFatturaTotal($r),
+                    'amount' => ($r->lines?->count() ?? 0) > 0
+                        ? $r->cycleTotal()->format(app()->getLocale())
+                        : null,
                     'frequency' => $r->frequency->label(),
                     'started_at' => null,
                     'next_due_at' => $r->next_issue_at?->format('d/m/Y'),
@@ -150,26 +151,6 @@ class ActiveSubscriptionsWidget extends Widget
             12 => __('documents/labels.frequency.yearly'),
             default => __('dashboard.active_subscriptions.every_n_months', ['n' => $months]),
         };
-    }
-
-    private function formatRecurringFatturaTotal(RecurringFattura $r): ?string
-    {
-        $lines = $r->lines?->toArray() ?? [];
-        if ($lines === []) {
-            return null;
-        }
-
-        $cents = 0;
-        foreach ($lines as $line) {
-            $qty = (float) ($line['qty'] ?? 1);
-            $unit = (int) ($line['unit_price_cents'] ?? 0);
-            $vatRate = (float) ($line['vat_rate'] ?? 0);
-            $net = (int) round($qty * $unit);
-            $cents += $net + (int) round($net * $vatRate / 100);
-        }
-
-        return (new Money($cents, $r->currency ?: config('app.currency', 'EUR')))
-            ->format(app()->getLocale());
     }
 
     private function compareDates(?string $a, ?string $b): int

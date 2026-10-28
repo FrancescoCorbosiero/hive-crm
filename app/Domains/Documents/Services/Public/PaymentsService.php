@@ -105,12 +105,10 @@ class PaymentsService
     }
 
     /**
-     * Recompute paid_amount_cents + payment_status from the underlying
-     * payments rows. Single source of truth — the cached columns can
-     * be regenerated from this method at any time.
-     *
-     * Status precedence: Cancelled > Paid > Overdue (when past due_date)
-     * > Partially Paid > Unpaid. Cancelled is sticky — once a fattura
+     * Recompute paid_amount_cents from the underlying payments rows and
+     * re-derive payment_status from it (Fattura::derivePaymentStatus).
+     * Single source of truth — the cached columns can be regenerated
+     * from this method at any time. Cancelled is sticky — once a fattura
      * is voided, no payment recompute revives it.
      */
     public function recomputeFromPayments(Fattura $fattura): void
@@ -119,20 +117,10 @@ class PaymentsService
             return;
         }
 
-        $paid = (int) Payment::query()
+        $fattura->paid_amount_cents = (int) Payment::query()
             ->where('fattura_id', $fattura->id)
             ->sum('amount_cents');
-
-        $newStatus = match (true) {
-            $paid >= $fattura->total_cents && $fattura->total_cents > 0 => PaymentStatus::Paid,
-            $paid > 0 => PaymentStatus::PartiallyPaid,
-            $fattura->due_date && Carbon::parse($fattura->due_date)->isPast() => PaymentStatus::Overdue,
-            default => PaymentStatus::Unpaid,
-        };
-
-        $fattura->update([
-            'paid_amount_cents' => $paid,
-            'payment_status' => $newStatus->value,
-        ]);
+        $fattura->payment_status = $fattura->derivePaymentStatus();
+        $fattura->save();
     }
 }

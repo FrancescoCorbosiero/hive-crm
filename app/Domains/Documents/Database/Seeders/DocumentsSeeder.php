@@ -5,18 +5,28 @@ declare(strict_types=1);
 namespace App\Domains\Documents\Database\Seeders;
 
 use App\Domains\Contacts\Services\Public\ContactsService;
-use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Models\Fattura;
-use App\Domains\Documents\Models\FatturaCounter;
+use App\Domains\Documents\Services\Public\FatturaService;
+use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * Two sample fatture for the demo workspace.
+ *
+ * Fattura numbers are fiscal artefacts, so this seeder never touches
+ * the counter or upserts on (year, number) — doing so would overwrite a
+ * real invoice and desync the sequence. Demo fatture are only added to
+ * a ledger that has none yet (which also makes re-runs a no-op), and go
+ * through FatturaService / PaymentsService like real ones.
+ */
 class DocumentsSeeder extends Seeder
 {
     public function run(): void
     {
-        $ownerId = User::query()->value('id');
-        $year = (int) now()->year;
+        if (Fattura::query()->exists()) {
+            return;
+        }
 
         $clientId = app(ContactsService::class)
             ->idsByEmails(['amministrazione@bellavistadolci.it'])
@@ -26,14 +36,14 @@ class DocumentsSeeder extends Seeder
             return;
         }
 
-        FatturaCounter::query()->updateOrCreate(['year' => $year], ['last_number' => 0]);
+        $ownerId = User::query()->value('id');
 
         $samples = [
             [
                 'lines' => [
                     ['description' => 'Manutenzione mensile sito', 'qty' => 1, 'unit_price_cents' => 8000, 'vat_rate' => 22],
                 ],
-                'payment_status' => PaymentStatus::Paid,
+                'paid' => true,
                 'days_ago' => 30,
             ],
             [
@@ -41,39 +51,28 @@ class DocumentsSeeder extends Seeder
                     ['description' => 'Restyling homepage', 'qty' => 1, 'unit_price_cents' => 220000, 'vat_rate' => 22],
                     ['description' => 'Migrazione contenuti', 'qty' => 4, 'unit_price_cents' => 7500, 'vat_rate' => 22],
                 ],
-                'payment_status' => PaymentStatus::Unpaid,
+                'paid' => false,
                 'days_ago' => 5,
             ],
         ];
 
         foreach ($samples as $sample) {
-            $subtotal = 0;
-            $vat = 0;
-            foreach ($sample['lines'] as $line) {
-                $sub = (int) round($line['qty'] * $line['unit_price_cents']);
-                $subtotal += $sub;
-                $vat += (int) round($sub * $line['vat_rate'] / 100);
+            $issuedAt = now()->subDays($sample['days_ago']);
+
+            $fattura = app(FatturaService::class)->create([
+                'client_contact_id' => (int) $clientId,
+                'issued_at' => $issuedAt,
+                'due_date' => $issuedAt->copy()->addDays(30),
+                'lines' => $sample['lines'],
+                'owner_user_id' => $ownerId,
+            ]);
+
+            if ($sample['paid']) {
+                app(PaymentsService::class)->record($fattura->id, [
+                    'amount_cents' => $fattura->total_cents,
+                    'paid_at' => $issuedAt->toDateString(),
+                ]);
             }
-            $total = $subtotal + $vat;
-
-            $counter = FatturaCounter::query()->lockForUpdate()->find($year);
-            $counter->last_number = $counter->last_number + 1;
-            $counter->save();
-
-            Fattura::query()->updateOrCreate(
-                ['year' => $year, 'number' => $counter->last_number],
-                [
-                    'client_contact_id' => $clientId,
-                    'issued_at' => now()->subDays($sample['days_ago']),
-                    'lines' => $sample['lines'],
-                    'subtotal_cents' => $subtotal,
-                    'vat_cents' => $vat,
-                    'total_cents' => $total,
-                    'currency' => 'EUR',
-                    'payment_status' => $sample['payment_status']->value,
-                    'owner_user_id' => $ownerId,
-                ],
-            );
         }
     }
 }

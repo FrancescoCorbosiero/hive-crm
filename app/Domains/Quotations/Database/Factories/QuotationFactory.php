@@ -18,14 +18,18 @@ class QuotationFactory extends Factory
 {
     protected $model = Quotation::class;
 
+    /**
+     * Fill the derived totals at make time too: model events (and so the
+     * DerivesTotalsFromLines hook) don't fire under a bare Event::fake().
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(fn (Quotation $quotation) => $quotation->fillTotalsFromLines());
+    }
+
     public function definition(): array
     {
         $year = (int) now()->year;
-        $lines = [
-            ['description' => 'Servizio test', 'qty' => 1, 'unit_price_cents' => 100_000, 'vat_rate' => 22],
-        ];
-        $sub = 100_000;
-        $vat = 22_000;
 
         return [
             'year' => $year,
@@ -35,10 +39,10 @@ class QuotationFactory extends Factory
             'lead_id' => null,
             'issued_at' => now(),
             'valid_until' => now()->addDays(30),
-            'lines' => $lines,
-            'subtotal_cents' => $sub,
-            'vat_cents' => $vat,
-            'total_cents' => $sub + $vat,
+            // Totals are derived from the lines (DerivesTotalsFromLines).
+            'lines' => [
+                ['description' => 'Servizio test', 'qty' => 1, 'unit_price_cents' => 100_000, 'vat_rate' => 22],
+            ],
             'currency' => 'EUR',
             'status' => QuotationStatus::Draft->value,
             'document_id' => null,

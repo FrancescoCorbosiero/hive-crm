@@ -90,6 +90,7 @@ class FatturaPaExporter
             'partita_iva' => $piva,
             'denominazione' => $deno,
             'regime_fiscale' => (string) ($cedente['regime_fiscale'] ?? 'RF19'),
+            'natura_default' => (string) ($cedente['natura_default'] ?? '') ?: 'N2.2',
             'sede' => $sede,
         ];
     }
@@ -156,12 +157,13 @@ class FatturaPaExporter
     {
         $issued = $fattura->issued_at?->format('Y-m-d') ?? now()->format('Y-m-d');
         $numero = $fattura->year.'/'.str_pad((string) $fattura->number, 3, '0', STR_PAD_LEFT);
-        $totalEuros = number_format($fattura->total_cents / 100, 2, '.', '');
         $currency = $fattura->currency ?: 'EUR';
 
-        $documentNatura = $fattura->natura ?: (string) config('fattura.cedente.natura_default', 'N2.2');
-
-        $lines = (array) $fattura->lines;
+        // Lines, VAT summary and document total all come from the same
+        // LineItems, so ImportoTotaleDocumento always equals the sum of
+        // the DatiRiepilogo blocks the SdI cross-checks.
+        $items = $fattura->lineItems(defaultNatura: $fattura->natura ?: $cedente['natura_default']);
+        $totalEuros = $this->amount($items->total()->cents);
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
         $xml .= '<p:FatturaElettronica versione="FPR12" xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2">';
@@ -233,44 +235,28 @@ class FatturaPaExporter
 
         $xml .= '<DatiBeniServizi>';
 
-        // Lines.
-        $riepilogo = [];  // [rateKey => [imponibileCents, imposta, natura]]
-        foreach ($lines as $i => $line) {
-            $qty = (float) ($line['qty'] ?? 0);
-            $unit = (int) ($line['unit_price_cents'] ?? 0);
-            $rate = (float) ($line['vat_rate'] ?? 0);
-            $lineSubtotal = (int) round($qty * $unit);
-            $lineVat = (int) round($lineSubtotal * $rate / 100);
-            $natura = $rate == 0.0 ? ($line['natura'] ?? $documentNatura) : null;
-
+        foreach ($items->items() as $i => $line) {
             $xml .= '<DettaglioLinee>';
             $xml .= '<NumeroLinea>'.($i + 1).'</NumeroLinea>';
-            $xml .= '<Descrizione>'.$this->esc((string) ($line['description'] ?? 'Riga')).'</Descrizione>';
-            $xml .= '<Quantita>'.number_format($qty, 2, '.', '').'</Quantita>';
-            $xml .= '<PrezzoUnitario>'.number_format($unit / 100, 2, '.', '').'</PrezzoUnitario>';
-            $xml .= '<PrezzoTotale>'.number_format($lineSubtotal / 100, 2, '.', '').'</PrezzoTotale>';
-            $xml .= '<AliquotaIVA>'.number_format($rate, 2, '.', '').'</AliquotaIVA>';
-            if ($natura !== null) {
-                $xml .= '<Natura>'.$this->esc((string) $natura).'</Natura>';
+            $xml .= '<Descrizione>'.$this->esc($line->description !== '' ? $line->description : 'Riga').'</Descrizione>';
+            $xml .= '<Quantita>'.number_format($line->quantity, 2, '.', '').'</Quantita>';
+            $xml .= '<PrezzoUnitario>'.$this->amount($line->unitPriceCents).'</PrezzoUnitario>';
+            $xml .= '<PrezzoTotale>'.$this->amount($line->netCents).'</PrezzoTotale>';
+            $xml .= '<AliquotaIVA>'.number_format($line->vatRate, 2, '.', '').'</AliquotaIVA>';
+            if ($line->natura !== null) {
+                $xml .= '<Natura>'.$this->esc($line->natura).'</Natura>';
             }
             $xml .= '</DettaglioLinee>';
-
-            $key = number_format($rate, 2, '.', '').'|'.($natura ?? '');
-            if (! isset($riepilogo[$key])) {
-                $riepilogo[$key] = ['imponibile' => 0, 'imposta' => 0, 'rate' => $rate, 'natura' => $natura];
-            }
-            $riepilogo[$key]['imponibile'] += $lineSubtotal;
-            $riepilogo[$key]['imposta'] += $lineVat;
         }
 
-        foreach ($riepilogo as $r) {
+        foreach ($items->vatSummary() as $summary) {
             $xml .= '<DatiRiepilogo>';
-            $xml .= '<AliquotaIVA>'.number_format($r['rate'], 2, '.', '').'</AliquotaIVA>';
-            if ($r['natura'] !== null) {
-                $xml .= '<Natura>'.$this->esc((string) $r['natura']).'</Natura>';
+            $xml .= '<AliquotaIVA>'.number_format($summary->vatRate, 2, '.', '').'</AliquotaIVA>';
+            if ($summary->natura !== null) {
+                $xml .= '<Natura>'.$this->esc($summary->natura).'</Natura>';
             }
-            $xml .= '<ImponibileImporto>'.number_format($r['imponibile'] / 100, 2, '.', '').'</ImponibileImporto>';
-            $xml .= '<Imposta>'.number_format($r['imposta'] / 100, 2, '.', '').'</Imposta>';
+            $xml .= '<ImponibileImporto>'.$this->amount($summary->taxableCents).'</ImponibileImporto>';
+            $xml .= '<Imposta>'.$this->amount($summary->vatCents).'</Imposta>';
             $xml .= '</DatiRiepilogo>';
         }
 
@@ -304,6 +290,11 @@ class FatturaPaExporter
         $xml .= '</Sede>';
 
         return $xml;
+    }
+
+    private function amount(int $cents): string
+    {
+        return number_format($cents / 100, 2, '.', '');
     }
 
     private function esc(string $value): string

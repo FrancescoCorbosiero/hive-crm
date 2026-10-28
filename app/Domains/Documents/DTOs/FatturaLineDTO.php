@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\DTOs;
 
+use App\Shared\Billing\LineItem;
 use App\Shared\ValueObjects\Money;
 
+/**
+ * One fattura line as rendered on the PDF. VAT is deliberately not
+ * exposed per line: it is computed per rate on the summed net (see
+ * LineItems), so a per-line VAT figure would not add up to the total.
+ */
 final readonly class FatturaLineDTO
 {
     public function __construct(
@@ -13,30 +19,22 @@ final readonly class FatturaLineDTO
         public float $qty,
         public Money $unitPrice,
         public float $vatRate,
+        private Money $net,
     ) {}
 
     public function lineSubtotal(): Money
     {
-        return $this->unitPrice->multiply($this->qty);
+        return $this->net;
     }
 
-    public function lineVat(): Money
-    {
-        return $this->lineSubtotal()->multiply($this->vatRate / 100);
-    }
-
-    public function lineTotal(): Money
-    {
-        return $this->lineSubtotal()->add($this->lineVat());
-    }
-
-    public static function fromArray(array $row, string $currency = 'EUR'): self
+    public static function fromLineItem(LineItem $item, string $currency = 'EUR'): self
     {
         return new self(
-            description: (string) ($row['description'] ?? ''),
-            qty: (float) ($row['qty'] ?? 0),
-            unitPrice: new Money((int) ($row['unit_price_cents'] ?? 0), $currency),
-            vatRate: (float) ($row['vat_rate'] ?? 0),
+            description: $item->description,
+            qty: $item->quantity,
+            unitPrice: new Money($item->unitPriceCents, $currency),
+            vatRate: $item->vatRate,
+            net: new Money($item->netCents, $currency),
         );
     }
 }

@@ -9,9 +9,8 @@ use App\Domains\Finance\Models\FinancialEntry;
 
 it('mirrors a payment as an Income FinancialEntry in the Finance domain', function () {
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
     ]);
 
     $payment = app(PaymentsService::class)->record($fattura->id, [
@@ -33,7 +32,7 @@ it('mirrors a payment as an Income FinancialEntry in the Finance domain', functi
 
 it('is idempotent — replaying PaymentRecorded with the same payment id does not double-create', function () {
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create(['client_contact_id' => $contact->id, 'total_cents' => 100_000]);
+    $fattura = Fattura::factory()->totalling(100_000)->create(['client_contact_id' => $contact->id]);
     $payment = app(PaymentsService::class)->record($fattura->id, ['amount_cents' => 100_000]);
 
     PaymentRecorded::dispatch($payment->id);

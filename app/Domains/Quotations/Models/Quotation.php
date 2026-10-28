@@ -6,6 +6,7 @@ namespace App\Domains\Quotations\Models;
 
 use App\Domains\Quotations\Database\Factories\QuotationFactory;
 use App\Domains\Quotations\Enums\QuotationStatus;
+use App\Shared\Billing\DerivesTotalsFromLines;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 class Quotation extends Model
 {
     use BelongsToOwner;
+    use DerivesTotalsFromLines;
     use HasFactory;
 
     protected $table = 'quotations';

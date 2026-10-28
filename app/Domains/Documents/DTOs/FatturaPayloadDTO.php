@@ -6,6 +6,7 @@ namespace App\Domains\Documents\DTOs;
 
 use App\Domains\Contacts\DTOs\ContactDTO;
 use App\Domains\Documents\Models\Fattura;
+use App\Shared\Billing\LineItem;
 use App\Shared\ValueObjects\Money;
 use Carbon\Carbon;
 
@@ -43,9 +44,10 @@ final readonly class FatturaPayloadDTO
     {
         $currency = $fattura->currency;
 
-        $lines = collect((array) $fattura->lines)
-            ->map(fn (array $row) => FatturaLineDTO::fromArray($row, $currency))
-            ->all();
+        $lines = array_map(
+            fn (LineItem $item) => FatturaLineDTO::fromLineItem($item, $currency),
+            $fattura->lineItems()->items(),
+        );
 
         return new self(
             id: $fattura->id,

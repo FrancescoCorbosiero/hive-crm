@@ -117,7 +117,7 @@ class CashFlowProjectionPage extends Page implements HasForms
 
         // Projected income from active RecurringFattura schedules.
         foreach (RecurringFattura::query()->where('is_active', true)->get() as $rec) {
-            $cycleCents = $this->cycleTotalCents((array) $rec->lines);
+            $cycleCents = $rec->cycleTotal()->cents;
             if ($cycleCents <= 0) {
                 continue;
             }
@@ -257,30 +257,6 @@ class CashFlowProjectionPage extends Page implements HasForms
             ],
             'has_data' => $totalIncome > 0 || $totalLoss > 0,
         ];
-    }
-
-    /**
-     * Total per cycle in cents for a RecurringFattura's lines array.
-     * Mirrors FatturaService::computeTotals so projection math matches
-     * what the actual issued fattura would total to.
-     *
-     * @param  array<int, array<string,mixed>>  $lines
-     */
-    protected function cycleTotalCents(array $lines): int
-    {
-        $total = 0;
-        foreach ($lines as $line) {
-            $qty = (float) ($line['qty'] ?? 0);
-            $unit = (int) ($line['unit_price_cents'] ?? 0);
-            $rate = (float) ($line['vat_rate'] ?? 0);
-
-            $lineSubtotal = (int) round($qty * $unit);
-            $lineVat = (int) round($lineSubtotal * $rate / 100);
-
-            $total += $lineSubtotal + $lineVat;
-        }
-
-        return $total;
     }
 
     /**

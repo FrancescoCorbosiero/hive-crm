@@ -10,6 +10,7 @@ use App\Domains\Finance\DTOs\FinancialEntryDTO;
 use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
+use App\Shared\Billing\LineItems;
 use App\Shared\ValueObjects\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -171,13 +172,11 @@ class FinanceService
             throw new \DomainException('FinancialEntry has no contact_id and none was provided; cannot generate a Fattura.');
         }
 
-        // VAT inclusion: the entry stores a net cash amount. We derive
-        // unit_price_cents so that subtotal + vat ≈ entry amount. With
-        // vat_rate = 0 the Fattura total equals the entry amount.
+        // VAT inclusion: the entry stores the cash actually received, so
+        // the line's net is back-derived from it (subtotal + VAT ≈ entry
+        // amount). With vat_rate = 0 the Fattura total equals the entry.
         $vatRate = (float) ($overrides['vat_rate'] ?? 0);
-        $unitPriceCents = $vatRate > 0
-            ? (int) round($entry->amount_cents / (1 + $vatRate / 100))
-            : (int) $entry->amount_cents;
+        $unitPriceCents = LineItems::netFromGross((int) $entry->amount_cents, $vatRate);
 
         $fattura = app(FatturaService::class)->create([
             'client_contact_id' => (int) $clientContactId,

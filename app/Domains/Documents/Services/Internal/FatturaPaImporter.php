@@ -12,6 +12,7 @@ use App\Domains\Documents\Models\FatturaCounter;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Settings\Services\Public\BusinessProfileService;
+use App\Shared\Billing\LineItems;
 use DomainException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -143,7 +144,7 @@ class FatturaPaImporter
         $totalEuros = $this->parseMoney((string) $general->ImportoTotaleDocumento);
 
         $lines = $this->parseLines($body->DatiBeniServizi->DettaglioLinee);
-        [$subtotalCents, $vatCents, $totalCentsFromLines] = $this->computeTotals($lines);
+        $items = LineItems::fromArray($lines, $currency);
 
         return [
             'cedente' => $cedente,
@@ -153,9 +154,9 @@ class FatturaPaImporter
             'issued_at' => $issuedAt,
             'currency' => $currency,
             'lines' => $lines,
-            'subtotal_cents' => $subtotalCents,
-            'vat_cents' => $vatCents,
-            'total_cents' => $totalCentsFromLines,
+            'subtotal_cents' => $items->subtotal()->cents,
+            'vat_cents' => $items->vat()->cents,
+            'total_cents' => $items->total()->cents,
             'declared_total_cents' => $totalEuros,
         ];
     }
@@ -298,26 +299,6 @@ class FatturaPaImporter
         return $out;
     }
 
-    /**
-     * @param  array<int, array<string,mixed>>  $lines
-     * @return array{0:int,1:int,2:int}
-     */
-    private function computeTotals(array $lines): array
-    {
-        $subtotal = 0;
-        $vat = 0;
-        foreach ($lines as $line) {
-            $qty = (float) ($line['qty'] ?? 0);
-            $unit = (int) ($line['unit_price_cents'] ?? 0);
-            $rate = (float) ($line['vat_rate'] ?? 0);
-            $lineSubtotal = (int) round($qty * $unit);
-            $subtotal += $lineSubtotal;
-            $vat += (int) round($lineSubtotal * $rate / 100);
-        }
-
-        return [$subtotal, $vat, $subtotal + $vat];
-    }
-
     // ── Guards ─────────────────────────────────────────────────────────
 
     /**
@@ -410,9 +391,6 @@ class FatturaPaImporter
                 'client_contact_id' => $contactId,
                 'issued_at' => $parsed['issued_at'],
                 'lines' => $parsed['lines'],
-                'subtotal_cents' => $parsed['subtotal_cents'],
-                'vat_cents' => $parsed['vat_cents'],
-                'total_cents' => $parsed['total_cents'],
                 'currency' => $parsed['currency'],
                 'payment_status' => PaymentStatus::Unpaid->value,
                 'owner_user_id' => $ownerUserId,

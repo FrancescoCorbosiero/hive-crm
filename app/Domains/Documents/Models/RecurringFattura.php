@@ -6,7 +6,9 @@ namespace App\Domains\Documents\Models;
 
 use App\Domains\Documents\Database\Factories\RecurringFatturaFactory;
 use App\Domains\Documents\Enums\RecurringFrequency;
+use App\Shared\Billing\HasLineItems;
 use App\Shared\Concerns\BelongsToOwner;
+use App\Shared\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +18,7 @@ class RecurringFattura extends Model
 {
     use BelongsToOwner;
     use HasFactory;
+    use HasLineItems;
 
     protected $table = 'recurring_fatture';
 
@@ -47,6 +50,14 @@ class RecurringFattura extends Model
     protected static function newFactory(): RecurringFatturaFactory
     {
         return RecurringFatturaFactory::new();
+    }
+
+    /**
+     * What one issued cycle of this schedule totals (net + VAT).
+     */
+    public function cycleTotal(): Money
+    {
+        return $this->lineItems()->total();
     }
 
     public function scopeDueOn(Builder $query, $date): Builder

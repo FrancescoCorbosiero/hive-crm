@@ -19,36 +19,52 @@ class FatturaFactory extends Factory
 {
     protected $model = Fattura::class;
 
+    /**
+     * Fill the derived totals at make time too: model events (and so the
+     * DerivesTotalsFromLines hook) don't fire under a bare Event::fake().
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(fn (Fattura $fattura) => $fattura->fillTotalsFromLines());
+    }
+
     public function definition(): array
     {
-        $year = (int) now()->year;
-
-        $lines = [
-            [
-                'description' => 'Sviluppo sito web',
-                'qty' => 1,
-                'unit_price_cents' => 250_000,
-                'vat_rate' => 22,
-            ],
-        ];
-
-        $subtotal = 250_000;
-        $vat = (int) round($subtotal * 22 / 100);
-        $total = $subtotal + $vat;
-
         return [
-            'year' => $year,
+            'year' => (int) now()->year,
             'number' => fake()->unique()->numberBetween(1, 9999),
             'client_contact_id' => 1,
             'issued_at' => now(),
-            'lines' => $lines,
-            'subtotal_cents' => $subtotal,
-            'vat_cents' => $vat,
-            'total_cents' => $total,
+            // Totals are derived from the lines (DerivesTotalsFromLines):
+            // 2_500.00 + 22% VAT = 3_050.00.
+            'lines' => [
+                [
+                    'description' => 'Sviluppo sito web',
+                    'qty' => 1,
+                    'unit_price_cents' => 250_000,
+                    'vat_rate' => 22,
+                ],
+            ],
             'currency' => 'EUR',
             'payment_status' => PaymentStatus::Unpaid->value,
             'document_id' => null,
             'owner_user_id' => null,
         ];
+    }
+
+    /**
+     * A single VAT-free line, so the fattura totals exactly $cents —
+     * for tests that care about payment arithmetic, not tax.
+     */
+    public function totalling(int $cents): self
+    {
+        return $this->state(fn () => [
+            'lines' => [[
+                'description' => 'Servizio',
+                'qty' => 1,
+                'unit_price_cents' => $cents,
+                'vat_rate' => 0,
+            ]],
+        ]);
     }
 }

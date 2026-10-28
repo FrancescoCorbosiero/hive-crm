@@ -13,9 +13,8 @@ use Illuminate\Support\Facades\Event;
 it('records a payment, updates paid_amount_cents, and dispatches PaymentRecorded', function () {
     Event::fake();
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'paid_amount_cents' => 0,
         'payment_status' => PaymentStatus::Unpaid->value,
     ]);
@@ -35,9 +34,8 @@ it('records a payment, updates paid_amount_cents, and dispatches PaymentRecorded
 it('moves status to Paid when total is fully covered, and dispatches FatturaPaid once', function () {
     Event::fake();
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'paid_amount_cents' => 0,
         'payment_status' => PaymentStatus::Unpaid->value,
     ]);
@@ -51,9 +49,8 @@ it('moves status to Paid when total is fully covered, and dispatches FatturaPaid
 it('does NOT re-dispatch FatturaPaid on a payment after the fattura is already Paid', function () {
     Event::fake();
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'paid_amount_cents' => 100_000,
         'payment_status' => PaymentStatus::Paid->value,
     ]);
@@ -67,9 +64,8 @@ it('does NOT re-dispatch FatturaPaid on a payment after the fattura is already P
 
 it('walks status backwards when a payment is deleted', function () {
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'payment_status' => PaymentStatus::Unpaid->value,
     ]);
     $payment = app(PaymentsService::class)->record($fattura->id, ['amount_cents' => 100_000]);
@@ -84,9 +80,8 @@ it('walks status backwards when a payment is deleted', function () {
 
 it('marks a fattura Overdue when due_date has passed and nothing has been paid', function () {
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'paid_amount_cents' => 0,
         'due_date' => now()->subDays(5),
         'payment_status' => PaymentStatus::Unpaid->value,
@@ -100,9 +95,8 @@ it('marks a fattura Overdue when due_date has passed and nothing has been paid',
 
 it('refuses to recompute (is sticky) once a fattura is Cancelled', function () {
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'payment_status' => PaymentStatus::Cancelled->value,
     ]);
 
@@ -117,9 +111,8 @@ it('refuses to recompute (is sticky) once a fattura is Cancelled', function () {
 
 it('returns the outstanding amount as a Money instance', function () {
     $contact = Contact::factory()->create();
-    $fattura = Fattura::factory()->create([
+    $fattura = Fattura::factory()->totalling(100_000)->create([
         'client_contact_id' => $contact->id,
-        'total_cents' => 100_000,
         'paid_amount_cents' => 30_000,
     ]);
 

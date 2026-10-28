@@ -6,6 +6,7 @@ namespace App\Domains\Documents\Models;
 
 use App\Domains\Documents\Database\Factories\FatturaFactory;
 use App\Domains\Documents\Enums\PaymentStatus;
+use App\Shared\Billing\DerivesTotalsFromLines;
 use App\Shared\Concerns\BelongsToOwner;
 use App\Shared\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
@@ -19,8 +20,21 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Fattura extends Model
 {
     use BelongsToOwner;
+    use DerivesTotalsFromLines;
     use HasFactory;
     use LogsActivity;
+
+    protected static function booted(): void
+    {
+        // The status is derived from paid vs. total vs. due date, so an
+        // edit that moves the total or the due date re-derives it (runs
+        // after DerivesTotalsFromLines has refreshed the totals).
+        static::saving(function (Fattura $fattura): void {
+            if ($fattura->exists && $fattura->isDirty(['total_cents', 'due_date'])) {
+                $fattura->payment_status = $fattura->derivePaymentStatus();
+            }
+        });
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -66,6 +80,24 @@ class Fattura extends Model
             'paid_amount_cents' => 'integer',
             'payment_status' => PaymentStatus::class,
         ];
+    }
+
+    /**
+     * Payment status implied by the cached paid amount, the total and the
+     * due date. Cancelled is sticky — a voided fattura never revives.
+     */
+    public function derivePaymentStatus(): PaymentStatus
+    {
+        $paid = (int) $this->paid_amount_cents;
+        $total = (int) $this->total_cents;
+
+        return match (true) {
+            $this->payment_status === PaymentStatus::Cancelled => PaymentStatus::Cancelled,
+            $total > 0 && $paid >= $total => PaymentStatus::Paid,
+            $paid > 0 => PaymentStatus::PartiallyPaid,
+            $this->due_date !== null && $this->due_date->isPast() => PaymentStatus::Overdue,
+            default => PaymentStatus::Unpaid,
+        };
     }
 
     public function paidAmount(): Money
