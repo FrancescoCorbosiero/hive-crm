@@ -7,6 +7,7 @@ namespace App\Domains\Scheduling;
 use App\Domains\Scheduling\Database\Seeders\SystemScheduledTasksSeeder;
 use App\Domains\Scheduling\Registry\ScheduledCommandRegistry;
 use App\Domains\Scheduling\Services\ScheduleLoader;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 
 class SchedulingServiceProvider extends ServiceProvider
@@ -21,6 +22,15 @@ class SchedulingServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
 
         $this->registerSystemCommands();
+
+        // Bind the scheduled_tasks rows only when something actually needs
+        // the schedule (schedule:run and friends). Loading them from
+        // routes/console.php queried the table on every artisan boot —
+        // migrations, tinker, every queue worker, and each "Run now"
+        // click, which goes through Artisan::call().
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $this->app->make(ScheduleLoader::class)->register($schedule);
+        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([

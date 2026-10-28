@@ -6,19 +6,19 @@ namespace App\Domains\Scheduling\Services;
 
 use App\Domains\Scheduling\Models\ScheduledTask;
 use App\Domains\Scheduling\Registry\ScheduledCommandRegistry;
-use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schedule;
 use Throwable;
 
 /**
  * Binds DB-stored scheduled_tasks rows into Laravel's Scheduler.
  *
- * Called from routes/console.php on every artisan boot. The Schedule
- * facade is consulted once per minute by schedule:run, which means
- * adding / disabling a task from the UI takes effect on the next tick
- * without needing a deploy.
+ * Runs when Laravel's Schedule is first resolved (hooked up in
+ * SchedulingServiceProvider) — i.e. by schedule:run / schedule:work /
+ * schedule:list, not on every artisan boot. schedule:run starts a fresh
+ * process each minute, so adding / disabling a task from the UI takes
+ * effect on the next tick without needing a deploy.
  *
  * The output of each run is streamed to storage/app/scheduled_tasks/
  * via sendOutputTo(), then read back in the after() callback and
@@ -31,7 +31,7 @@ class ScheduleLoader
 
     public const OUTPUT_LIMIT = 5000;
 
-    public function register(): void
+    public function register(Schedule $schedule): void
     {
         // Guard against running before the migration has been applied —
         // for example on the very first `php artisan migrate` invocation.
@@ -55,14 +55,13 @@ class ScheduleLoader
                 continue;
             }
 
-            $this->bind($task);
+            $this->bind($schedule, $task);
         }
     }
 
-    private function bind(ScheduledTask $task): void
+    private function bind(Schedule $schedule, ScheduledTask $task): void
     {
-        /** @var Event $event */
-        $event = Schedule::command($task->command)
+        $event = $schedule->command($task->command)
             ->cron($task->cron_expression)
             ->name('scheduled_task_'.$task->id);
 
@@ -93,12 +92,10 @@ class ScheduleLoader
             ]);
         });
 
-        $event->onSuccess(function () use ($taskId, $outputPath): void {
-            self::recordResult($taskId, exitCode: 0, outputPath: $outputPath);
-        });
-
-        $event->onFailure(function () use ($taskId, $outputPath): void {
-            self::recordResult($taskId, exitCode: 1, outputPath: $outputPath);
+        // One callback for both outcomes: onFailure() can't see the exit
+        // code, so every failure used to be recorded as 1.
+        $event->after(function () use ($event, $taskId, $outputPath): void {
+            self::recordResult($taskId, exitCode: $event->exitCode ?? 1, outputPath: $outputPath);
         });
     }
 

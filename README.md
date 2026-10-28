@@ -107,11 +107,15 @@ Adding a new domain to the panel is a one-line change.
 ## Testing
 
 ```bash
-./vendor/bin/sail pest               # full suite
-./vendor/bin/sail pest --filter=...  # focused
+./vendor/bin/sail pest                   # full suite: Unit, Feature, Arch
+./vendor/bin/sail pest --testsuite=Arch  # module-boundary rules only
+./vendor/bin/sail pest --filter=...      # focused
+./vendor/bin/sail pint                   # code style
 ```
 
-Tests run on an in-memory SQLite database (see `phpunit.xml`).
+Tests run on an in-memory SQLite database (see `phpunit.xml`). CI
+(`.github/workflows/ci.yml`) runs `pint --test` and the full suite on
+every push to `main` and every pull request.
 
 ## Backups
 

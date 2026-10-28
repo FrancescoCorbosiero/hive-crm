@@ -16,8 +16,8 @@ use Illuminate\Support\Carbon;
  * cron expression edited from the UI, but they cannot be deleted —
  * removing them would silently break the platform.
  *
- * The actual binding into Laravel's Scheduler happens once per cron
- * tick in routes/console.php via ScheduleLoader::register(). Runtime
+ * The actual binding into Laravel's Scheduler happens when the
+ * scheduler is resolved, via ScheduleLoader::register(). Runtime
  * outcomes (last_started_at / last_finished_at / last_exit_code /
  * last_output) are written back by the lifecycle callbacks the loader
  * attaches to each scheduled event.
