@@ -88,7 +88,9 @@ class ScheduledTask extends Model
     public function durationSeconds(): ?int
     {
         if ($this->last_started_at && $this->last_finished_at) {
-            return $this->last_started_at->diffInSeconds($this->last_finished_at);
+            // Carbon 3 returns a float; returning it from ?int is a
+            // TypeError under strict_types.
+            return (int) round($this->last_started_at->diffInSeconds($this->last_finished_at));
         }
 
         return null;

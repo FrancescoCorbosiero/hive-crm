@@ -5,6 +5,7 @@ use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Shared\ValueObjects\Money;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 it('aggregates monthly income for a website', function () {
     $websiteId = 1;
@@ -63,6 +64,22 @@ it('returns a 12-month income series indexed by YYYY-MM', function () {
 
     $secondToLast = $series->slice(-2, 1)->first();
     expect($secondToLast->cents)->toBe(20000);
+});
+
+it('builds the monthly income series from a single query', function () {
+    FinancialEntry::factory()->income(10000)->on(now()->startOfMonth())->create();
+    FinancialEntry::factory()->income(2500)->on(now()->endOfMonth())->create();
+    FinancialEntry::factory()->income(20000)->on(now()->startOfMonth()->subMonths(11))->create();
+    FinancialEntry::factory()->income(99900)->on(now()->startOfMonth()->subMonths(12))->create(); // outside
+    FinancialEntry::factory()->loss(5000)->on(now()->startOfMonth())->create();
+
+    DB::enableQueryLog();
+    $series = app(FinanceService::class)->monthlyIncomeSeries(12);
+
+    expect(DB::getQueryLog())->toHaveCount(1); // was one per month
+    expect($series->first()->cents)->toBe(20000);
+    expect($series->last()->cents)->toBe(12500);
+    expect($series->sum(fn (Money $month) => $month->cents))->toBe(32500);
 });
 
 it('returns the recent entries as DTOs', function () {

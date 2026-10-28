@@ -1,8 +1,11 @@
 <?php
 
 use App\Domains\Scheduling\Database\Seeders\SystemScheduledTasksSeeder;
+use App\Domains\Scheduling\Filament\Resources\ScheduledTaskResource\Pages\EditScheduledTask;
 use App\Domains\Scheduling\Models\ScheduledTask;
 use App\Domains\Scheduling\Registry\ScheduledCommandRegistry;
+use App\Models\User;
+use Livewire\Livewire;
 
 it('seeds every system command exactly once', function () {
     (new SystemScheduledTasksSeeder)->run();
@@ -56,4 +59,32 @@ it('whitelist refuses unknown commands', function () {
     expect(ScheduledCommandRegistry::has('backup:run'))->toBeTrue();
     expect(ScheduledCommandRegistry::has('migrate:fresh'))->toBeFalse();
     expect(ScheduledCommandRegistry::has('tinker'))->toBeFalse();
+});
+
+it('reports the last run duration in whole seconds', function () {
+    // Carbon 3's diffInSeconds() is a float (5.0 here): returning it from
+    // ?int threw a TypeError, so the edit page of any task that had run
+    // crashed.
+    $task = new ScheduledTask([
+        'last_started_at' => '2026-05-01 03:00:00',
+        'last_finished_at' => '2026-05-01 03:00:05',
+    ]);
+
+    expect($task->durationSeconds())->toBe(5);
+});
+
+it('opens the edit page of a task that has already run', function () {
+    $this->actingAs(User::factory()->create());
+    $task = ScheduledTask::query()->create([
+        'name' => 'Backups',
+        'command' => 'backup:run',
+        'cron_expression' => '0 3 * * *',
+        'last_started_at' => now()->subMinutes(2),
+        'last_finished_at' => now()->subMinute(),
+        'last_exit_code' => 0,
+    ]);
+
+    Livewire::test(EditScheduledTask::class, ['record' => $task->id])
+        ->assertSuccessful()
+        ->assertSee('60s');
 });

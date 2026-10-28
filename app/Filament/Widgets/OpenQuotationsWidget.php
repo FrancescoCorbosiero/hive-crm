@@ -81,7 +81,9 @@ class OpenQuotationsWidget extends TableWidget
                         if ($q->valid_until->lt($today)) {
                             return 'danger';
                         }
-                        if ($q->valid_until->diffInDays($today) <= 7) {
+                        // Not diffInDays(): Carbon 3 signs it, so a date
+                        // months ahead came out negative — always "<= 7".
+                        if ($q->valid_until->lte($today->copy()->addDays(7))) {
                             return 'warning';
                         }
 

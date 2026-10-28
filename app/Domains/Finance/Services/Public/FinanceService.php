@@ -294,22 +294,25 @@ class FinanceService
     public function monthlyIncomeSeries(int $months = 12, ?CarbonInterface $endingAt = null, bool $includeNonTaxable = false): Collection
     {
         $end = $endingAt ? Carbon::instance($endingAt) : now();
-        $cursor = $end->copy()->startOfMonth()->subMonths($months - 1);
+        $first = $end->copy()->startOfMonth()->subMonths($months - 1);
+        $currency = config('app.currency', 'EUR');
+
+        // One query for the whole window, bucketed here: occurred_at is a
+        // DATE, so its "Y-m" prefix is the month on every driver (a SQL
+        // month expression is not portable between pgsql and sqlite).
+        $centsByMonth = FinancialEntry::query()
+            ->incomes()
+            ->taxable($includeNonTaxable)
+            ->occurredBetween($first, $end->copy()->endOfMonth())
+            ->toBase()
+            ->get(['occurred_at', 'amount_cents'])
+            ->groupBy(fn (object $row) => substr((string) $row->occurred_at, 0, 7))
+            ->map(fn (Collection $rows) => (int) $rows->sum('amount_cents'));
 
         $series = collect();
         for ($i = 0; $i < $months; $i++) {
-            $monthStart = $cursor->copy()->startOfMonth();
-            $monthEnd = $cursor->copy()->endOfMonth();
-
-            $total = $this->sum(
-                FinancialEntry::query()
-                    ->incomes()
-                    ->taxable($includeNonTaxable)
-                    ->occurredBetween($monthStart, $monthEnd),
-            );
-
-            $series->put($monthStart->format('Y-m'), $total);
-            $cursor->addMonth();
+            $key = $first->copy()->addMonths($i)->format('Y-m');
+            $series->put($key, new Money($centsByMonth[$key] ?? 0, $currency));
         }
 
         return $series;

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\DTOs\ContactDTO;
+use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Documents\Filament\Resources\RecurringFatturaResource;
 use App\Domains\Documents\Models\RecurringFattura;
 use App\Domains\Finance\Filament\Resources\RecurringExpenseResource;
@@ -64,8 +65,19 @@ class ActiveSubscriptionsWidget extends Widget
         $websites = Website::query()
             ->where('status', WebsiteStatus::Active->value)
             ->whereNotNull('next_renewal_at')
-            ->get()
-            ->map(function (Website $w) use ($locale, $today) {
+            ->get();
+        $recurringFatture = RecurringFattura::query()->where('is_active', true)->get();
+        $recurringExpenses = RecurringExpense::query()->where('is_active', true)->get();
+
+        // One lookup for every counterparty instead of one per row.
+        $names = $this->contactNames([
+            ...$websites->pluck('owner_contact_id'),
+            ...$recurringFatture->pluck('client_contact_id'),
+            ...$recurringExpenses->pluck('vendor_contact_id'),
+        ]);
+
+        $websites = $websites
+            ->map(function (Website $w) use ($locale, $today, $names) {
                 $period = (int) ($w->renewal_period_months ?: 12);
 
                 return [
@@ -73,7 +85,7 @@ class ActiveSubscriptionsWidget extends Widget
                     'kind' => __('dashboard.active_subscriptions.kinds.website'),
                     'direction' => 'income',
                     'name' => $w->getTranslation('name', $locale),
-                    'counterparty' => $this->resolveContactName($w->owner_contact_id),
+                    'counterparty' => $names[$w->owner_contact_id] ?? null,
                     'amount' => null,
                     'frequency' => $this->labelForMonths($period),
                     'started_at' => $w->subscription_started_at?->format('d/m/Y'),
@@ -83,16 +95,14 @@ class ActiveSubscriptionsWidget extends Widget
                 ];
             });
 
-        $recurringRevenue = RecurringFattura::query()
-            ->where('is_active', true)
-            ->get()
-            ->map(function (RecurringFattura $r) use ($today) {
+        $recurringRevenue = $recurringFatture
+            ->map(function (RecurringFattura $r) use ($today, $names) {
                 return [
                     'id' => 'rfattura-'.$r->id,
                     'kind' => __('dashboard.active_subscriptions.kinds.recurring_fattura'),
                     'direction' => 'income',
                     'name' => $r->name,
-                    'counterparty' => $this->resolveContactName($r->client_contact_id),
+                    'counterparty' => $names[$r->client_contact_id] ?? null,
                     'amount' => ($r->lines?->count() ?? 0) > 0
                         ? $r->cycleTotal()->format(app()->getLocale())
                         : null,
@@ -104,16 +114,14 @@ class ActiveSubscriptionsWidget extends Widget
                 ];
             });
 
-        $recurringCost = RecurringExpense::query()
-            ->where('is_active', true)
-            ->get()
-            ->map(function (RecurringExpense $e) use ($locale, $today) {
+        $recurringCost = $recurringExpenses
+            ->map(function (RecurringExpense $e) use ($locale, $today, $names) {
                 return [
                     'id' => 'rexpense-'.$e->id,
                     'kind' => __('dashboard.active_subscriptions.kinds.recurring_expense'),
                     'direction' => 'loss',
                     'name' => $e->name,
-                    'counterparty' => $this->resolveContactName($e->vendor_contact_id),
+                    'counterparty' => $names[$e->vendor_contact_id] ?? null,
                     'amount' => $e->money()->format($locale),
                     'frequency' => $e->frequency->label(),
                     'started_at' => $e->started_at?->format('d/m/Y'),
@@ -134,13 +142,21 @@ class ActiveSubscriptionsWidget extends Widget
             ->values();
     }
 
-    private function resolveContactName(?int $contactId): ?string
+    /**
+     * @param  array<int, ?int>  $contactIds
+     * @return array<int, string>
+     */
+    private function contactNames(array $contactIds): array
     {
-        if (! $contactId) {
-            return null;
+        $ids = array_values(array_unique(array_filter($contactIds)));
+
+        if ($ids === []) {
+            return [];
         }
 
-        return Contact::query()->whereKey($contactId)->value('name');
+        return app(ContactsService::class)->findMany($ids)
+            ->mapWithKeys(fn (ContactDTO $contact) => [$contact->id => $contact->name])
+            ->all();
     }
 
     private function labelForMonths(int $months): string

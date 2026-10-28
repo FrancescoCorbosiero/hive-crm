@@ -13,9 +13,15 @@ use Illuminate\Database\Eloquent\Builder;
  * One tab per case of the chosen enum, plus an "All" tab and (when the
  * enum exposes an isOpen() method) an "Open" meta-tab that excludes
  * closed cases. Each tab carries a numeric badge with the matching count.
+ *
+ * The badges share one GROUP BY per request instead of running a COUNT
+ * per tab on every Livewire round-trip (search, sort, paginate).
  */
 trait HasStatusTabs
 {
+    /** @var array<string, int>|null */
+    private ?array $statusTabCounts = null;
+
     /** @return class-string<\BackedEnum> */
     abstract protected function statusEnum(): string;
 
@@ -43,19 +49,19 @@ trait HasStatusTabs
         $enum = $this->statusEnum();
         $column = $this->statusColumn();
         $open = $this->openStatuses();
-        $base = fn () => static::getResource()::getEloquentQuery();
+        $count = fn (array $values) => array_sum(array_intersect_key($this->statusTabCounts(), array_flip($values)));
 
         $tabs = [
             'all' => Tab::make()
                 ->label(__('shared/tabs.all'))
-                ->badge(fn () => $base()->count()),
+                ->badge(fn () => array_sum($this->statusTabCounts())),
         ];
 
         if (! empty($open)) {
             $openValues = array_map(fn ($c) => $c->value, $open);
             $tabs['open'] = Tab::make()
                 ->label(__('shared/tabs.open'))
-                ->badge(fn () => $base()->whereIn($column, $openValues)->count())
+                ->badge(fn () => $count($openValues))
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereIn($column, $openValues));
         }
 
@@ -63,11 +69,31 @@ trait HasStatusTabs
             $value = $case->value;
             $tabs[$value] = Tab::make()
                 ->label($case->label())
-                ->badge(fn () => $base()->where($column, $value)->count())
+                ->badge(fn () => $count([$value]))
                 ->modifyQueryUsing(fn (Builder $query) => $query->where($column, $value));
         }
 
         return $tabs;
+    }
+
+    /**
+     * Row count per status value, over the resource's base query.
+     *
+     * @return array<string, int>
+     */
+    private function statusTabCounts(): array
+    {
+        $column = $this->statusColumn();
+
+        return $this->statusTabCounts ??= static::getResource()::getEloquentQuery()
+            ->toBase()
+            ->reorder()
+            ->select($column)
+            ->selectRaw('count(*) as aggregate')
+            ->groupBy($column)
+            ->pluck('aggregate', $column)
+            ->map(fn ($aggregate) => (int) $aggregate)
+            ->all();
     }
 
     public function getDefaultActiveTab(): string|int|null
