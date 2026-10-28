@@ -23,7 +23,7 @@ final class UnsubscribeToken
 {
     public static function for(int $contactId, ?int $ttlDays = null): string
     {
-        $ttlDays ??= (int) env('APP_UNSUBSCRIBE_TTL_DAYS', 365);
+        $ttlDays ??= (int) config('hive.mail.unsubscribe_ttl_days', 365);
         $expiresAt = Carbon::now()->addDays($ttlDays)->getTimestamp();
 
         $payload = $contactId.'.'.$expiresAt;

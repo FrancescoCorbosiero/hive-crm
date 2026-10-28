@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,5 +39,14 @@ class User extends Authenticatable implements FilamentUser
         // v1: single-user app — every authenticated user is the admin.
         // Phase 1+ will replace this with spatie/laravel-permission roles.
         return true;
+    }
+
+    /**
+     * Horizon / Pulse follow the panel's access rule, so the two can
+     * never drift apart once roles land.
+     */
+    public function canViewOperationsDashboards(): bool
+    {
+        return $this->canAccessPanel(Filament::getPanel('admin'));
     }
 }

@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * Production-safe default seeder. Creates ONLY the admin user.
@@ -13,22 +13,43 @@ use Illuminate\Support\Facades\Hash;
  * lives in DemoDataSeeder and is installable on-demand from the admin UI
  * (Settings → Demo data). This prevents fake records from landing in a
  * real production workspace on first boot.
+ *
+ * The admin comes from config('hive.admin') (ADMIN_EMAIL / ADMIN_NAME /
+ * ADMIN_PASSWORD). An existing admin keeps their password unless
+ * ADMIN_PASSWORD is set; a new one never gets the guessable local-dev
+ * default outside local development.
  */
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = config('hive.admin.email', env('ADMIN_EMAIL', 'admin@hive.local'));
-        $name = config('hive.admin.name', env('ADMIN_NAME', 'Hive Admin'));
-        $password = env('ADMIN_PASSWORD', 'password');
+        $email = (string) config('hive.admin.email');
+        $password = (string) config('hive.admin.password');
 
-        User::query()->updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => $name,
-                'password' => Hash::make($password),
-                'email_verified_at' => now(),
-            ],
-        );
+        $admin = User::query()->firstOrNew(['email' => $email]);
+        $admin->name = (string) config('hive.admin.name');
+        $admin->email_verified_at ??= now();
+
+        if ($password !== '') {
+            $admin->password = $password; // hashed by the model cast
+        } elseif (! $admin->exists) {
+            $admin->password = $this->initialPassword($email);
+        }
+
+        $admin->save();
+    }
+
+    private function initialPassword(string $email): string
+    {
+        if (app()->environment('local', 'testing')) {
+            return 'password';
+        }
+
+        $generated = Str::password(24);
+
+        $this->command?->warn("No ADMIN_PASSWORD set. Generated a password for {$email}: {$generated}");
+        $this->command?->warn('Store it now — it is not shown again. To change it, set ADMIN_PASSWORD and re-run db:seed.');
+
+        return $generated;
     }
 }

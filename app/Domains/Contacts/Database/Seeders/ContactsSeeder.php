@@ -102,8 +102,5 @@ class ContactsSeeder extends Seeder
                 array_merge($row, ['owner_user_id' => $ownerId]),
             );
         }
-
-        // A handful of randomized extras for table density.
-        Contact::factory()->count(8)->create(['owner_user_id' => $ownerId]);
     }
 }

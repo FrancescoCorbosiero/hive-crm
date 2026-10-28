@@ -130,8 +130,11 @@ the most recent successful restore in your ops journal.
 
 ## Observability
 
-- `https://APP_DOMAIN/horizon` — Horizon queue dashboard (auth-gated).
+- `https://APP_DOMAIN/horizon` — Horizon queue dashboard.
 - `https://APP_DOMAIN/pulse` — Pulse application metrics.
+
+Both are gated on admin-panel access (`User::canViewOperationsDashboards`):
+log into `/admin` first, then open them in the same browser.
 - `https://APP_DOMAIN/up` — health probe for uptime monitors.
 
 ## Operational checklist after first deploy
@@ -142,7 +145,8 @@ real production setups before.
 
 - [ ] `https://APP_DOMAIN/up` returns 200 — Caddy + app are healthy.
 - [ ] `https://APP_DOMAIN/admin` loads + you can log in with the seeded
-      admin (set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`).
+      admin (set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` *before*
+      seeding; without a password the seeder prints a generated one once).
 - [ ] Locale switcher in the topbar flips IT ↔ EN.
 - [ ] Dashboard widgets render: today calendar, monthly income chart,
       YTD totals, upcoming renewals, leads pipeline, recent transactions.

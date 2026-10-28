@@ -33,12 +33,13 @@ class MailServiceProvider extends ServiceProvider
     /**
      * SES sandbox accounts allow ~1 email/sec; production-eligible
      * accounts ramp up to 14/sec by default. We start conservative —
-     * raise via config when SES production access is granted.
+     * raise MAIL_SES_PER_MINUTE (config/hive.php) when SES production
+     * access is granted.
      */
     private function registerRateLimiters(): void
     {
         RateLimiter::for('ses-send', fn () => Limit::perMinute(
-            (int) env('MAIL_SES_PER_MINUTE', 60),
+            (int) config('hive.mail.ses_per_minute', 60),
         ));
     }
 
