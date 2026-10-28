@@ -69,7 +69,7 @@ class ScheduledCommandRegistry
 
     /**
      * @return array<string, string> Map of artisan signature → label
-     *                                for use as a Filament Select.
+     *                               for use as a Filament Select.
      */
     public static function options(): array
     {

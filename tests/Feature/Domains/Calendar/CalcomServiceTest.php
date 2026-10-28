@@ -1,7 +1,9 @@
 <?php
 
 use App\Domains\Calendar\Services\Public\CalcomService;
+use Carbon\Carbon;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -21,7 +23,7 @@ it('sends an authenticated request to /bookings with the provided afterStart fil
     ]);
 
     $service = new CalcomService(app(HttpFactory::class));
-    $rows = $service->getBookingsSince(\Carbon\Carbon::parse('2026-04-29T00:00:00Z'));
+    $rows = $service->getBookingsSince(Carbon::parse('2026-04-29T00:00:00Z'));
 
     expect($rows)->toHaveCount(2);
     expect($rows[0]['uid'])->toBe('cal_1');
@@ -69,7 +71,7 @@ it('throws on a persistent 4xx (no retry on client errors)', function () {
     $service = new CalcomService(app(HttpFactory::class));
 
     expect(fn () => $service->getBookingsSince(now()))
-        ->toThrow(\Illuminate\Http\Client\RequestException::class);
+        ->toThrow(RequestException::class);
 
     // No retries on 403.
     Http::assertSentCount(1);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Finance\Filament\Widgets;
 
 use App\Domains\Finance\Services\Public\FinanceService;
+use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 
 class MonthlyIncomeChartWidget extends ChartWidget
@@ -24,7 +25,8 @@ class MonthlyIncomeChartWidget extends ChartWidget
 
         $labels = $series->keys()->map(function (string $ym) {
             [$year, $month] = explode('-', $ym);
-            return \Carbon\Carbon::createFromDate((int) $year, (int) $month, 1)
+
+            return Carbon::createFromDate((int) $year, (int) $month, 1)
                 ->locale(app()->getLocale())
                 ->isoFormat('MMM YY');
         })->all();

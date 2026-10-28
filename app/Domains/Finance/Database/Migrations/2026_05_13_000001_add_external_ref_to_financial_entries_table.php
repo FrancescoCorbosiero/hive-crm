@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -32,7 +33,7 @@ return new class extends Migration
             Schema::table('financial_entries', function (Blueprint $table) {
                 $table->index('external_ref', 'financial_entries_external_ref_idx');
             });
-            \Illuminate\Support\Facades\DB::statement(
+            DB::statement(
                 'CREATE UNIQUE INDEX financial_entries_external_ref_unique '
                 .'ON financial_entries (external_ref) WHERE external_ref IS NOT NULL',
             );
@@ -47,7 +48,7 @@ return new class extends Migration
     {
         $driver = Schema::getConnection()->getDriverName();
         if ($driver === 'pgsql') {
-            \Illuminate\Support\Facades\DB::statement(
+            DB::statement(
                 'DROP INDEX IF EXISTS financial_entries_external_ref_unique',
             );
             Schema::table('financial_entries', function (Blueprint $table) {

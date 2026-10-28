@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Contacts\Models\Contact;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Finance\Services\Public\FinanceService;
@@ -81,7 +82,7 @@ it('refuses to generate a Fattura from a non-taxable income entry', function () 
     $entry = FinancialEntry::factory()
         ->income(10000)
         ->nonTaxable()
-        ->create(['contact_id' => \App\Domains\Contacts\Models\Contact::factory()->create()->id]);
+        ->create(['contact_id' => Contact::factory()->create()->id]);
 
     expect(fn () => app(FinanceService::class)->generateFattura($entry->id))
         ->toThrow(DomainException::class);

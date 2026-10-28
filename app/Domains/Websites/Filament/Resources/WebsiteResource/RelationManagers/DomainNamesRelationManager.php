@@ -11,6 +11,7 @@ use App\Domains\DomainNames\Models\DomainName;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Read-only listing of the domains pointing at this website — the
@@ -21,7 +22,7 @@ class DomainNamesRelationManager extends RelationManager
 {
     protected static string $relationship = 'domainNames';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('domain_names/labels.plural');
     }

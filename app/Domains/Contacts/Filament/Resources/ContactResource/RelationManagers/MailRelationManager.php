@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 
 use App\Domains\Mail\Enums\RecipientStatus;
-use App\Domains\Mail\Models\CampaignRecipient;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Latest 10 campaign sends to this contact, newest first. Pending
@@ -19,7 +19,7 @@ class MailRelationManager extends RelationManager
 {
     protected static string $relationship = 'campaignRecipients';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('contacts/labels.summary.mail');
     }

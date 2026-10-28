@@ -3,7 +3,7 @@
 use App\Domains\Websites\Events\WebsiteWentDown;
 use App\Domains\Websites\Models\Website;
 use App\Domains\Websites\Services\Internal\WebsitePinger;
-use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 
@@ -65,7 +65,7 @@ it('marks down on a 5xx response', function () {
 it('marks down on a connection failure', function () {
     Http::preventStrayRequests();
     Http::fake(function () {
-        throw new \Illuminate\Http\Client\ConnectionException('refused');
+        throw new ConnectionException('refused');
     });
 
     $w = Website::factory()->create(['url' => 'https://example.com']);

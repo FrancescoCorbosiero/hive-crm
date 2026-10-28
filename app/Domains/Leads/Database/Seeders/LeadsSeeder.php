@@ -8,13 +8,14 @@ use App\Domains\Leads\Enums\LeadSource;
 use App\Domains\Leads\Enums\LeadStatus;
 use App\Domains\Leads\Enums\LostReason;
 use App\Domains\Leads\Models\Lead;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class LeadsSeeder extends Seeder
 {
     public function run(): void
     {
-        $ownerId = \App\Models\User::query()->value('id');
+        $ownerId = User::query()->value('id');
 
         $leads = [
             [

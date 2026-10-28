@@ -4,6 +4,7 @@ use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
 use App\Shared\ValueObjects\Money;
+use Carbon\Carbon;
 
 it('round-trips Money through amount_cents + currency columns', function () {
     $entry = FinancialEntry::factory()->create();
@@ -45,8 +46,8 @@ it('filters entries by occurredBetween scope', function () {
     FinancialEntry::factory()->on('2026-03-15')->create();
 
     $count = FinancialEntry::occurredBetween(
-        \Carbon\Carbon::parse('2026-02-01'),
-        \Carbon\Carbon::parse('2026-02-28'),
+        Carbon::parse('2026-02-01'),
+        Carbon::parse('2026-02-28'),
     )->count();
 
     expect($count)->toBe(1);

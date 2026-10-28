@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Domains\Documents\Filament\Resources\FatturaResource\RelationManagers;
 
 use App\Domains\Documents\Enums\PaymentMethod;
+use App\Domains\Documents\Filament\Exports\PaymentExporter;
 use App\Domains\Documents\Models\Payment;
 use App\Domains\Documents\Services\Public\PaymentsService;
+use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Tables\Actions\ExportAction;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -22,7 +26,7 @@ class PaymentsRelationManager extends RelationManager
         return 'payments';
     }
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('documents/labels.payment.plural');
     }
@@ -35,7 +39,7 @@ class PaymentsRelationManager extends RelationManager
                 ->displayFormat('d/m/Y')
                 ->default(now())
                 ->required(),
-            \App\Shared\Filament\MoneyInput::make('amount_cents')
+            MoneyInput::make('amount_cents')
                 ->label(__('documents/labels.payment.amount'))
                 ->required(),
             Forms\Components\Select::make('method')
@@ -75,15 +79,15 @@ class PaymentsRelationManager extends RelationManager
                 Tables\Actions\Action::make('record')
                     ->label(__('documents/labels.actions.record_payment'))
                     ->icon('heroicon-o-banknotes')
-                    ->form(fn () => $this->form(\Filament\Forms\Form::make($this))->getComponents())
+                    ->form(fn () => $this->form(Form::make($this))->getComponents())
                     ->action(function (array $data): void {
                         app(PaymentsService::class)->record(
                             (int) $this->getOwnerRecord()->id,
                             $data,
                         );
                     }),
-                \Filament\Tables\Actions\ExportAction::make()
-                    ->exporter(\App\Domains\Documents\Filament\Exports\PaymentExporter::class),
+                ExportAction::make()
+                    ->exporter(PaymentExporter::class),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()

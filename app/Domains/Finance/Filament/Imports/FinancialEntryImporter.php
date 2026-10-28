@@ -61,7 +61,7 @@ class FinancialEntryImporter extends Importer
 
     public function resolveRecord(): ?FinancialEntry
     {
-        return new FinancialEntry();
+        return new FinancialEntry;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

@@ -85,7 +85,7 @@ return [
         'issue_now' => 'Emetti ora',
         'import_xml' => 'Importa XML FatturaPA',
         'import_xml_heading' => 'Importa fatture dal file XML FatturaPA',
-        'import_xml_description' => "Carica uno o più XML in formato FPR12 / FPA12. La direzione viene rilevata dal CodiceFiscale / P.IVA: se sei tu il Cedente diventa una Fattura (vendita); se sei tu il Cessionario diventa una voce di spesa (acquisto). Re-importare lo stesso file è sicuro: i duplicati vengono saltati.",
+        'import_xml_description' => 'Carica uno o più XML in formato FPR12 / FPA12. La direzione viene rilevata dal CodiceFiscale / P.IVA: se sei tu il Cedente diventa una Fattura (vendita); se sei tu il Cessionario diventa una voce di spesa (acquisto). Re-importare lo stesso file è sicuro: i duplicati vengono saltati.',
         'import_xml_files' => 'File XML',
         'import_xml_submit' => 'Importa',
         'import_xml_success' => ':count fatture importate',

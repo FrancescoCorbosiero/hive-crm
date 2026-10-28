@@ -9,6 +9,7 @@ use App\Domains\Documents\Models\Document;
 use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Leads\Models\Lead;
 use App\Domains\Websites\Models\Website;
+use Database\Seeders\DemoDataSeeder;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -82,7 +83,7 @@ class DemoDataPage extends Page
                 ->action(function (): void {
                     try {
                         Artisan::call('db:seed', [
-                            '--class' => \Database\Seeders\DemoDataSeeder::class,
+                            '--class' => DemoDataSeeder::class,
                             '--force' => true,
                         ]);
 

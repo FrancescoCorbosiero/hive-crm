@@ -5,10 +5,10 @@ use App\Domains\Scheduling\Models\ScheduledTask;
 use App\Domains\Scheduling\Registry\ScheduledCommandRegistry;
 
 it('seeds every system command exactly once', function () {
-    (new SystemScheduledTasksSeeder())->run();
+    (new SystemScheduledTasksSeeder)->run();
     $first = ScheduledTask::query()->count();
 
-    (new SystemScheduledTasksSeeder())->run();
+    (new SystemScheduledTasksSeeder)->run();
     $second = ScheduledTask::query()->count();
 
     expect($first)->toBe(count(ScheduledCommandRegistry::systemDefaults()));
@@ -16,7 +16,7 @@ it('seeds every system command exactly once', function () {
 });
 
 it('flags seeded tasks as system + enabled', function () {
-    (new SystemScheduledTasksSeeder())->run();
+    (new SystemScheduledTasksSeeder)->run();
 
     $task = ScheduledTask::query()->where('command', 'fatture:recompute-overdue')->first();
 

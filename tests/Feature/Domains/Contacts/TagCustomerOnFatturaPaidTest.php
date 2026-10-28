@@ -8,7 +8,7 @@ use App\Domains\Documents\Events\FatturaPaid;
 it('tags the contact as Customer when a fattura is paid', function () {
     $contact = Contact::factory()->create(['roles' => []]);
 
-    (new TagCustomerOnFatturaPaid())->handle(
+    (new TagCustomerOnFatturaPaid)->handle(
         new FatturaPaid(fatturaId: 1, clientContactId: $contact->id),
     );
 
@@ -21,7 +21,7 @@ it('is idempotent when the role is already present', function () {
     ]);
     $originalUpdatedAt = $contact->updated_at;
 
-    (new TagCustomerOnFatturaPaid())->handle(
+    (new TagCustomerOnFatturaPaid)->handle(
         new FatturaPaid(fatturaId: 1, clientContactId: $contact->id),
     );
 
@@ -34,7 +34,7 @@ it('preserves existing non-Customer roles', function () {
         'roles' => [ContactRole::Vendor->value],
     ]);
 
-    (new TagCustomerOnFatturaPaid())->handle(
+    (new TagCustomerOnFatturaPaid)->handle(
         new FatturaPaid(fatturaId: 1, clientContactId: $contact->id),
     );
 
@@ -44,7 +44,7 @@ it('preserves existing non-Customer roles', function () {
 });
 
 it('silently ignores a missing contact', function () {
-    (new TagCustomerOnFatturaPaid())->handle(
+    (new TagCustomerOnFatturaPaid)->handle(
         new FatturaPaid(fatturaId: 1, clientContactId: 999_999),
     );
 

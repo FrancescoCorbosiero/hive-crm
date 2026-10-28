@@ -47,7 +47,7 @@ class WebsitesService
             $attributes['notes'] = [$defaultLocale => $attributes['notes']];
         }
 
-        $website = \App\Domains\Websites\Models\Website::query()->create($attributes);
+        $website = Website::query()->create($attributes);
 
         return WebsiteDTO::fromModel($website);
     }

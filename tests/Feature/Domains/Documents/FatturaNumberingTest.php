@@ -4,6 +4,7 @@ use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
 use App\Domains\Documents\Services\Public\FatturaService;
+use Illuminate\Database\QueryException;
 
 function fatturaPayload(int $clientId, ?int $year = null): array
 {
@@ -68,7 +69,7 @@ it('the (year, number) UNIQUE constraint is the second line of defence', functio
         'client_contact_id' => $contact->id,
         'year' => 2030,
         'number' => 1,
-    ]))->toThrow(\Illuminate\Database\QueryException::class);
+    ]))->toThrow(QueryException::class);
 });
 
 it('persists a counter row per year and never lets it move backwards', function () {

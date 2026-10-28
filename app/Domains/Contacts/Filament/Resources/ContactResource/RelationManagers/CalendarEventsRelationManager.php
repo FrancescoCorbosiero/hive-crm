@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 
 use App\Domains\Calendar\Enums\CalendarEventStatus;
-use App\Domains\Calendar\Models\CalendarEvent;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Upcoming + recent calendar events for this contact, joined by
@@ -19,7 +19,7 @@ class CalendarEventsRelationManager extends RelationManager
 {
     protected static string $relationship = 'calendarEvents';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('contacts/labels.summary.calendar');
     }

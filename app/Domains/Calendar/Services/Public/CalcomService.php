@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Domains\Calendar\Services\Public;
 
 use Carbon\CarbonInterface;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\Client\Response;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,7 +26,7 @@ class CalcomService
     public function __construct(private readonly HttpFactory $http) {}
 
     /**
-     * @return array<int, array<string,mixed>>  raw booking rows
+     * @return array<int, array<string,mixed>> raw booking rows
      */
     public function getBookingsSince(CarbonInterface $since, int $limit = 100): array
     {
@@ -72,11 +73,11 @@ class CalcomService
                 times: 3,
                 sleepMilliseconds: fn (int $attempt) => 250 * (2 ** ($attempt - 1)),
                 when: function (\Throwable $exception, $request) {
-                    if ($exception instanceof \Illuminate\Http\Client\ConnectionException) {
+                    if ($exception instanceof ConnectionException) {
                         return true;
                     }
 
-                    if ($exception instanceof \Illuminate\Http\Client\RequestException) {
+                    if ($exception instanceof RequestException) {
                         return $exception->response->serverError();
                     }
 

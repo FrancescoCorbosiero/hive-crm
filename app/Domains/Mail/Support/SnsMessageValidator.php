@@ -27,7 +27,7 @@ class SnsMessageValidator
     {
         $message = new Message(json_decode($rawBody, true) ?: []);
 
-        ($this->validator ?? new MessageValidator())->validate($message);
+        ($this->validator ?? new MessageValidator)->validate($message);
 
         return $message;
     }

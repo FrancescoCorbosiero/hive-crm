@@ -7,6 +7,7 @@ namespace App\Domains\Scheduling\Filament\Resources;
 use App\Domains\Scheduling\Filament\Resources\ScheduledTaskResource\Pages;
 use App\Domains\Scheduling\Models\ScheduledTask;
 use App\Domains\Scheduling\Registry\ScheduledCommandRegistry;
+use App\Domains\Scheduling\Services\ScheduleLoader;
 use Cron\CronExpression;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Artisan;
 
 class ScheduledTaskResource extends Resource
@@ -125,6 +127,7 @@ class ScheduledTaskResource extends Resource
                         ->label(__('scheduling/labels.duration'))
                         ->content(function (ScheduledTask $record): string {
                             $d = $record->durationSeconds();
+
                             return $d !== null ? $d.'s' : '—';
                         }),
                     Forms\Components\Textarea::make('last_output')
@@ -197,7 +200,7 @@ class ScheduledTaskResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->action(function (Collection $records) {
                             $records->reject(fn (ScheduledTask $r) => $r->is_system)
                                 ->each(fn (ScheduledTask $r) => $r->delete());
                         }),
@@ -223,6 +226,7 @@ class ScheduledTaskResource extends Resource
                         ->danger()
                         ->title(__('scheduling/labels.run_now_unknown'))
                         ->send();
+
                     return;
                 }
 
@@ -240,7 +244,7 @@ class ScheduledTaskResource extends Resource
                     $record->update([
                         'last_finished_at' => now(),
                         'last_exit_code' => $exitCode,
-                        'last_output' => mb_substr($output, -\App\Domains\Scheduling\Services\ScheduleLoader::OUTPUT_LIMIT),
+                        'last_output' => mb_substr($output, -ScheduleLoader::OUTPUT_LIMIT),
                     ]);
 
                     Notification::make()

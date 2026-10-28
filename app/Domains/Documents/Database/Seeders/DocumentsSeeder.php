@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace App\Domains\Documents\Database\Seeders;
 
-use App\Domains\Documents\Enums\DocumentCategory;
+use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Documents\Enums\PaymentStatus;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DocumentsSeeder extends Seeder
 {
     public function run(): void
     {
-        $ownerId = \App\Models\User::query()->value('id');
+        $ownerId = User::query()->value('id');
         $year = (int) now()->year;
 
-        $clientId = app(\App\Domains\Contacts\Services\Public\ContactsService::class)
+        $clientId = app(ContactsService::class)
             ->idsByEmails(['amministrazione@bellavistadolci.it'])
             ->first();
 

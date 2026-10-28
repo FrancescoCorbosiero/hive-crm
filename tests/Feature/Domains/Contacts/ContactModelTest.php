@@ -2,6 +2,7 @@
 
 use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Models\Contact;
+use App\Models\User;
 
 it('creates a contact via the factory with at least one role', function () {
     $contact = Contact::factory()->create();
@@ -64,7 +65,7 @@ it('excludes contacts with no email from the mailable scope', function () {
 });
 
 it('auto-assigns the owner_user_id to the seeded admin when one exists', function () {
-    \App\Models\User::factory()->create();
+    User::factory()->create();
 
     $contact = Contact::factory()->create(['owner_user_id' => null]);
 

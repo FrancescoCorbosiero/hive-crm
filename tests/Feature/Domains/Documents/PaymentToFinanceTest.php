@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Events\PaymentRecorded;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Domains\Finance\Enums\FinancialEntryType;
@@ -35,8 +36,8 @@ it('is idempotent — replaying PaymentRecorded with the same payment id does no
     $fattura = Fattura::factory()->create(['client_contact_id' => $contact->id, 'total_cents' => 100_000]);
     $payment = app(PaymentsService::class)->record($fattura->id, ['amount_cents' => 100_000]);
 
-    \App\Domains\Documents\Events\PaymentRecorded::dispatch($payment->id);
-    \App\Domains\Documents\Events\PaymentRecorded::dispatch($payment->id);
+    PaymentRecorded::dispatch($payment->id);
+    PaymentRecorded::dispatch($payment->id);
 
     expect(FinancialEntry::count())->toBe(1);
 });

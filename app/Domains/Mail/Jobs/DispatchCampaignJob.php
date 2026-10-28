@@ -49,6 +49,7 @@ class DispatchCampaignJob implements ShouldQueue
 
                 if (! $contact || ! $contact->isMailable()) {
                     $recipient->update(['status' => RecipientStatus::Skipped->value]);
+
                     continue;
                 }
 

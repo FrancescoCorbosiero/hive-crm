@@ -8,13 +8,14 @@ use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
 use App\Domains\Websites\Models\Website;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class FinancialEntriesSeeder extends Seeder
 {
     public function run(): void
     {
-        $ownerId = \App\Models\User::query()->value('id');
+        $ownerId = User::query()->value('id');
 
         // Per-website monthly subscription income for the last 12 months.
         $websites = Website::query()->whereNotNull('owner_contact_id')->get();

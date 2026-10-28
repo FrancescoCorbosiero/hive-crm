@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Mail\Support\UnsubscribeToken;
+use Carbon\Carbon;
 
 it('produces a token that decodes back to the contact id', function () {
     $token = UnsubscribeToken::for(42);
@@ -21,11 +22,11 @@ it('rejects a malformed token', function () {
 
 it('rejects an expired token', function () {
     $token = UnsubscribeToken::for(42, ttlDays: 0);
-    \Carbon\Carbon::setTestNow(now()->addMinute());
+    Carbon::setTestNow(now()->addMinute());
 
     expect(UnsubscribeToken::decode($token))->toBeNull();
 
-    \Carbon\Carbon::setTestNow();
+    Carbon::setTestNow();
 });
 
 it('embeds the contact id in the URL', function () {

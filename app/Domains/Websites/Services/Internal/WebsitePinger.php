@@ -49,7 +49,7 @@ class WebsitePinger
     }
 
     /**
-     * @return array{0: bool, 1: ?int}  [isUp, statusCode|null]
+     * @return array{0: bool, 1: ?int} [isUp, statusCode|null]
      */
     private function probe(string $url): array
     {

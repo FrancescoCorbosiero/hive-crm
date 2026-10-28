@@ -10,6 +10,7 @@ use App\Domains\Contacts\Events\ContactCreated;
 use App\Domains\Contacts\Events\ContactFlaggedDoNotEmail;
 use App\Domains\Contacts\Models\Contact;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Public entry-point for cross-domain access to the Contacts domain.
@@ -106,7 +107,7 @@ class ContactsService
         }
 
         return Contact::query()
-            ->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(email)'), $emails)
+            ->whereIn(DB::raw('LOWER(email)'), $emails)
             ->pluck('id');
     }
 

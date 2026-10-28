@@ -7,6 +7,7 @@ namespace App\Domains\Catalog\Database\Seeders;
 use App\Domains\Catalog\Enums\ServiceCategory;
 use App\Domains\Catalog\Models\Service;
 use App\Domains\Quotations\Enums\LineCadence;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
@@ -17,7 +18,7 @@ class CatalogSeeder extends Seeder
 {
     public function run(): void
     {
-        $ownerId = \App\Models\User::query()->value('id');
+        $ownerId = User::query()->value('id');
 
         $services = [
             [

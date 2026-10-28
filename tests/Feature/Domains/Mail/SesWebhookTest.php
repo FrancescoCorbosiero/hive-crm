@@ -13,7 +13,8 @@ beforeEach(function () {
     // bypasses signature checks. The dedicated rejection test below
     // restores the real validator to cover the negative path.
     $this->app->bind(SnsMessageValidator::class, function () {
-        return new class extends SnsMessageValidator {
+        return new class extends SnsMessageValidator
+        {
             public function validate(string $rawBody): Message
             {
                 $payload = json_decode($rawBody, true) ?: [];
@@ -158,7 +159,7 @@ it('ignores notifications whose messageId does not match any recipient', functio
 it('rejects a webhook whose SNS signature fails verification', function () {
     // Swap the fake binding with the real validator (which will fail
     // because the test body has no real signature).
-    $this->app->bind(SnsMessageValidator::class, fn () => new SnsMessageValidator());
+    $this->app->bind(SnsMessageValidator::class, fn () => new SnsMessageValidator);
 
     $body = json_encode(snsNotification(['notificationType' => 'Delivery', 'mail' => ['messageId' => 'x']]));
 

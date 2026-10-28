@@ -8,6 +8,7 @@ use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Events\ContactCreated;
 use App\Domains\Contacts\Models\Contact;
 use Filament\Forms;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Select;
 
 /**
@@ -31,7 +32,7 @@ class ContactPicker
 {
     /**
      * @param  list<ContactRole|string>  $defaultRoles
-     *         Roles assigned to newly-created contacts.
+     *                                                  Roles assigned to newly-created contacts.
      */
     public static function make(string $name, array $defaultRoles = [ContactRole::Customer]): Select
     {
@@ -77,7 +78,7 @@ class ContactPicker
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Field>
+     * @return array<int, Field>
      */
     private static function createOptionForm(): array
     {

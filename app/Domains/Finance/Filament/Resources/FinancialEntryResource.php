@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Resources;
 
-use App\Domains\Contacts\Models\Contact;
 use App\Domains\Finance\Enums\FinancialEntrySource;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Filament\Resources\FinancialEntryResource\Pages;
 use App\Domains\Finance\Models\FinancialEntry;
+use App\Domains\Finance\Services\Public\FinanceService;
+use App\Shared\Filament\ContactPicker;
+use App\Shared\Filament\MoneyInput;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -64,7 +67,7 @@ class FinancialEntryResource extends Resource
                         ->default(FinancialEntryType::Income->value)
                         ->required(),
 
-                    \App\Shared\Filament\MoneyInput::make('amount_cents')
+                    MoneyInput::make('amount_cents')
                         ->label(__('finance/entries.fields.amount'))
                         ->required(),
 
@@ -113,7 +116,7 @@ class FinancialEntryResource extends Resource
                         ->numeric()
                         ->visible(fn (Forms\Get $get) => filled($get('source_type'))),
 
-                    \App\Shared\Filament\ContactPicker::make('contact_id')
+                    ContactPicker::make('contact_id')
                         ->label(__('finance/entries.fields.contact')),
                 ]),
 
@@ -210,15 +213,15 @@ class FinancialEntryResource extends Resource
                     ->requiresConfirmation()
                     ->action(function (FinancialEntry $entry): void {
                         try {
-                            $fattura = app(\App\Domains\Finance\Services\Public\FinanceService::class)
+                            $fattura = app(FinanceService::class)
                                 ->generateFattura($entry->id);
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->success()
                                 ->title(__('finance/entries.actions.generate_fattura_success', ['number' => $fattura->displayNumber()]))
                                 ->send();
                         } catch (\Throwable $e) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->danger()
                                 ->title(__('finance/entries.actions.generate_fattura_failure'))
                                 ->body($e->getMessage())

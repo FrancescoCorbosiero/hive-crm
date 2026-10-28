@@ -2,6 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Domains\Catalog\Database\Seeders\CatalogSeeder;
+use App\Domains\Contacts\Database\Seeders\ContactsSeeder;
+use App\Domains\Documents\Database\Seeders\DocumentsSeeder;
+use App\Domains\Finance\Database\Seeders\FinancialEntriesSeeder;
+use App\Domains\Leads\Database\Seeders\LeadsSeeder;
+use App\Domains\Websites\Database\Seeders\WebsitesSeeder;
 use Illuminate\Database\Seeder;
 
 /**
@@ -19,12 +25,12 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            \App\Domains\Contacts\Database\Seeders\ContactsSeeder::class,
-            \App\Domains\Websites\Database\Seeders\WebsitesSeeder::class,
-            \App\Domains\Finance\Database\Seeders\FinancialEntriesSeeder::class,
-            \App\Domains\Leads\Database\Seeders\LeadsSeeder::class,
-            \App\Domains\Catalog\Database\Seeders\CatalogSeeder::class,
-            \App\Domains\Documents\Database\Seeders\DocumentsSeeder::class,
+            ContactsSeeder::class,
+            WebsitesSeeder::class,
+            FinancialEntriesSeeder::class,
+            LeadsSeeder::class,
+            CatalogSeeder::class,
+            DocumentsSeeder::class,
         ]);
     }
 }

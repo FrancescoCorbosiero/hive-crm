@@ -7,6 +7,7 @@ namespace App\Domains\Finance\Filament\Pages;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Websites\Services\Public\WebsitesService;
+use App\Shared\ValueObjects\Money;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -130,9 +131,9 @@ class FinanceAnalyticsPage extends Page implements HasForms
                 'amount' => $m->format($locale),
             ])->values(),
             'per_website' => $perWebsite,
-            'totalIncome' => (new \App\Shared\ValueObjects\Money($totalIncome, $currency))->format($locale),
-            'totalLoss' => (new \App\Shared\ValueObjects\Money($totalLoss, $currency))->format($locale),
-            'net' => (new \App\Shared\ValueObjects\Money($net, $currency))->format($locale),
+            'totalIncome' => (new Money($totalIncome, $currency))->format($locale),
+            'totalLoss' => (new Money($totalLoss, $currency))->format($locale),
+            'net' => (new Money($net, $currency))->format($locale),
             'netNegative' => $net < 0,
         ];
     }

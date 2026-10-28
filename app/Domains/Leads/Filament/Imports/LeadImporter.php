@@ -46,7 +46,7 @@ class LeadImporter extends Importer
             return Lead::query()->firstOrNew(['email' => $this->data['email']]);
         }
 
-        return new Lead();
+        return new Lead;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

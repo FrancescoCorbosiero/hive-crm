@@ -6,6 +6,7 @@ namespace App\Domains\Contacts\Database\Seeders;
 
 use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Models\Contact;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class ContactsSeeder extends Seeder
@@ -93,7 +94,7 @@ class ContactsSeeder extends Seeder
             ],
         ];
 
-        $ownerId = \App\Models\User::query()->value('id');
+        $ownerId = User::query()->value('id');
 
         foreach ($real as $row) {
             Contact::query()->updateOrCreate(

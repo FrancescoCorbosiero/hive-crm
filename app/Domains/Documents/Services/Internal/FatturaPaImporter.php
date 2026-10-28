@@ -11,6 +11,7 @@ use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Models\FatturaCounter;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Models\FinancialEntry;
+use App\Domains\Settings\Services\Public\BusinessProfileService;
 use DomainException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -334,7 +335,7 @@ class FatturaPaImporter
      */
     private function detectDirection(array $parsed): string
     {
-        $cedente = app(\App\Domains\Settings\Services\Public\BusinessProfileService::class)->cedente();
+        $cedente = app(BusinessProfileService::class)->cedente();
         $ownerCf = strtoupper((string) ($cedente['codice_fiscale'] ?? ''));
         $ownerPiva = (string) ($cedente['partita_iva'] ?? '');
 
@@ -367,7 +368,7 @@ class FatturaPaImporter
         }
 
         throw new DomainException(sprintf(
-            "Neither party in the XML matches the configured owner (%s / %s). Cedente: %s / %s. Cessionario: %s / %s.",
+            'Neither party in the XML matches the configured owner (%s / %s). Cedente: %s / %s. Cessionario: %s / %s.',
             $ownerCf ?: '—', $ownerPiva ?: '—',
             $parsed['cedente']['codice_fiscale'] ?? '—', $parsed['cedente']['partita_iva'] ?? '—',
             $parsed['cessionario']['codice_fiscale'] ?? '—', $parsed['cessionario']['partita_iva'] ?? '—',

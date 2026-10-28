@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -75,6 +76,7 @@ class Fattura extends Model
     public function outstanding(): Money
     {
         $cents = max(0, (int) $this->total_cents - (int) $this->paid_amount_cents);
+
         return new Money($cents, $this->currency);
     }
 
@@ -88,7 +90,7 @@ class Fattura extends Model
         return $this->belongsTo(Document::class);
     }
 
-    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }

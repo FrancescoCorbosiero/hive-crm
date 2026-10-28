@@ -79,7 +79,7 @@ it('rolls back the entire conversion if any step fails', function () {
             // missing the required `url` field
             'name' => 'Bad website',
         ]);
-    })->toThrow(\Exception::class);
+    })->toThrow(Exception::class);
 
     expect(Contact::count())->toBe(0);
     expect(Website::count())->toBe(0);

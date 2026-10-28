@@ -3,6 +3,7 @@
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Mail\Enums\CampaignStatus;
 use App\Domains\Mail\Enums\RecipientStatus;
+use App\Domains\Mail\Jobs\SendCampaignRecipientJob;
 use App\Domains\Mail\Mail\CampaignMail;
 use App\Domains\Mail\Models\Campaign;
 use App\Domains\Mail\Models\CampaignRecipient;
@@ -97,7 +98,7 @@ it('worker skips a recipient whose contact was flagged do_not_email after dispat
     // Race condition: bounce arrives between dispatch and worker.
     $contact->update(['do_not_email' => true]);
 
-    \App\Domains\Mail\Jobs\SendCampaignRecipientJob::dispatchSync($recipient->id);
+    SendCampaignRecipientJob::dispatchSync($recipient->id);
 
     Mail::assertNothingSent();
     expect($recipient->fresh()->status)->toBe(RecipientStatus::Skipped);

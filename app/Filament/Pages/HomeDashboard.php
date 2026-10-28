@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Contacts\Filament\Resources\ContactResource;
 use App\Domains\Documents\Filament\Resources\FatturaResource;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\Documents\Services\Public\PaymentsService;
 use App\Domains\DomainNames\Filament\Resources\DomainNameResource;
+use App\Domains\DomainNames\Filament\Widgets\ExpiringDomainsWidget;
 use App\Domains\Finance\Enums\FinancialEntryType;
 use App\Domains\Finance\Services\Public\FinanceService;
 use App\Domains\Leads\Enums\LeadSource;
@@ -23,6 +25,7 @@ use App\Filament\Widgets\OpenQuotationsWidget;
 use App\Filament\Widgets\QuickActionsWidget;
 use App\Filament\Widgets\TopLeadsWidget;
 use App\Filament\Widgets\WelcomeHeroWidget;
+use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -73,7 +76,7 @@ class HomeDashboard extends Dashboard
             DashboardKpisWidget::class,
             OpenQuotationsWidget::class,
             ActiveSubscriptionsWidget::class,
-            \App\Domains\DomainNames\Filament\Widgets\ExpiringDomainsWidget::class,
+            ExpiringDomainsWidget::class,
             TopLeadsWidget::class,
         ];
     }
@@ -295,9 +298,9 @@ class HomeDashboard extends Dashboard
                     ])->mapWithKeys(fn ($k) => [$k => __('finance/entries.categories.'.$k)])->all())
                     ->searchable(),
 
-                \App\Shared\Filament\ContactPicker::make(
+                ContactPicker::make(
                     'contact_id',
-                    [\App\Domains\Contacts\Enums\ContactRole::Vendor],
+                    [ContactRole::Vendor],
                 )
                     ->label(__('dashboard.fast_entry.log_expense.vendor')),
             ])

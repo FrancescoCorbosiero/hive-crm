@@ -1,22 +1,39 @@
 <?php
 
+use App\Domains\Calendar\CalendarServiceProvider;
+use App\Domains\Catalog\CatalogServiceProvider;
+use App\Domains\Contacts\ContactsServiceProvider;
+use App\Domains\Documents\DocumentsServiceProvider;
+use App\Domains\DomainNames\DomainNamesServiceProvider;
+use App\Domains\Finance\FinanceServiceProvider;
+use App\Domains\Leads\LeadsServiceProvider;
+use App\Domains\Mail\MailServiceProvider;
+use App\Domains\Quotations\QuotationsServiceProvider;
+use App\Domains\Repositories\RepositoriesServiceProvider;
+use App\Domains\Scheduling\SchedulingServiceProvider;
+use App\Domains\Settings\SettingsServiceProvider;
+use App\Domains\Websites\WebsitesServiceProvider;
+use App\Providers\AppServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
+use App\Providers\HorizonServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\Filament\AdminPanelProvider::class,
-    App\Providers\HorizonServiceProvider::class,
+    AppServiceProvider::class,
+    AdminPanelProvider::class,
+    HorizonServiceProvider::class,
 
     // ── Domains ────────────────────────────────────────────────────────
-    App\Domains\Contacts\ContactsServiceProvider::class,
-    App\Domains\Websites\WebsitesServiceProvider::class,
-    App\Domains\DomainNames\DomainNamesServiceProvider::class,
-    App\Domains\Repositories\RepositoriesServiceProvider::class,
-    App\Domains\Catalog\CatalogServiceProvider::class,
-    App\Domains\Finance\FinanceServiceProvider::class,
-    App\Domains\Leads\LeadsServiceProvider::class,
-    App\Domains\Calendar\CalendarServiceProvider::class,
-    App\Domains\Mail\MailServiceProvider::class,
-    App\Domains\Documents\DocumentsServiceProvider::class,
-    App\Domains\Quotations\QuotationsServiceProvider::class,
-    App\Domains\Scheduling\SchedulingServiceProvider::class,
-    App\Domains\Settings\SettingsServiceProvider::class,
+    ContactsServiceProvider::class,
+    WebsitesServiceProvider::class,
+    DomainNamesServiceProvider::class,
+    RepositoriesServiceProvider::class,
+    CatalogServiceProvider::class,
+    FinanceServiceProvider::class,
+    LeadsServiceProvider::class,
+    CalendarServiceProvider::class,
+    MailServiceProvider::class,
+    DocumentsServiceProvider::class,
+    QuotationsServiceProvider::class,
+    SchedulingServiceProvider::class,
+    SettingsServiceProvider::class,
 ];

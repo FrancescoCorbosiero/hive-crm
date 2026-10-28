@@ -6,8 +6,8 @@ namespace App\Filament\Widgets;
 
 use App\Domains\Catalog\Filament\Resources\ServiceResource;
 use App\Domains\Contacts\Filament\Resources\ContactResource;
-use App\Domains\DomainNames\Filament\Resources\DomainNameResource;
 use App\Domains\Documents\Filament\Resources\FatturaResource;
+use App\Domains\DomainNames\Filament\Resources\DomainNameResource;
 use App\Domains\Finance\Filament\Resources\FinancialEntryResource;
 use App\Domains\Leads\Filament\Resources\LeadResource;
 use App\Domains\Quotations\Filament\Resources\QuotationResource;

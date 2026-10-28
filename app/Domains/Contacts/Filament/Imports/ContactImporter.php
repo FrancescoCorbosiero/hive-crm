@@ -79,7 +79,7 @@ class ContactImporter extends Importer
             return Contact::query()->firstOrNew(['email' => $this->data['email']]);
         }
 
-        return new Contact();
+        return new Contact;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

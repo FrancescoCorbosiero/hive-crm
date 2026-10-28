@@ -2,6 +2,7 @@
 
 use App\Domains\Calendar\Enums\CalendarEventStatus;
 use App\Domains\Calendar\Models\CalendarEvent;
+use Carbon\Carbon;
 
 beforeEach(function () {
     config()->set('services.calcom.webhook_secret', 'test-webhook-secret');
@@ -112,7 +113,7 @@ it('updates the existing row on a reschedule webhook for the same uid', function
 
     expect(CalendarEvent::count())->toBe(1);
     $event = CalendarEvent::first();
-    expect($event->starts_at->equalTo(\Carbon\Carbon::parse('2026-05-12T16:00:00Z')))->toBeTrue();
+    expect($event->starts_at->equalTo(Carbon::parse('2026-05-12T16:00:00Z')))->toBeTrue();
 });
 
 it('marks the row as cancelled when a BOOKING_CANCELLED arrives', function () {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Scheduling\Console\Commands;
 
 use App\Domains\Scheduling\Database\Seeders\SystemScheduledTasksSeeder;
+use App\Domains\Scheduling\Models\ScheduledTask;
 use Illuminate\Console\Command;
 
 /**
@@ -24,9 +25,9 @@ class SyncScheduledTasksCommand extends Command
 
     public function handle(): int
     {
-        $before = \App\Domains\Scheduling\Models\ScheduledTask::query()->count();
-        (new SystemScheduledTasksSeeder())->run();
-        $after = \App\Domains\Scheduling\Models\ScheduledTask::query()->count();
+        $before = ScheduledTask::query()->count();
+        (new SystemScheduledTasksSeeder)->run();
+        $after = ScheduledTask::query()->count();
 
         $this->info(sprintf('Scheduled tasks: %d → %d (%+d).', $before, $after, $after - $before));
 

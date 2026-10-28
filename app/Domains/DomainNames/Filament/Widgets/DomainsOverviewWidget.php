@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\DomainNames\Filament\Widgets;
 
-use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Models\DomainName;
 use App\Shared\ValueObjects\Money;
 use Filament\Widgets\StatsOverviewWidget;

@@ -6,7 +6,9 @@ namespace App\Domains\Scheduling\Filament\Resources\ScheduledTaskResource\Pages;
 
 use App\Domains\Scheduling\Filament\Resources\ScheduledTaskResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Artisan;
 
 class ListScheduledTasks extends ListRecords
 {
@@ -19,8 +21,8 @@ class ListScheduledTasks extends ListRecords
                 ->label(__('scheduling/labels.sync_system'))
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
-                    \Illuminate\Support\Facades\Artisan::call('scheduling:sync');
-                    \Filament\Notifications\Notification::make()
+                    Artisan::call('scheduling:sync');
+                    Notification::make()
                         ->success()
                         ->title(__('scheduling/labels.sync_done'))
                         ->send();

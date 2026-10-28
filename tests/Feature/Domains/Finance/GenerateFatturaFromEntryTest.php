@@ -50,14 +50,14 @@ it('refuses to generate a Fattura from a LOSS entry', function () {
     ]);
 
     expect(fn () => app(FinanceService::class)->generateFattura($entry->id))
-        ->toThrow(\DomainException::class);
+        ->toThrow(DomainException::class);
 });
 
 it('requires either entry.contact_id or an override to generate a Fattura', function () {
     $entry = FinancialEntry::factory()->income(10000)->create(['contact_id' => null]);
 
     expect(fn () => app(FinanceService::class)->generateFattura($entry->id))
-        ->toThrow(\DomainException::class);
+        ->toThrow(DomainException::class);
 
     // With an override the call succeeds.
     $contact = Contact::factory()->create();

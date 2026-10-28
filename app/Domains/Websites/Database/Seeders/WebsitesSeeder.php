@@ -7,13 +7,14 @@ namespace App\Domains\Websites\Database\Seeders;
 use App\Domains\Contacts\Services\Public\ContactsService;
 use App\Domains\Websites\Enums\WebsiteStatus;
 use App\Domains\Websites\Models\Website;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class WebsitesSeeder extends Seeder
 {
     public function run(): void
     {
-        $ownerId = \App\Models\User::query()->value('id');
+        $ownerId = User::query()->value('id');
 
         // Resolve the seeded customer contacts through the public service
         // — keeps this seeder honest about the no-cross-domain-Eloquent-

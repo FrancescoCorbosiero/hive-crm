@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\Settings\Filament\Pages;
 
 use App\Domains\Settings\Enums\ProfileType;
-use App\Domains\Settings\Models\BusinessProfile;
 use App\Domains\Settings\Services\Public\BusinessProfileService;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -255,7 +255,7 @@ class BusinessProfilePage extends Page implements HasForms
     protected function getFormActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label(__('settings/profile.save'))
                 ->submit('save'),
         ];

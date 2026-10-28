@@ -32,7 +32,7 @@ it('refuses to issue an invoice for an unconverted lead', function () {
     ]);
 
     app(LeadsService::class)->issueInvoice($lead->id);
-})->throws(\DomainException::class);
+})->throws(DomainException::class);
 
 it('defaults qty to 1 and uses lead name as line description', function () {
     $contact = Contact::factory()->create();

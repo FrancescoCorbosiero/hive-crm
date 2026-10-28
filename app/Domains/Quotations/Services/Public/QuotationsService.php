@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Quotations\Services\Public;
 
+use App\Domains\Documents\Enums\DocumentCategory;
 use App\Domains\Documents\Services\Public\DocumentsService;
 use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\Documents\Services\Public\RecurringFatturaService;
@@ -177,7 +178,7 @@ class QuotationsService
     /**
      * @param  array<int, array<string,mixed>>  $lines
      * @return array<string, array<int, array<string,mixed>>>
-     *         keyed by cadence value, only non-una_tantum groups
+     *                                                        keyed by cadence value, only non-una_tantum groups
      */
     private function groupRecurringLines(array $lines): array
     {
@@ -254,7 +255,7 @@ class QuotationsService
             mime: 'application/pdf',
             attributes: [
                 'title' => $q->displayNumber().' — '.$q->name,
-                'category' => \App\Domains\Documents\Enums\DocumentCategory::Other->value,
+                'category' => DocumentCategory::Other->value,
                 'related_type' => 'quotation',
                 'related_id' => $q->id,
                 'issued_at' => $q->issued_at,
@@ -269,7 +270,7 @@ class QuotationsService
 
     /**
      * @param  array<int, array<string,mixed>>  $lines
-     * @return array{0:int,1:int,2:int}  [subtotal, vat, total] in cents
+     * @return array{0:int,1:int,2:int} [subtotal, vat, total] in cents
      */
     private function computeTotals(array $lines): array
     {

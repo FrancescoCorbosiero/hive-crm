@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 
 use App\Domains\Documents\Enums\PaymentStatus;
+use App\Domains\Documents\Filament\Resources\FatturaResource;
 use App\Domains\Documents\Models\Fattura;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
@@ -20,7 +22,7 @@ class FattureRelationManager extends RelationManager
 {
     protected static string $relationship = 'fatture';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('contacts/labels.summary.fatture');
     }
@@ -80,7 +82,7 @@ class FattureRelationManager extends RelationManager
                 Tables\Actions\Action::make('open')
                     ->label(__('contacts/labels.summary.open'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (Fattura $f) => \App\Domains\Documents\Filament\Resources\FatturaResource::getUrl('edit', ['record' => $f->id])),
+                    ->url(fn (Fattura $f) => FatturaResource::getUrl('edit', ['record' => $f->id])),
             ])
             ->paginated(false);
     }

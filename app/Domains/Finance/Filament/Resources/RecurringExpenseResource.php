@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domains\Finance\Filament\Resources;
 
-use App\Domains\Contacts\Models\Contact;
+use App\Domains\Contacts\Enums\ContactRole;
 use App\Domains\Documents\Enums\RecurringFrequency;
 use App\Domains\Finance\Filament\Resources\RecurringExpenseResource\Pages;
 use App\Domains\Finance\Models\RecurringExpense;
 use App\Domains\Finance\Services\Public\FinanceService;
+use App\Shared\Filament\ContactPicker;
 use App\Shared\Filament\MoneyInput;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -74,9 +76,9 @@ class RecurringExpenseResource extends Resource
                         ->options(self::categoryOptions())
                         ->searchable(),
 
-                    \App\Shared\Filament\ContactPicker::make(
+                    ContactPicker::make(
                         'vendor_contact_id',
-                        [\App\Domains\Contacts\Enums\ContactRole::Vendor],
+                        [ContactRole::Vendor],
                     )
                         ->label(__('finance/recurring_expenses.fields.vendor')),
                 ]),
@@ -173,7 +175,7 @@ class RecurringExpenseResource extends Resource
                             'owner_user_id' => $expense->owner_user_id,
                         ]);
 
-                        $next = $expense->frequency->advance(\Carbon\Carbon::parse($occurredAt));
+                        $next = $expense->frequency->advance(Carbon::parse($occurredAt));
 
                         $expense->update([
                             'last_logged_at' => $occurredAt,

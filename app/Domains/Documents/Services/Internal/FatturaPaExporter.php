@@ -6,6 +6,7 @@ namespace App\Domains\Documents\Services\Internal;
 
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Models\Fattura;
+use App\Domains\Settings\Services\Public\BusinessProfileService;
 use DomainException;
 use Illuminate\Support\Str;
 
@@ -54,7 +55,7 @@ class FatturaPaExporter
      */
     private function cedenteConfig(): array
     {
-        $cedente = app(\App\Domains\Settings\Services\Public\BusinessProfileService::class)->cedente();
+        $cedente = app(BusinessProfileService::class)->cedente();
 
         $cf = (string) ($cedente['codice_fiscale'] ?? '');
         $piva = (string) ($cedente['partita_iva'] ?? '');
@@ -105,7 +106,7 @@ class FatturaPaExporter
 
         if ($piva === '' && $cf === '') {
             throw new DomainException(sprintf(
-                "Contact #%d is missing both Partita IVA and Codice Fiscale; cannot generate a FatturaPA XML.",
+                'Contact #%d is missing both Partita IVA and Codice Fiscale; cannot generate a FatturaPA XML.',
                 $contactId,
             ));
         }
@@ -114,7 +115,7 @@ class FatturaPaExporter
         foreach (['street', 'city', 'province', 'postal_code'] as $k) {
             if (empty($address[$k])) {
                 throw new DomainException(sprintf(
-                    "Contact #%d is missing address.%s — required by the FatturaPA XSD.",
+                    'Contact #%d is missing address.%s — required by the FatturaPA XSD.',
                     $contactId,
                     $k,
                 ));

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 
 use App\Domains\Quotations\Enums\QuotationStatus;
+use App\Domains\Quotations\Filament\Resources\QuotationResource;
 use App\Domains\Quotations\Models\Quotation;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Read-only listing of the contact's quotations, filtered to open ones
@@ -20,7 +22,7 @@ class QuotationsRelationManager extends RelationManager
 {
     protected static string $relationship = 'quotations';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('contacts/labels.summary.quotations');
     }
@@ -59,7 +61,7 @@ class QuotationsRelationManager extends RelationManager
                 Tables\Actions\Action::make('open')
                     ->label(__('contacts/labels.summary.open'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (Quotation $q) => \App\Domains\Quotations\Filament\Resources\QuotationResource::getUrl('edit', ['record' => $q->id])),
+                    ->url(fn (Quotation $q) => QuotationResource::getUrl('edit', ['record' => $q->id])),
             ])
             ->paginated(false);
     }
