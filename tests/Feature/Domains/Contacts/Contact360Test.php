@@ -8,11 +8,15 @@ use App\Domains\Contacts\Filament\Resources\ContactResource\Pages\ViewContact;
 use App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers\DomainNamesRelationManager;
 use App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers\WebsitesRelationManager;
 use App\Domains\Contacts\Models\Contact;
+use App\Domains\Documents\Filament\Resources\FatturaResource;
+use App\Domains\Documents\Filament\Resources\FatturaResource\Pages\CreateFattura;
 use App\Domains\Documents\Models\Fattura;
 use App\Domains\DomainNames\Enums\DomainStatus;
 use App\Domains\DomainNames\Enums\Registrar;
+use App\Domains\DomainNames\Filament\Resources\DomainNameResource\Pages\CreateDomainName;
 use App\Domains\DomainNames\Models\DomainName;
 use App\Domains\Quotations\Models\Quotation;
+use App\Domains\Websites\Filament\Resources\WebsiteResource\Pages\CreateWebsite;
 use App\Domains\Websites\Models\Website;
 use App\Models\User;
 use Livewire\Livewire;
@@ -86,14 +90,19 @@ it('renders the View page with both new relation managers without errors', funct
         ->assertSuccessful();
 });
 
-it('issues a draft Fattura tied to the contact via the quick-create action', function () {
+it('opens the fattura form prefilled with the contact, allocating no number', function () {
     $contact = Contact::factory()->create();
 
+    // Rendering the contact's actions must not create anything: the old
+    // action created an empty €0 fattura and so burned the next number.
     Livewire::test(EditContact::class, ['record' => $contact->id])
-        ->callAction('issueFattura');
+        ->assertActionHasUrl('issueFattura', FatturaResource::getUrl('create').'?client_contact_id='.$contact->id);
+    expect(Fattura::count())->toBe(0);
 
-    $fattura = Fattura::query()->latest('id')->firstOrFail();
-    expect($fattura->client_contact_id)->toBe($contact->id);
+    Livewire::withQueryParams(['client_contact_id' => $contact->id])
+        ->test(CreateFattura::class)
+        ->assertFormSet(['client_contact_id' => $contact->id]);
+    expect(Fattura::count())->toBe(0);
 });
 
 it('creates a draft Quotation tied to the contact via the quick-create action', function () {
@@ -120,11 +129,15 @@ it('exposes Website / Domain quick-create links pointing at the right URLs', fun
     expect($domainUrl)->toContain('owner_contact_id='.$contact->id);
 });
 
-// NOTE: The mount() hook that reads ?owner_contact_id and pre-fills
-// the create form is a 5-line read-and-fill with no branching beyond
-// a null check. Livewire's synthetic test request doesn't propagate
-// query params into request()->query(), and HTTP-level rendering
-// tests require a built Vite manifest the test env doesn't ship.
-// Coverage strategy: the URL-generation test above proves the
-// outgoing link is correctly formed; the receiving pre-fill is
-// verified manually in the UI.
+it('prefills the owner on the Website / Domain create forms those links open', function (string $page) {
+    $contact = Contact::factory()->create();
+
+    // Livewire::withQueryParams() makes the initial render a GET with
+    // the query string, so request()->query() sees it in mount().
+    Livewire::withQueryParams(['owner_contact_id' => $contact->id])
+        ->test($page)
+        ->assertFormSet(['owner_contact_id' => $contact->id]);
+})->with([
+    'website' => CreateWebsite::class,
+    'domain' => CreateDomainName::class,
+]);

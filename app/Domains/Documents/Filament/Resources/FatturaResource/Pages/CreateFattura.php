@@ -25,6 +25,23 @@ class CreateFattura extends CreateRecord
 {
     protected static string $resource = FatturaResource::class;
 
+    /**
+     * Pre-fill the client when arriving from a contact's "Issue fattura"
+     * link (?client_contact_id=…). The fattura, and its number, only
+     * come into existence when this form is saved.
+     */
+    public function mount(): void
+    {
+        parent::mount();
+
+        $contactId = request()->query('client_contact_id');
+        if ($contactId !== null && is_numeric($contactId)) {
+            $this->form->fill(array_merge($this->data, [
+                'client_contact_id' => (int) $contactId,
+            ]));
+        }
+    }
+
     protected function handleRecordCreation(array $data): Fattura
     {
         return app(FatturaService::class)->create([

@@ -9,7 +9,6 @@ use App\Domains\Contacts\Filament\Resources\ContactResource\Pages;
 use App\Domains\Contacts\Filament\Resources\ContactResource\RelationManagers;
 use App\Domains\Contacts\Models\Contact;
 use App\Domains\Documents\Filament\Resources\FatturaResource;
-use App\Domains\Documents\Services\Public\FatturaService;
 use App\Domains\DomainNames\Filament\Resources\DomainNameResource;
 use App\Domains\Quotations\Filament\Resources\QuotationResource;
 use App\Domains\Quotations\Services\Public\QuotationsService;
@@ -288,22 +287,15 @@ class ContactResource extends Resource
     public static function quickCreateHeaderActions(Contact $contact): array
     {
         return [
+            // A link to the prefilled create form, not an action that
+            // creates the fattura: that allocated the next progressive
+            // number to an empty €0 invoice, so abandoning the form left
+            // either that invoice or a gap in the numbering.
             Action::make('issueFattura')
                 ->label(__('contacts/labels.actions.issue_fattura'))
                 ->icon('heroicon-o-document-text')
                 ->color('warning')
-                ->action(function () use ($contact) {
-                    $fattura = app(FatturaService::class)->create([
-                        'client_contact_id' => $contact->id,
-                        'issued_at' => now(),
-                        'lines' => [],
-                        'owner_user_id' => $contact->owner_user_id,
-                    ]);
-
-                    return redirect()->to(
-                        FatturaResource::getUrl('edit', ['record' => $fattura->id]),
-                    );
-                }),
+                ->url(fn () => FatturaResource::getUrl('create').'?client_contact_id='.$contact->id),
 
             Action::make('createQuotation')
                 ->label(__('contacts/labels.actions.create_quotation'))
